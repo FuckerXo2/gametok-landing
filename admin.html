@@ -20,6 +20,7 @@
       background: linear-gradient(135deg, #FF6B6B, #FF8E53);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .login-form, .admin-content { display: none; }
     .login-form.active, .admin-content.active { display: block; }
@@ -101,10 +102,7 @@
     .btn-danger { background: #e74c3c; color: #fff; }
     .btn-small { padding: 8px 16px; font-size: 12px; }
     
-    .games-list {
-      display: grid;
-      gap: 12px;
-    }
+    .games-list { display: grid; gap: 12px; }
     .game-item {
       display: flex;
       align-items: center;
@@ -121,6 +119,12 @@
       align-items: center;
       justify-content: center;
       font-size: 24px;
+    }
+    .game-thumb {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      object-fit: cover;
     }
     .game-info { flex: 1; }
     .game-name { font-weight: 600; margin-bottom: 4px; }
@@ -148,15 +152,26 @@
       padding: 20px;
       text-align: center;
       cursor: pointer;
-      margin-bottom: 12px;
+      transition: border-color 0.2s;
+      position: relative;
     }
     .thumbnail-upload:hover { border-color: #FF8E53; }
+    .thumbnail-upload.uploading { border-color: #FF8E53; opacity: 0.7; }
+    .thumbnail-upload input[type="file"] {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
     .thumbnail-preview {
-      max-width: 100px;
-      max-height: 100px;
+      width: 80px;
+      height: 80px;
       border-radius: 8px;
+      object-fit: cover;
       margin-top: 10px;
     }
+    .upload-text { color: #888; font-size: 14px; }
+    .upload-text span { color: #FF8E53; }
   </style>
 </head>
 <body>
@@ -198,7 +213,14 @@
             </select>
           </div>
           <div class="form-row">
-            <input type="text" id="gameThumbnail" placeholder="Thumbnail URL (optional)">
+            <div style="flex: 1;">
+              <div class="thumbnail-upload" id="thumbnailUpload">
+                <input type="file" accept="image/*" onchange="uploadThumbnail(event)">
+                <div class="upload-text">📷 <span>Click to upload thumbnail</span></div>
+                <div id="thumbnailPreviewContainer"></div>
+              </div>
+              <input type="hidden" id="gameThumbnail">
+            </div>
           </div>
           <button class="btn btn-primary" onclick="addGame()">Add Game</button>
         </div>
@@ -226,6 +248,10 @@
     const API = 'https://gametok-backend-production.up.railway.app';
     const ADMIN_PASSWORD = 'gametok2024';
     
+    // Cloudinary config - UPDATE THESE WITH YOUR VALUES
+    const CLOUDINARY_CLOUD_NAME = 'dujntgrjd';
+    const CLOUDINARY_UPLOAD_PRESET = 'gametok_unsigned';
+    
     function login() {
       const pwd = document.getElementById('password').value;
       if (pwd === ADMIN_PASSWORD) {
@@ -245,6 +271,45 @@
       document.getElementById('statsTab').style.display = tab === 'stats' ? 'block' : 'none';
     }
     
+    async function uploadThumbnail(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const uploadBox = document.getElementById('thumbnailUpload');
+      const previewContainer = document.getElementById('thumbnailPreviewContainer');
+      
+      uploadBox.classList.add('uploading');
+      previewContainer.innerHTML = '<div class="upload-text">Uploading...</div>';
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'gametok/thumbnails');
+      
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        
+        if (data.secure_url) {
+          document.getElementById('gameThumbnail').value = data.secure_url;
+          previewContainer.innerHTML = `<img src="${data.secure_url}" class="thumbnail-preview" alt="Thumbnail">`;
+          uploadBox.querySelector('.upload-text').innerHTML = '✅ <span>Uploaded! Click to change</span>';
+        } else {
+          throw new Error(data.error?.message || 'Upload failed');
+        }
+      } catch (e) {
+        console.error(e);
+        previewContainer.innerHTML = '';
+        uploadBox.querySelector('.upload-text').innerHTML = '❌ <span>Upload failed. Try again</span>';
+        alert('Failed to upload: ' + e.message);
+      }
+      
+      uploadBox.classList.remove('uploading');
+    }
+    
     async function loadGames() {
       try {
         const res = await fetch(`${API}/api/admin/games`);
@@ -252,7 +317,10 @@
         document.getElementById('gameCount').textContent = data.games.length;
         document.getElementById('gamesList').innerHTML = data.games.map(g => `
           <div class="game-item">
-            <div class="game-icon" style="background: ${g.color}">${g.icon}</div>
+            ${g.thumbnail 
+              ? `<img src="${g.thumbnail}" class="game-thumb" alt="${g.name}">`
+              : `<div class="game-icon" style="background: ${g.color}">${g.icon}</div>`
+            }
             <div class="game-info">
               <div class="game-name">${g.name}</div>
               <div class="game-url">${g.embedUrl || 'Self-hosted: ' + g.id}</div>
@@ -272,8 +340,6 @@
         const gamesRes = await fetch(`${API}/api/games?limit=1000`);
         const gamesData = await gamesRes.json();
         document.getElementById('totalGames').textContent = gamesData.total || 0;
-        
-        // Users count would need an endpoint
         document.getElementById('totalUsers').textContent = '-';
       } catch (e) {
         console.error(e);
@@ -302,11 +368,14 @@
         const data = await res.json();
         if (data.success) {
           alert('Game added!');
+          // Clear form
           document.getElementById('gameId').value = '';
           document.getElementById('gameName').value = '';
           document.getElementById('gameUrl').value = '';
           document.getElementById('gameDesc').value = '';
           document.getElementById('gameThumbnail').value = '';
+          document.getElementById('thumbnailPreviewContainer').innerHTML = '';
+          document.querySelector('#thumbnailUpload .upload-text').innerHTML = '📷 <span>Click to upload thumbnail</span>';
           loadGames();
         } else {
           alert('Error: ' + data.error);
@@ -331,7 +400,6 @@
       }
     }
     
-    // Enter key to login
     document.getElementById('password').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') login();
     });
