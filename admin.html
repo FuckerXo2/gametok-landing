@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameTOK Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { 
+      font-size: 28px; 
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .login-form, .admin-content { display: none; }
+    .login-form.active, .admin-content.active { display: block; }
+    
+    .login-form {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 32px;
+      background: #1a1a1a;
+      border-radius: 16px;
+    }
+    .login-form h2 { margin-bottom: 20px; text-align: center; }
+    .login-form input {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0a0a0a;
+      color: #fff;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    .login-form button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 12px;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 15px;
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    .tab.active { background: #FF8E53; color: #fff; }
+    
+    .add-game-form {
+      background: #1a1a1a;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .form-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    .form-row input, .form-row select {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0a0a0a;
+      color: #fff;
+      font-size: 14px;
+    }
+    .form-row input::placeholder { color: #666; }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary { background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: #fff; }
+    .btn-danger { background: #e74c3c; color: #fff; }
+    .btn-small { padding: 8px 16px; font-size: 12px; }
+    
+    .games-list {
+      display: grid;
+      gap: 12px;
+    }
+    .game-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #1a1a1a;
+      border-radius: 12px;
+    }
+    .game-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .game-info { flex: 1; }
+    .game-name { font-weight: 600; margin-bottom: 4px; }
+    .game-url { font-size: 12px; color: #888; word-break: break-all; }
+    .game-actions { display: flex; gap: 8px; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-value { font-size: 32px; font-weight: 700; color: #FF8E53; }
+    .stat-label { font-size: 14px; color: #888; margin-top: 4px; }
+    
+    .thumbnail-upload {
+      border: 2px dashed #333;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .thumbnail-upload:hover { border-color: #FF8E53; }
+    .thumbnail-preview {
+      max-width: 100px;
+      max-height: 100px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="login-form active" id="loginForm">
+      <h2>🎮 GameTOK Admin</h2>
+      <input type="password" id="password" placeholder="Enter admin password">
+      <button onclick="login()">Login</button>
+    </div>
+    
+    <div class="admin-content" id="adminContent">
+      <h1>🎮 GameTOK Admin</h1>
+      
+      <div class="tabs">
+        <button class="tab active" onclick="showTab('games')">Games</button>
+        <button class="tab" onclick="showTab('stats')">Stats</button>
+      </div>
+      
+      <div id="gamesTab">
+        <div class="add-game-form">
+          <h3 style="margin-bottom: 16px;">Add New Game</h3>
+          <div class="form-row">
+            <input type="text" id="gameId" placeholder="Game ID (e.g. gm-cool-game)">
+            <input type="text" id="gameName" placeholder="Game Name">
+          </div>
+          <div class="form-row">
+            <input type="text" id="gameUrl" placeholder="GameMonetize URL (https://html5.gamemonetize.co/...)">
+          </div>
+          <div class="form-row">
+            <input type="text" id="gameDesc" placeholder="Description (optional)">
+            <select id="gameCategory">
+              <option value="arcade">Arcade</option>
+              <option value="puzzle">Puzzle</option>
+              <option value="action">Action</option>
+              <option value="casual">Casual</option>
+              <option value="sports">Sports</option>
+              <option value="strategy">Strategy</option>
+              <option value="retro">Retro</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <input type="text" id="gameThumbnail" placeholder="Thumbnail URL (optional)">
+          </div>
+          <button class="btn btn-primary" onclick="addGame()">Add Game</button>
+        </div>
+        
+        <h3 style="margin-bottom: 16px;">All Games (<span id="gameCount">0</span>)</h3>
+        <div class="games-list" id="gamesList"></div>
+      </div>
+      
+      <div id="statsTab" style="display: none;">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="totalGames">0</div>
+            <div class="stat-label">Total Games</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalUsers">0</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'https://gametok-backend-production.up.railway.app';
+    const ADMIN_PASSWORD = 'gametok2024';
+    
+    function login() {
+      const pwd = document.getElementById('password').value;
+      if (pwd === ADMIN_PASSWORD) {
+        document.getElementById('loginForm').classList.remove('active');
+        document.getElementById('adminContent').classList.add('active');
+        loadGames();
+        loadStats();
+      } else {
+        alert('Wrong password');
+      }
+    }
+    
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('gamesTab').style.display = tab === 'games' ? 'block' : 'none';
+      document.getElementById('statsTab').style.display = tab === 'stats' ? 'block' : 'none';
+    }
+    
+    async function loadGames() {
+      try {
+        const res = await fetch(`${API}/api/admin/games`);
+        const data = await res.json();
+        document.getElementById('gameCount').textContent = data.games.length;
+        document.getElementById('gamesList').innerHTML = data.games.map(g => `
+          <div class="game-item">
+            <div class="game-icon" style="background: ${g.color}">${g.icon}</div>
+            <div class="game-info">
+              <div class="game-name">${g.name}</div>
+              <div class="game-url">${g.embedUrl || 'Self-hosted: ' + g.id}</div>
+            </div>
+            <div class="game-actions">
+              <button class="btn btn-danger btn-small" onclick="deleteGame('${g.id}')">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    async function loadStats() {
+      try {
+        const gamesRes = await fetch(`${API}/api/games?limit=1000`);
+        const gamesData = await gamesRes.json();
+        document.getElementById('totalGames').textContent = gamesData.total || 0;
+        
+        // Users count would need an endpoint
+        document.getElementById('totalUsers').textContent = '-';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    async function addGame() {
+      const id = document.getElementById('gameId').value.trim();
+      const name = document.getElementById('gameName').value.trim();
+      const embedUrl = document.getElementById('gameUrl').value.trim();
+      const description = document.getElementById('gameDesc').value.trim();
+      const category = document.getElementById('gameCategory').value;
+      const thumbnail = document.getElementById('gameThumbnail').value.trim();
+      
+      if (!id || !name) {
+        alert('ID and Name are required');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/api/admin/games`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name, description, category, embedUrl: embedUrl || null, thumbnail: thumbnail || null })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Game added!');
+          document.getElementById('gameId').value = '';
+          document.getElementById('gameName').value = '';
+          document.getElementById('gameUrl').value = '';
+          document.getElementById('gameDesc').value = '';
+          document.getElementById('gameThumbnail').value = '';
+          loadGames();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (e) {
+        alert('Failed to add game');
+      }
+    }
+    
+    async function deleteGame(id) {
+      if (!confirm(`Delete game "${id}"?`)) return;
+      try {
+        const res = await fetch(`${API}/api/admin/games/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          loadGames();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (e) {
+        alert('Failed to delete game');
+      }
+    }
+    
+    // Enter key to login
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+</body>
+</html>
