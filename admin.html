@@ -187,6 +187,7 @@
       
       <div class="tabs">
         <button class="tab active" onclick="showTab('games')">Games</button>
+        <button class="tab" onclick="showTab('config')">Config</button>
         <button class="tab" onclick="showTab('stats')">Stats</button>
       </div>
       
@@ -241,6 +242,34 @@
           </div>
         </div>
       </div>
+      
+      <div id="configTab" style="display: none;">
+        <div class="add-game-form">
+          <h3 style="margin-bottom: 16px;">⚙️ Remote Config</h3>
+          <p style="color: #888; margin-bottom: 20px; font-size: 14px;">Change app behavior without pushing updates</p>
+          
+          <div class="form-row">
+            <div style="flex: 1;">
+              <label style="display: block; color: #888; font-size: 12px; margin-bottom: 6px;">Ad Frequency (show ad every X games)</label>
+              <input type="number" id="configAdFrequency" min="1" max="20" value="3" style="width: 100%;">
+            </div>
+            <div style="flex: 1;">
+              <label style="display: block; color: #888; font-size: 12px; margin-bottom: 6px;">Min App Version</label>
+              <input type="text" id="configMinVersion" value="1.0.0" style="width: 100%;">
+            </div>
+          </div>
+          
+          <div class="form-row" style="margin-top: 16px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <input type="checkbox" id="configMaintenance" style="width: 20px; height: 20px;">
+              <span style="color: #e74c3c;">🚨 Maintenance Mode (disables app)</span>
+            </label>
+          </div>
+          
+          <button class="btn btn-primary" onclick="saveConfig()" style="margin-top: 20px;">Save Config</button>
+          <span id="configStatus" style="margin-left: 12px; color: #4ECDC4;"></span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -269,6 +298,41 @@
       event.target.classList.add('active');
       document.getElementById('gamesTab').style.display = tab === 'games' ? 'block' : 'none';
       document.getElementById('statsTab').style.display = tab === 'stats' ? 'block' : 'none';
+      document.getElementById('configTab').style.display = tab === 'config' ? 'block' : 'none';
+      if (tab === 'config') loadConfig();
+    }
+    
+    async function loadConfig() {
+      try {
+        const res = await fetch(`${API}/api/config`);
+        const config = await res.json();
+        document.getElementById('configAdFrequency').value = config.adFrequency || 3;
+        document.getElementById('configMinVersion').value = config.minAppVersion || '1.0.0';
+        document.getElementById('configMaintenance').checked = config.maintenanceMode || false;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    
+    async function saveConfig() {
+      const adFrequency = parseInt(document.getElementById('configAdFrequency').value);
+      const minAppVersion = document.getElementById('configMinVersion').value;
+      const maintenanceMode = document.getElementById('configMaintenance').checked;
+      
+      try {
+        const res = await fetch(`${API}/api/admin/config`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adFrequency, minAppVersion, maintenanceMode })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('configStatus').textContent = '✓ Saved!';
+          setTimeout(() => document.getElementById('configStatus').textContent = '', 2000);
+        }
+      } catch (e) {
+        alert('Failed to save config');
+      }
     }
     
     async function uploadThumbnail(event) {
