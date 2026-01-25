@@ -259,6 +259,7 @@
         </div>
         
         <h3 style="margin-bottom: 16px;">All Games (<span id="gameCount">0</span>)</h3>
+        <input type="text" id="gameSearch" placeholder="🔍 Search games..." oninput="filterGames()" style="width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #0a0a0a; color: #fff; font-size: 14px; margin-bottom: 16px;">
         <div class="games-list" id="gamesList"></div>
       </div>
       
@@ -426,29 +427,50 @@
       uploadBox.classList.remove('uploading');
     }
     
+    let allGames = [];
+    
     async function loadGames() {
       try {
         const res = await fetch(`${API}/api/admin/games`);
         const data = await res.json();
+        allGames = data.games;
         document.getElementById('gameCount').textContent = data.games.length;
-        document.getElementById('gamesList').innerHTML = data.games.map(g => `
-          <div class="game-item">
-            ${g.thumbnail 
-              ? `<img src="${g.thumbnail}" class="game-thumb" alt="${g.name}">`
-              : `<div class="game-icon" style="background: ${g.color}">${g.icon}</div>`
-            }
-            <div class="game-info">
-              <div class="game-name">${g.name}</div>
-              <div class="game-url">${g.embedUrl || 'Self-hosted: ' + g.id}</div>
-            </div>
-            <div class="game-actions">
-              <button class="btn btn-danger btn-small" onclick="deleteGame('${g.id}')">Delete</button>
-            </div>
-          </div>
-        `).join('');
+        renderGames(data.games);
       } catch (e) {
         console.error(e);
       }
+    }
+    
+    function renderGames(games) {
+      document.getElementById('gamesList').innerHTML = games.map(g => `
+        <div class="game-item">
+          ${g.thumbnail 
+            ? `<img src="${g.thumbnail}" class="game-thumb" alt="${g.name}">`
+            : `<div class="game-icon" style="background: ${g.color}">${g.icon}</div>`
+          }
+          <div class="game-info">
+            <div class="game-name">${g.name}</div>
+            <div class="game-url">${g.embedUrl || 'Self-hosted: ' + g.id}</div>
+          </div>
+          <div class="game-actions">
+            <button class="btn btn-danger btn-small" onclick="deleteGame('${g.id}')">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function filterGames() {
+      const query = document.getElementById('gameSearch').value.toLowerCase();
+      if (!query) {
+        renderGames(allGames);
+        return;
+      }
+      const filtered = allGames.filter(g => 
+        g.name.toLowerCase().includes(query) || 
+        g.id.toLowerCase().includes(query) ||
+        (g.category && g.category.toLowerCase().includes(query))
+      );
+      renderGames(filtered);
     }
     
     async function loadStats() {
