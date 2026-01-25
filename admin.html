@@ -269,7 +269,11 @@
         </div>
         
         <h3 style="margin-bottom: 16px;">All Games (<span id="gameCount">0</span>)</h3>
-        <input type="text" id="gameSearch" placeholder="🔍 Search games..." oninput="filterGames()" style="width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #0a0a0a; color: #fff; font-size: 14px; margin-bottom: 16px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <input type="text" id="gameSearch" placeholder="🔍 Search games..." oninput="filterGames()" style="flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #0a0a0a; color: #fff; font-size: 14px;">
+          <input type="text" id="bulkDeleteIds" placeholder="Game IDs to delete (comma separated)" style="flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #0a0a0a; color: #fff; font-size: 14px;">
+          <button class="btn btn-danger" onclick="bulkDeleteGames()">Delete Listed</button>
+        </div>
         <div class="games-list" id="gamesList"></div>
       </div>
       
@@ -459,7 +463,7 @@
             : `<div class="game-icon" style="background: ${g.color}">${g.icon}</div>`
           }
           <div class="game-info">
-            <div class="game-name">${g.name}</div>
+            <div class="game-name">${g.name} ${g.fileSize ? `<span style="color: ${g.fileSize > 10*1024*1024 ? '#e74c3c' : '#4ECDC4'}; font-size: 12px;">(${(g.fileSize/1024/1024).toFixed(1)}MB)</span>` : ''}</div>
             <div class="game-url">${g.embedUrl || 'Self-hosted: ' + g.id}</div>
           </div>
           <div class="game-actions">
@@ -467,6 +471,38 @@
           </div>
         </div>
       `).join('');
+    }
+    
+    async function bulkDeleteGames() {
+      const idsInput = document.getElementById('bulkDeleteIds').value;
+      if (!idsInput.trim()) {
+        alert('Enter game IDs to delete (comma separated)');
+        return;
+      }
+      
+      const ids = idsInput.split(',').map(id => id.trim()).filter(id => id);
+      if (ids.length === 0) {
+        alert('No valid IDs found');
+        return;
+      }
+      
+      if (!confirm('Delete ' + ids.length + ' games? IDs: ' + ids.join(', '))) return;
+      
+      let deleted = 0;
+      for (const id of ids) {
+        try {
+          const res = await fetch(API + '/api/admin/games/' + id, { method: 'DELETE' });
+          const data = await res.json();
+          if (data.success) deleted++;
+        } catch (e) {
+          console.error('Failed to delete ' + id);
+        }
+      }
+      
+      alert('Deleted ' + deleted + ' of ' + ids.length + ' games');
+      document.getElementById('bulkDeleteIds').value = '';
+      loadGames();
+      loadStats();
     }
     
     function filterGames() {
