@@ -219,7 +219,17 @@
               <input type="checkbox" id="portraitOnly" style="width: 18px; height: 18px;">
               <span>📱 Portrait games only (vertical, best for phones)</span>
             </label>
-            <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: auto;">🗑️ Delete Landscape Games</button>
+          </div>
+          <div class="form-row" style="margin-top: 12px;">
+            <label style="display: flex; align-items: center; gap: 10px; color: #FF8E53;">
+              <span>📦 Max size:</span>
+              <input type="number" id="maxSizeMB" placeholder="MB" value="10" min="0" max="100" style="width: 80px;">
+              <span style="color: #888;">MB (0 = no limit, recommended: 10)</span>
+            </label>
+          </div>
+          <div class="form-row" style="margin-top: 12px;">
+            <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn">🗑️ Delete Large Games (>10MB)</button>
+            <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
           </div>
           <div id="importStatus" style="margin-top: 12px; color: #4ECDC4; font-size: 14px;"></div>
         </div>
@@ -618,23 +628,34 @@
       const count = parseInt(document.getElementById('importCount').value) || 500;
       const category = document.getElementById('importCategory').value;
       const portraitOnly = document.getElementById('portraitOnly').checked;
+      const maxSizeMB = parseInt(document.getElementById('maxSizeMB').value) || 0;
       const btn = document.getElementById('importBtn');
       const status = document.getElementById('importStatus');
       
       btn.disabled = true;
       btn.textContent = 'Importing...';
-      status.textContent = `⏳ Fetching ${count} games from GameMonetize...${portraitOnly ? ' (portrait only)' : ''}`;
+      let filterInfo = portraitOnly ? ' (portrait only)' : '';
+      if (maxSizeMB > 0) filterInfo += ` (max ${maxSizeMB}MB)`;
+      status.textContent = `⏳ Fetching ${count} games from GameMonetize...${filterInfo}`;
+      if (maxSizeMB > 0) {
+        status.textContent += ' - Checking file sizes, this may take a while...';
+      }
       
       try {
         const res = await fetch(`${API}/api/admin/import-gamemonetize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count, category: category || undefined, portraitOnly })
+          body: JSON.stringify({ count, category: category || undefined, portraitOnly, maxSizeMB })
         });
         const data = await res.json();
         
         if (data.success) {
-          status.innerHTML = `✅ <strong>Imported ${data.imported} games!</strong> (${data.skipped} skipped) | Total: ${data.totalGames} games`;
+          let msg = `✅ <strong>Imported ${data.imported} games!</strong> (${data.skipped} duplicates`;
+          if (data.skippedForSize > 0) {
+            msg += `, ${data.skippedForSize} too large`;
+          }
+          msg += `) | Total: ${data.totalGames} games`;
+          status.innerHTML = msg;
           loadGames();
           loadStats();
         } else {
@@ -646,6 +667,40 @@
       
       btn.disabled = false;
       btn.textContent = 'Import Games';
+    }
+    
+    async function deleteLargeGames() {
+      const maxSizeMB = parseInt(document.getElementById('maxSizeMB').value) || 10;
+      if (!confirm(`This will delete ALL GameMonetize games larger than ${maxSizeMB}MB. This may take a while. Continue?`)) return;
+      
+      const btn = document.getElementById('deleteLargeBtn');
+      const status = document.getElementById('importStatus');
+      
+      btn.disabled = true;
+      btn.textContent = 'Checking sizes...';
+      status.textContent = `⏳ Checking game sizes and deleting games > ${maxSizeMB}MB... This may take a while.`;
+      
+      try {
+        const res = await fetch(`${API}/api/admin/delete-large-games`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ maxSizeMB })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `✅ <strong>Deleted ${data.deleted} large games!</strong> (checked ${data.checked}) | Remaining: ${data.remaining} games`;
+          loadGames();
+          loadStats();
+        } else {
+          status.innerHTML = `❌ Error: ${data.error}`;
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to delete: ${e.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🗑️ Delete Large Games (>10MB)';
     }
     
     async function deleteLandscapeGames() {
