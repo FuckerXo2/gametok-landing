@@ -214,6 +214,13 @@
             <input type="number" id="importCount" placeholder="Number of games" value="500" min="10" max="5000" style="flex: 1;">
             <button class="btn btn-primary" onclick="bulkImport()" id="importBtn">Import Games</button>
           </div>
+          <div class="form-row" style="margin-top: 12px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #4ECDC4;">
+              <input type="checkbox" id="portraitOnly" style="width: 18px; height: 18px;">
+              <span>📱 Portrait games only (vertical, best for phones)</span>
+            </label>
+            <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: auto;">🗑️ Delete Landscape Games</button>
+          </div>
           <div id="importStatus" style="margin-top: 12px; color: #4ECDC4; font-size: 14px;"></div>
         </div>
         
@@ -588,18 +595,19 @@
     async function bulkImport() {
       const count = parseInt(document.getElementById('importCount').value) || 500;
       const category = document.getElementById('importCategory').value;
+      const portraitOnly = document.getElementById('portraitOnly').checked;
       const btn = document.getElementById('importBtn');
       const status = document.getElementById('importStatus');
       
       btn.disabled = true;
       btn.textContent = 'Importing...';
-      status.textContent = `⏳ Fetching ${count} games from GameMonetize...`;
+      status.textContent = `⏳ Fetching ${count} games from GameMonetize...${portraitOnly ? ' (portrait only)' : ''}`;
       
       try {
         const res = await fetch(`${API}/api/admin/import-gamemonetize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count, category: category || undefined })
+          body: JSON.stringify({ count, category: category || undefined, portraitOnly })
         });
         const data = await res.json();
         
@@ -616,6 +624,38 @@
       
       btn.disabled = false;
       btn.textContent = 'Import Games';
+    }
+    
+    async function deleteLandscapeGames() {
+      if (!confirm('This will delete ALL landscape (horizontal) GameMonetize games. Continue?')) return;
+      
+      const btn = document.getElementById('deleteLandscapeBtn');
+      const status = document.getElementById('importStatus');
+      
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      status.textContent = '⏳ Checking game dimensions and deleting landscape games...';
+      
+      try {
+        const res = await fetch(`${API}/api/admin/delete-landscape-games`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `✅ <strong>Deleted ${data.deleted} landscape games!</strong> | Remaining: ${data.remaining} games`;
+          loadGames();
+          loadStats();
+        } else {
+          status.innerHTML = `❌ Error: ${data.error}`;
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to delete: ${e.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🗑️ Delete Landscape Games';
     }
   </script>
 </body>
