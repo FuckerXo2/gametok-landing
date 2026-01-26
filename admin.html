@@ -221,15 +221,9 @@
             </label>
           </div>
           <div class="form-row" style="margin-top: 12px;">
-            <label style="display: flex; align-items: center; gap: 10px; color: #FF8E53;">
-              <span>📦 Max size:</span>
-              <input type="number" id="maxSizeMB" placeholder="MB" value="10" min="0" max="100" style="width: 80px;">
-              <span style="color: #888;">MB (0 = no limit, recommended: 10)</span>
-            </label>
-          </div>
-          <div class="form-row" style="margin-top: 12px;">
             <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn">🗑️ Delete Large Games (>10MB)</button>
             <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
+            <span style="color: #888; font-size: 12px; margin-left: 12px;">Run scan-game-sizes.js locally first to detect sizes</span>
           </div>
           <div id="importStatus" style="margin-top: 12px; color: #4ECDC4; font-size: 14px;"></div>
         </div>
@@ -664,34 +658,24 @@
       const count = parseInt(document.getElementById('importCount').value) || 500;
       const category = document.getElementById('importCategory').value;
       const portraitOnly = document.getElementById('portraitOnly').checked;
-      const maxSizeMB = parseInt(document.getElementById('maxSizeMB').value) || 0;
       const btn = document.getElementById('importBtn');
       const status = document.getElementById('importStatus');
       
       btn.disabled = true;
       btn.textContent = 'Importing...';
       let filterInfo = portraitOnly ? ' (portrait only)' : '';
-      if (maxSizeMB > 0) filterInfo += ` (max ${maxSizeMB}MB)`;
       status.textContent = `⏳ Fetching ${count} games from GameMonetize...${filterInfo}`;
-      if (maxSizeMB > 0) {
-        status.textContent += ' - Checking file sizes, this may take a while...';
-      }
       
       try {
         const res = await fetch(`${API}/api/admin/import-gamemonetize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count, category: category || undefined, portraitOnly, maxSizeMB })
+          body: JSON.stringify({ count, category: category || undefined, portraitOnly })
         });
         const data = await res.json();
         
         if (data.success) {
-          let msg = `✅ <strong>Imported ${data.imported} games!</strong> (${data.skipped} duplicates`;
-          if (data.skippedForSize > 0) {
-            msg += `, ${data.skippedForSize} too large`;
-          }
-          msg += `) | Total: ${data.totalGames} games`;
-          status.innerHTML = msg;
+          status.innerHTML = `✅ <strong>Imported ${data.imported} games!</strong> (${data.skipped} duplicates) | Total: ${data.totalGames} games`;
           loadGames();
           loadStats();
         } else {
@@ -706,26 +690,29 @@
     }
     
     async function deleteLargeGames() {
-      const maxSizeMB = parseInt(document.getElementById('maxSizeMB').value) || 10;
-      if (!confirm(`This will delete ALL GameMonetize games larger than ${maxSizeMB}MB. This may take a while. Continue?`)) return;
+      if (!confirm('This will delete ALL games larger than 10MB (based on scanned sizes). Run scan-game-sizes.js first! Continue?')) return;
       
       const btn = document.getElementById('deleteLargeBtn');
       const status = document.getElementById('importStatus');
       
       btn.disabled = true;
-      btn.textContent = 'Checking sizes...';
-      status.textContent = `⏳ Checking game sizes and deleting games > ${maxSizeMB}MB... This may take a while.`;
+      btn.textContent = 'Deleting...';
+      status.textContent = '⏳ Deleting large games...';
       
       try {
         const res = await fetch(`${API}/api/admin/delete-large-games`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ maxSizeMB })
+          body: JSON.stringify({ maxSizeMB: 10 })
         });
         const data = await res.json();
         
         if (data.success) {
-          status.innerHTML = `✅ <strong>Deleted ${data.deleted} large games!</strong> (checked ${data.checked}) | Remaining: ${data.remaining} games`;
+          let msg = `✅ <strong>Deleted ${data.deleted} large games!</strong> | Remaining: ${data.remaining} games`;
+          if (data.unknownSize > 0) {
+            msg += ` | ${data.unknownSize} games have unknown size`;
+          }
+          status.innerHTML = msg;
           loadGames();
           loadStats();
         } else {
