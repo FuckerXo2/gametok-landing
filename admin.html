@@ -221,9 +221,12 @@
             </label>
           </div>
           <div class="form-row" style="margin-top: 12px;">
-            <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn">🗑️ Delete Large Games (>10MB)</button>
+            <button class="btn btn-primary btn-small" onclick="triggerSizeScan()" id="scanBtn" style="background: #4ECDC4;">📊 Scan Game Sizes</button>
+            <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn" style="margin-left: 8px;">🗑️ Delete Large Games (>8MB)</button>
             <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
-            <span style="color: #888; font-size: 12px; margin-left: 12px;">Run scan-game-sizes.js locally first to detect sizes</span>
+          </div>
+          <div class="form-row" style="margin-top: 8px;">
+            <span style="color: #888; font-size: 12px;">Scan runs on GitHub Actions (free). Results update automatically.</span>
           </div>
           <div id="importStatus" style="margin-top: 12px; color: #4ECDC4; font-size: 14px;"></div>
         </div>
@@ -457,7 +460,7 @@
             : `<div class="game-icon" style="background: ${g.color}">${g.icon}</div>`
           }
           <div class="game-info">
-            <div class="game-name">${g.name} ${g.fileSize ? `<span style="color: ${g.fileSize > 10*1024*1024 ? '#e74c3c' : '#4ECDC4'}; font-size: 12px;">(${(g.fileSize/1024/1024).toFixed(1)}MB)</span>` : ''}</div>
+            <div class="game-name">${g.name} ${g.fileSize ? `<span style="color: ${g.fileSize > 8*1024*1024 ? '#e74c3c' : '#4ECDC4'}; font-size: 12px;">(${(g.fileSize/1024/1024).toFixed(1)}MB)</span>` : ''}</div>
             <div class="game-url">${g.embedUrl || 'Self-hosted: ' + g.id}</div>
           </div>
           <div class="game-actions">
@@ -689,8 +692,79 @@
       btn.textContent = 'Import Games';
     }
     
+    let scanStatusInterval = null;
+    
+    async function triggerSizeScan() {
+      const btn = document.getElementById('scanBtn');
+      const status = document.getElementById('importStatus');
+      
+      btn.disabled = true;
+      btn.textContent = 'Triggering...';
+      status.textContent = '⏳ Starting game size scan on GitHub Actions...';
+      
+      try {
+        const res = await fetch(`${API}/api/admin/trigger-size-scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `✅ <strong>Scan triggered!</strong> Checking status... <a href="https://github.com/FuckerXo2/gametok-backend/actions" target="_blank" style="color: #FF8E53;">(View on GitHub)</a>`;
+          
+          // Start polling for status
+          if (scanStatusInterval) clearInterval(scanStatusInterval);
+          scanStatusInterval = setInterval(checkScanStatus, 5000); // Check every 5 seconds
+          checkScanStatus(); // Check immediately
+        } else {
+          status.innerHTML = `❌ Error: ${data.error}`;
+          btn.disabled = false;
+          btn.textContent = '📊 Scan Game Sizes';
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to trigger scan: ${e.message}`;
+        btn.disabled = false;
+        btn.textContent = '📊 Scan Game Sizes';
+      }
+    }
+    
+    async function checkScanStatus() {
+      const btn = document.getElementById('scanBtn');
+      const status = document.getElementById('importStatus');
+      
+      try {
+        const res = await fetch(`${API}/api/admin/scan-status`);
+        const data = await res.json();
+        
+        if (data.status === 'in_progress') {
+          const progress = data.scannedGames && data.totalGames 
+            ? ` (${data.scannedGames}/${data.totalGames} games)`
+            : '';
+          status.innerHTML = `⏳ <strong>Scanning in progress...</strong>${progress} <a href="https://github.com/FuckerXo2/gametok-backend/actions" target="_blank" style="color: #FF8E53;">(View on GitHub)</a>`;
+        } else if (data.status === 'completed') {
+          clearInterval(scanStatusInterval);
+          status.innerHTML = `✅ <strong>Scan completed!</strong> ${data.scannedGames || 0} games scanned. Refreshing list...`;
+          btn.disabled = false;
+          btn.textContent = '📊 Scan Game Sizes';
+          loadGames(); // Refresh the games list
+        } else if (data.status === 'failed') {
+          clearInterval(scanStatusInterval);
+          status.innerHTML = `❌ <strong>Scan failed.</strong> Check <a href="https://github.com/FuckerXo2/gametok-backend/actions" target="_blank" style="color: #FF8E53;">GitHub Actions</a> for details.`;
+          btn.disabled = false;
+          btn.textContent = '📊 Scan Game Sizes';
+        } else {
+          // No active scan or queued
+          clearInterval(scanStatusInterval);
+          btn.disabled = false;
+          btn.textContent = '📊 Scan Game Sizes';
+        }
+      } catch (e) {
+        console.error('Failed to check scan status:', e);
+      }
+    }
+    
     async function deleteLargeGames() {
-      if (!confirm('This will delete ALL games larger than 10MB (based on scanned sizes). Run scan-game-sizes.js first! Continue?')) return;
+      if (!confirm('This will delete ALL games larger than 8MB (based on scanned sizes). Run size scan first! Continue?')) return;
       
       const btn = document.getElementById('deleteLargeBtn');
       const status = document.getElementById('importStatus');
@@ -703,7 +777,7 @@
         const res = await fetch(`${API}/api/admin/delete-large-games`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ maxSizeMB: 10 })
+          body: JSON.stringify({ maxSizeMB: 8 })
         });
         const data = await res.json();
         
@@ -723,7 +797,7 @@
       }
       
       btn.disabled = false;
-      btn.textContent = '🗑️ Delete Large Games (>10MB)';
+      btn.textContent = '🗑️ Delete Large Games (>8MB)';
     }
     
     async function deleteLandscapeGames() {
