@@ -447,8 +447,33 @@
         allGames = data.games;
         document.getElementById('gameCount').textContent = data.games.length;
         renderGames(data.games);
+        
+        // Check if there's an active scan when page loads
+        checkIfScanIsRunning();
       } catch (e) {
         console.error(e);
+      }
+    }
+    
+    async function checkIfScanIsRunning() {
+      try {
+        const res = await fetch(`${API}/api/admin/scan-status`);
+        const data = await res.json();
+        
+        if (data.status === 'in_progress') {
+          // Scan is running, start polling
+          const btn = document.getElementById('scanBtn');
+          const status = document.getElementById('importStatus');
+          btn.disabled = true;
+          btn.textContent = 'Scanning...';
+          status.innerHTML = '⏳ Resuming scan status...';
+          
+          if (scanStatusInterval) clearInterval(scanStatusInterval);
+          scanStatusInterval = setInterval(checkScanStatus, 5000);
+          checkScanStatus(); // Check immediately
+        }
+      } catch (e) {
+        console.error('Failed to check scan status:', e);
       }
     }
     
