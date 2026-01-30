@@ -740,7 +740,8 @@
           const progress = data.scannedGames && data.totalGames 
             ? ` (${data.scannedGames}/${data.totalGames} games)`
             : '';
-          status.innerHTML = `⏳ <strong>Scanning in progress...</strong>${progress} <a href="https://github.com/FuckerXo2/gametok-backend/actions" target="_blank" style="color: #FF8E53;">(View on GitHub)</a>`;
+          const currentGame = data.currentGame ? `<br><span style="font-size: 12px; color: #888;">Currently: ${data.currentGame}</span>` : '';
+          status.innerHTML = `⏳ <strong>Scanning in progress...</strong>${progress}${currentGame} <a href="https://github.com/FuckerXo2/gametok-backend/actions" target="_blank" style="color: #FF8E53;">(View on GitHub)</a>`;
         } else if (data.status === 'completed') {
           clearInterval(scanStatusInterval);
           status.innerHTML = `✅ <strong>Scan completed!</strong> ${data.scannedGames || 0} games scanned. Refreshing list...`;
