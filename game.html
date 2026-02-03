@@ -161,13 +161,12 @@
             window.location.href = deepLink;
         }, 100);
         
-        // If still here after 2 seconds, app probably not installed
+        // If still here after 1.5 seconds, app not installed - go straight to App Store
         setTimeout(() => {
             if (!document.hidden) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('fallback').style.display = 'block';
+                window.location.href = appStoreUrl;
             }
-        }, 2000);
+        }, 1500);
         
         // Track if user leaves the page (app opened)
         document.addEventListener('visibilitychange', () => {
