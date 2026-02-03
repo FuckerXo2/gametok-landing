@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "XXXXXXXXXX.com.olasubomi.gametok",
+        "appID": "8GRX5F25PU.com.olasubomi.gametok",
         "paths": [
           "/game/*",
           "/game.html*"
