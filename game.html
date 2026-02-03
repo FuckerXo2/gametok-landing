@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play on GameTOK</title>
+    
+    <!-- App Store Smart Banner -->
+    <meta name="apple-itunes-app" content="app-id=6757498584">
+    
+    <!-- Open Graph for link previews -->
+    <meta property="og:title" content="Play this game on GameTOK!">
+    <meta property="og:description" content="Swipe. Play. Compete. Download GameTOK now!">
+    <meta property="og:type" content="website">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            padding: 40px 24px;
+            max-width: 400px;
+        }
+        .logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53, #FFC107);
+            border-radius: 24px;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: 800;
+            box-shadow: 0 20px 60px rgba(255, 142, 83, 0.3);
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .game-name {
+            font-size: 22px;
+            color: #FF8E53;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #888;
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+        .loading {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #333;
+            border-top-color: #FF8E53;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn {
+            display: inline-block;
+            background: #fff;
+            color: #000;
+            padding: 16px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn-secondary {
+            display: block;
+            color: #888;
+            font-size: 14px;
+            margin-top: 16px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">G</div>
+        <p class="game-name" id="gameName">Loading...</p>
+        <h1>Play on GameTOK</h1>
+        <p class="subtitle">Swipe. Play. Compete.</p>
+        
+        <div id="loading">
+            <div class="spinner"></div>
+            <p class="loading">Opening app...</p>
+        </div>
+        
+        <div id="fallback" style="display: none;">
+            <a href="https://apps.apple.com/app/gametok/id6757498584" class="btn">
+                Download GameTOK
+            </a>
+            <a href="https://apps.apple.com/app/gametok/id6757498584" class="btn-secondary">
+                Free on the App Store
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Get game ID from URL: /game.html?id=flappy-bird or /game/flappy-bird
+        const params = new URLSearchParams(window.location.search);
+        let gameId = params.get('id') || params.get('game');
+        
+        // Also check path like /game/flappy-bird
+        const pathMatch = window.location.pathname.match(/\/game\/([^\/]+)/);
+        if (pathMatch) gameId = pathMatch[1];
+        
+        // Update game name display
+        if (gameId) {
+            const gameName = gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            document.getElementById('gameName').textContent = gameName;
+            document.title = `Play ${gameName} on GameTOK`;
+        } else {
+            document.getElementById('gameName').textContent = 'A game';
+        }
+        
+        // Try to open the app with deep link
+        const deepLink = gameId 
+            ? `gametok://game/${gameId}`
+            : 'gametok://';
+        
+        // Universal link (iOS will intercept if app is installed)
+        const universalLink = gameId
+            ? `https://gametok.app/game/${gameId}`
+            : 'https://gametok.app';
+        
+        const appStoreUrl = 'https://apps.apple.com/app/gametok/id6757498584';
+        
+        // Try to open app
+        let appOpened = false;
+        
+        // Method 1: Try custom URL scheme
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = deepLink;
+        document.body.appendChild(iframe);
+        
+        // Method 2: Also try window.location for some browsers
+        setTimeout(() => {
+            window.location.href = deepLink;
+        }, 100);
+        
+        // If still here after 2 seconds, app probably not installed
+        setTimeout(() => {
+            if (!document.hidden) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('fallback').style.display = 'block';
+            }
+        }, 2000);
+        
+        // Track if user leaves the page (app opened)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                appOpened = true;
+            }
+        });
+    </script>
+</body>
+</html>

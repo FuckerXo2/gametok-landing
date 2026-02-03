@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "XXXXXXXXXX.com.olasubomi.gametok",
+        "paths": [
+          "/game/*",
+          "/game.html*"
+        ]
+      }
+    ]
+  }
+}
