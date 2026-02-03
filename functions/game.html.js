@@ -11,7 +11,7 @@ export async function onRequest(context) {
   // Format game name from ID (flappy-bird -> Flappy Bird)
   const gameName = gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   const thumbnailUrl = `https://gametok-games.pages.dev/thumbnails/${gameId}.png`;
-  const pageUrl = `https://gametok.app/game.html?id=${gameId}`;
+  const pageUrl = `https://gametok-landing.pages.dev/game.html?id=${gameId}`;
   
   const html = `<!DOCTYPE html>
 <html lang="en">
