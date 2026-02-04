@@ -945,6 +945,11 @@
     async function stopScan() {
       const status = document.getElementById('importStatus');
       const btn = document.getElementById('scanBtn');
+      const stopBtn = document.getElementById('stopScanBtn');
+      
+      stopBtn.disabled = true;
+      stopBtn.textContent = 'Stopping...';
+      status.innerHTML = '⏳ Cancelling GitHub workflow...';
       
       try {
         const res = await fetch(`${API}/api/admin/reset-scan`, {
@@ -954,17 +959,26 @@
         const data = await res.json();
         
         if (data.success) {
-          status.innerHTML = '✅ Scan stopped';
+          if (data.workflowCancelled) {
+            status.innerHTML = '✅ <strong>Scan cancelled!</strong> GitHub workflow stopped.';
+          } else {
+            status.innerHTML = '✅ Scan status reset (no running workflow found)';
+          }
           if (scanStatusInterval) {
             clearInterval(scanStatusInterval);
             scanStatusInterval = null;
           }
           btn.disabled = false;
           btn.textContent = '📊 Scan Game Sizes';
+        } else {
+          status.innerHTML = `❌ Failed to stop: ${data.error}`;
         }
       } catch (e) {
         status.innerHTML = `❌ Failed to stop scan: ${e.message}`;
       }
+      
+      stopBtn.disabled = false;
+      stopBtn.textContent = '⏹️ Stop Scan';
     }
   </script>
 </body>
