@@ -223,6 +223,7 @@
           </div>
           <div class="form-row" style="margin-top: 12px;">
             <button class="btn btn-primary btn-small" onclick="triggerSizeScan()" id="scanBtn" style="background: #4ECDC4;">📊 Scan Game Sizes</button>
+            <button class="btn btn-small" onclick="stopScan()" id="stopScanBtn" style="background: #888; margin-left: 8px;">⏹️ Stop Scan</button>
             <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn" style="margin-left: 8px;">🗑️ Delete Large Games (>8MB)</button>
             <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
             <button class="btn btn-danger btn-small" onclick="deleteNoDeveloperGames()" id="deleteNoDeveloperBtn" style="margin-left: 8px;">🗑️ Delete Unknown Developer</button>
@@ -939,6 +940,31 @@
       
       btn.disabled = false;
       btn.textContent = '🗑️ Delete by Developer';
+    }
+    
+    async function stopScan() {
+      const status = document.getElementById('importStatus');
+      const btn = document.getElementById('scanBtn');
+      
+      try {
+        const res = await fetch(`${API}/api/admin/reset-scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = '✅ Scan stopped';
+          if (scanStatusInterval) {
+            clearInterval(scanStatusInterval);
+            scanStatusInterval = null;
+          }
+          btn.disabled = false;
+          btn.textContent = '📊 Scan Game Sizes';
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to stop scan: ${e.message}`;
+      }
     }
   </script>
 </body>
