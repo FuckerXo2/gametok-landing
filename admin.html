@@ -227,6 +227,10 @@
             <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
             <button class="btn btn-danger btn-small" onclick="deleteNoDeveloperGames()" id="deleteNoDeveloperBtn" style="margin-left: 8px;">🗑️ Delete Unknown Developer</button>
           </div>
+          <div class="form-row" style="margin-top: 12px;">
+            <input type="text" id="deleteByDeveloper" placeholder="Developer name to delete" style="flex: 1;">
+            <button class="btn btn-danger btn-small" onclick="deleteByDeveloper()" id="deleteByDeveloperBtn">🗑️ Delete by Developer</button>
+          </div>
           <div class="form-row" style="margin-top: 8px;">
             <span style="color: #888; font-size: 12px;">Scan runs on GitHub Actions (free). Results update automatically.</span>
           </div>
@@ -895,6 +899,46 @@
       
       btn.disabled = false;
       btn.textContent = '🗑️ Delete Unknown Developer';
+    }
+    
+    async function deleteByDeveloper() {
+      const developer = document.getElementById('deleteByDeveloper').value.trim();
+      if (!developer) {
+        alert('Enter a developer name');
+        return;
+      }
+      
+      if (!confirm(`This will delete ALL games from developer "${developer}". Continue?`)) return;
+      
+      const btn = document.getElementById('deleteByDeveloperBtn');
+      const status = document.getElementById('importStatus');
+      
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      status.textContent = `⏳ Deleting games from ${developer}...`;
+      
+      try {
+        const res = await fetch(`${API}/api/admin/delete-by-developer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ developer })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `✅ <strong>Deleted ${data.deleted} games from ${developer}!</strong> | Remaining: ${data.remaining} games`;
+          document.getElementById('deleteByDeveloper').value = '';
+          loadGames();
+          loadStats();
+        } else {
+          status.innerHTML = `❌ Error: ${data.error}`;
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to delete: ${e.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🗑️ Delete by Developer';
     }
   </script>
 </body>
