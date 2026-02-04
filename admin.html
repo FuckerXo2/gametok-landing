@@ -211,6 +211,7 @@
               <option value="shooting">Shooting</option>
               <option value="multiplayer">Multiplayer</option>
             </select>
+            <input type="text" id="importCompany" placeholder="Developer (e.g., Raccoon)" style="flex: 1;">
             <input type="number" id="importCount" placeholder="Number of games" value="500" min="10" max="5000" style="flex: 1;">
             <button class="btn btn-primary" onclick="bulkImport()" id="importBtn">Import Games</button>
           </div>
@@ -685,6 +686,7 @@
     async function bulkImport() {
       const count = parseInt(document.getElementById('importCount').value) || 500;
       const category = document.getElementById('importCategory').value;
+      const company = document.getElementById('importCompany').value.trim();
       const portraitOnly = document.getElementById('portraitOnly').checked;
       const btn = document.getElementById('importBtn');
       const status = document.getElementById('importStatus');
@@ -692,13 +694,14 @@
       btn.disabled = true;
       btn.textContent = 'Importing...';
       let filterInfo = portraitOnly ? ' (portrait only)' : '';
+      if (company) filterInfo += ` by ${company}`;
       status.textContent = `⏳ Fetching ${count} games from GameMonetize...${filterInfo}`;
       
       try {
         const res = await fetch(`${API}/api/admin/import-gamemonetize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count, category: category || undefined, portraitOnly })
+          body: JSON.stringify({ count, category: category || undefined, company: company || undefined, portraitOnly })
         });
         const data = await res.json();
         
