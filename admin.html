@@ -225,6 +225,7 @@
             <button class="btn btn-primary btn-small" onclick="triggerSizeScan()" id="scanBtn" style="background: #4ECDC4;">📊 Scan Game Sizes</button>
             <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn" style="margin-left: 8px;">🗑️ Delete Large Games (>8MB)</button>
             <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
+            <button class="btn btn-danger btn-small" onclick="deleteNoDeveloperGames()" id="deleteNoDeveloperBtn" style="margin-left: 8px;">🗑️ Delete Unknown Developer</button>
           </div>
           <div class="form-row" style="margin-top: 8px;">
             <span style="color: #888; font-size: 12px;">Scan runs on GitHub Actions (free). Results update automatically.</span>
@@ -706,7 +707,10 @@
         const data = await res.json();
         
         if (data.success) {
-          status.innerHTML = `✅ <strong>Imported ${data.imported} games!</strong> (${data.skipped} duplicates) | Total: ${data.totalGames} games`;
+          let msg = `✅ <strong>Imported ${data.imported} games!</strong> (${data.skipped} duplicates)`;
+          if (data.skippedNoDeveloper > 0) msg += ` | ${data.skippedNoDeveloper} skipped (no developer)`;
+          msg += ` | Total: ${data.totalGames} games`;
+          status.innerHTML = msg;
           loadGames();
           loadStats();
         } else {
@@ -859,6 +863,38 @@
       
       btn.disabled = false;
       btn.textContent = '🗑️ Delete Landscape Games';
+    }
+    
+    async function deleteNoDeveloperGames() {
+      if (!confirm('This will delete ALL GameMonetize games without a known developer. Continue?')) return;
+      
+      const btn = document.getElementById('deleteNoDeveloperBtn');
+      const status = document.getElementById('importStatus');
+      
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      status.textContent = '⏳ Deleting games without known developer...';
+      
+      try {
+        const res = await fetch(`${API}/api/admin/delete-no-developer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `✅ <strong>Deleted ${data.deleted} games without developer!</strong> | Remaining: ${data.remaining} games`;
+          loadGames();
+          loadStats();
+        } else {
+          status.innerHTML = `❌ Error: ${data.error}`;
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to delete: ${e.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🗑️ Delete Unknown Developer';
     }
   </script>
 </body>
