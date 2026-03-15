@@ -1,35 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameTOK — Swipe. Play. Compete.</title>
-    <meta name="description" content="Discover and play hundreds of instant games. Swipe through an endless feed, compete with friends, climb leaderboards.">
+    <meta name="description"
+        content="Discover and play thousands of instant games. Swipe through an endless feed, compete with friends, climb leaderboards.">
     <meta property="og:title" content="GameTOK — Swipe. Play. Compete.">
     <meta property="og:description" content="Discover and play hundreds of instant games. No downloads needed.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://gametok.co">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
             --purple: #a855f7;
             --purple-deep: #7c3aed;
-            --purple-glow: rgba(168, 85, 247, 0.35);
-            --indigo: #6366f1;
-            --bg: #06060b;
-            --bg-card: #0c0c14;
-            --bg-card-hover: #111120;
+            --pink: #ec4899;
+            --glow: rgba(168, 85, 247, 0.35);
+            --glow-dim: rgba(168, 85, 247, 0.10);
+            --bg: #030306;
+            --bg2: #08080e;
             --text: #ffffff;
-            --text-dim: #64648a;
+            --text-dim: #55557a;
             --text-mid: #9898b8;
-            --border: #18182a;
+            --border: rgba(255, 255, 255, 0.05);
         }
 
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -39,504 +49,1154 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* NAV */
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* ===== NAV ===== */
         nav {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-            padding: 18px 40px;
-            display: flex; align-items: center; justify-content: space-between;
-            backdrop-filter: blur(24px);
-            background: rgba(6, 6, 11, 0.85);
-            border-bottom: 1px solid rgba(255,255,255,0.04);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 14px 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(20px) saturate(1.6);
+            background: rgba(3, 3, 6, 0.75);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.4s;
+        }
+
+        nav.scrolled {
+            background: rgba(3, 3, 6, 0.95);
+            border-bottom-color: rgba(168, 85, 247, 0.08);
         }
 
         .nav-logo {
-            display: flex; align-items: center; gap: 10px;
-            text-decoration: none; color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text);
         }
-        .nav-logo-icon {
-            width: 34px; height: 34px;
-            background: linear-gradient(135deg, var(--purple), var(--purple-deep));
+
+        .nav-logo img {
+            width: 38px;
+            height: 38px;
             border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 15px;
+            object-fit: cover;
         }
-        .nav-logo span { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
 
-        .nav-links { display: flex; align-items: center; gap: 28px; }
+        .nav-logo span {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 20px;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
         .nav-links a {
-            color: var(--text-dim); text-decoration: none;
-            font-size: 14px; font-weight: 500; transition: color 0.2s;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.3s;
         }
-        .nav-links a:hover { color: var(--text); }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
         .nav-cta {
-            background: linear-gradient(135deg, var(--purple), var(--purple-deep)) !important;
-            color: #fff !important; padding: 10px 22px; border-radius: 10px;
-            font-weight: 600 !important; transition: transform 0.2s, box-shadow 0.2s;
+            background: linear-gradient(135deg, var(--purple), var(--pink)) !important;
+            color: #fff !important;
+            padding: 10px 24px;
+            border-radius: 10px;
+            font-weight: 700 !important;
+            transition: transform 0.2s, box-shadow 0.3s;
         }
-        .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 30px var(--purple-glow); }
 
-        /* HERO */
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px var(--glow);
+        }
+
+        .nav-mobile {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .nav-mobile svg {
+            color: var(--text);
+        }
+
+        /* ===== HERO ===== */
         .hero {
-            min-height: 100vh; display: flex; align-items: center; justify-content: center;
-            padding: 120px 40px 80px; position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 40px 60px;
+            position: relative;
+            overflow: hidden;
         }
+
+        .hero-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                linear-gradient(rgba(168, 85, 247, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(168, 85, 247, 0.04) 1px, transparent 1px);
+            background-size: 80px 80px;
+            transform: perspective(400px) rotateX(55deg);
+            transform-origin: center top;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 70%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
         .hero-glow {
-            position: absolute; top: -300px; left: 50%; transform: translateX(-50%);
-            width: 900px; height: 900px;
-            background: radial-gradient(circle, var(--purple-glow) 0%, transparent 65%);
-            opacity: 0.25; pointer-events: none;
+            position: absolute;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 600px;
+            background: radial-gradient(ellipse, rgba(168, 85, 247, 0.12) 0%, rgba(236, 72, 153, 0.04) 40%, transparent 70%);
+            pointer-events: none;
         }
+
         .hero-content {
-            max-width: 1200px; width: 100%;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
-            align-items: center; position: relative; z-index: 1;
-        }
-        .hero-text { max-width: 540px; }
-
-        .hero-badge {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(168, 85, 247, 0.1);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            padding: 8px 16px; border-radius: 100px;
-            font-size: 13px; font-weight: 600; color: var(--purple);
-            margin-bottom: 28px;
-        }
-        .hero-badge-dot {
-            width: 7px; height: 7px; background: var(--purple);
-            border-radius: 50%; animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-        .hero h1 {
-            font-size: clamp(40px, 5.5vw, 68px); font-weight: 900;
-            line-height: 1.05; letter-spacing: -2.5px; margin-bottom: 22px;
-        }
-        .hero h1 .accent {
-            background: linear-gradient(135deg, var(--purple), var(--indigo));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .hero-desc {
-            font-size: 17px; line-height: 1.7; color: var(--text-mid);
-            margin-bottom: 36px; max-width: 440px;
-        }
-        .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
-
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, var(--purple), var(--purple-deep));
-            color: #fff; padding: 15px 30px; border-radius: 14px;
-            text-decoration: none; font-weight: 700; font-size: 15px;
-            transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px var(--purple-glow); }
-
-        .btn-secondary {
-            display: inline-flex; align-items: center; gap: 10px;
-            background: var(--bg-card); color: var(--text);
-            padding: 15px 30px; border-radius: 14px;
-            text-decoration: none; font-weight: 700; font-size: 15px;
-            border: 1px solid var(--border); transition: transform 0.2s, background 0.2s; cursor: pointer;
-        }
-        .btn-secondary:hover { transform: translateY(-2px); background: var(--bg-card-hover); }
-
-        .hero-stats {
-            display: flex; gap: 36px; margin-top: 44px;
-            padding-top: 28px; border-top: 1px solid var(--border);
-        }
-        .stat-item h3 {
-            font-size: 26px; font-weight: 800;
-            background: linear-gradient(135deg, var(--purple), var(--indigo));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-        .stat-item p { font-size: 13px; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
-
-        /* PHONE MOCKUP */
-        .hero-visual { display: flex; justify-content: center; position: relative; }
-
-        .phone {
-            width: 270px; height: 560px;
-            background: #0e0e18; border-radius: 44px;
-            border: 3px solid #1e1e30; position: relative; overflow: hidden;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 80px var(--purple-glow);
-        }
-        .phone-notch {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 110px; height: 26px; background: #0e0e18;
-            border-radius: 0 0 18px 18px; z-index: 2;
-        }
-        .phone-screen {
-            width: 100%; height: 100%;
-            background: linear-gradient(180deg, #0a0a16 0%, #10101e 100%);
-            display: flex; flex-direction: column; align-items: center;
-            padding: 50px 18px 18px; gap: 10px;
-        }
-        .phone-card {
-            width: 100%; height: 130px; border-radius: 16px;
-            position: relative; overflow: hidden;
-            animation: cardFloat 6s ease-in-out infinite;
-        }
-        .phone-card:nth-child(1) {
-            background: linear-gradient(135deg, #a855f7, #7c3aed);
-            animation-delay: 0s;
-        }
-        .phone-card:nth-child(2) {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            animation-delay: 2s;
-        }
-        .phone-card:nth-child(3) {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-            animation-delay: 4s;
-        }
-        .phone-card-inner {
-            padding: 16px; height: 100%;
-            display: flex; flex-direction: column; justify-content: flex-end;
-        }
-        .phone-card-inner .card-title { font-weight: 700; font-size: 14px; opacity: 0.9; }
-        .phone-card-inner .card-sub { font-size: 11px; opacity: 0.5; margin-top: 3px; }
-
-        @keyframes cardFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-
-        .orb {
-            position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none;
-        }
-        .orb-1 { width: 200px; height: 200px; background: var(--purple); opacity: 0.12; top: -60px; right: -40px; }
-        .orb-2 { width: 150px; height: 150px; background: var(--indigo); opacity: 0.1; bottom: -40px; left: -30px; }
-
-        /* SECTIONS */
-        .section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
-        .section-label {
-            font-size: 12px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 2px; color: var(--purple); margin-bottom: 14px;
-        }
-        .section-title {
-            font-size: clamp(30px, 4vw, 46px); font-weight: 900;
-            letter-spacing: -1.5px; margin-bottom: 14px; line-height: 1.1;
-        }
-        .section-desc {
-            font-size: 17px; color: var(--text-mid); max-width: 480px;
-            line-height: 1.6; margin-bottom: 56px;
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            width: 100%;
         }
 
-        /* FEATURES */
-        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .feature-card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 20px; padding: 32px;
-            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+        .hero-title {
+            font-size: clamp(60px, 11vw, 150px);
+            font-weight: 900;
+            line-height: 0.92;
+            text-transform: uppercase;
+            letter-spacing: -4px;
+            margin-bottom: 32px;
         }
-        .feature-card:hover {
+
+        .hero-title .line1 {
+            color: var(--text);
+        }
+
+        .hero-title .line2 {
+            -webkit-text-stroke: 2px var(--purple);
+            color: transparent;
+        }
+
+        .hero-title .line2-fill {
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-size: 17px;
+            color: var(--text-mid);
+            max-width: 440px;
+            margin: 0 auto 40px;
+            line-height: 1.7;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 56px;
+        }
+
+        .btn-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            color: #fff;
+            padding: 16px 32px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: transform 0.2s, box-shadow 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 40px var(--glow);
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            color: var(--text);
+            padding: 16px 32px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: transform 0.2s, border-color 0.3s, background 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-ghost:hover {
+            transform: translateY(-2px);
+            border-color: rgba(168, 85, 247, 0.3);
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        /* Game Cards */
+        .hero-cards {
+            width: 100%;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        .hero-cards img {
+            width: 100%;
+            display: block;
+            filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.6));
+            animation: cardBob 6s ease-in-out infinite;
+        }
+
+        @keyframes cardBob {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* ===== PHONE SHOWCASE ===== */
+        .showcase {
+            padding: 140px 40px 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase-ghost {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(120px, 20vw, 280px);
+            font-weight: 900;
+            text-transform: uppercase;
+            -webkit-text-stroke: 1px rgba(168, 85, 247, 0.04);
+            color: transparent;
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: -8px;
+        }
+
+        .showcase-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tag {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--purple);
+            margin-bottom: 18px;
+        }
+
+        .showcase-title {
+            font-size: clamp(34px, 5vw, 60px);
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1.05;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        .showcase-desc {
+            font-size: 16px;
+            color: var(--text-mid);
+            max-width: 460px;
+            margin: 0 auto 64px;
+            line-height: 1.7;
+        }
+
+        .phones-img {
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+            display: block;
+            filter: drop-shadow(0 40px 80px rgba(0, 0, 0, 0.5));
+            animation: phoneBob 8s ease-in-out infinite;
+        }
+
+        @keyframes phoneBob {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        /* ===== STATS STRIP ===== */
+        .stats {
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: var(--bg2);
+            padding: 52px 40px;
+        }
+
+        .stats-row {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 72px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 44px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-lbl {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* ===== HOW IT WORKS — Visual, not text-grid ===== */
+        .how {
+            padding: 120px 40px;
+            position: relative;
+        }
+
+        .how-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .how-title {
+            font-size: clamp(32px, 4.5vw, 52px);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 64px;
+        }
+
+        .how-steps {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .how-steps::before {
+            content: '';
+            position: absolute;
+            top: 44px;
+            left: 18%;
+            right: 18%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent);
+            opacity: 0.15;
+        }
+
+        .how-step {
+            flex: 1;
+            max-width: 260px;
+            text-align: center;
+            padding: 0 12px;
+        }
+
+        .step-circle {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 40px var(--glow);
+            font-size: 30px;
+        }
+
+        .how-step h3 {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .how-step p {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        /* ===== SOCIAL ===== */
+        .social {
+            padding: 120px 40px;
+            background: var(--bg2);
+        }
+
+        .social-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .social-title {
+            font-size: clamp(32px, 4.5vw, 52px);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 18px;
+        }
+
+        .social-desc {
+            font-size: 16px;
+            color: var(--text-mid);
+            margin-bottom: 48px;
+        }
+
+        .social-row {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .social-btn {
+            width: 110px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            color: var(--text-dim);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s, color 0.3s;
+        }
+
+        .social-btn svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .social-btn:hover {
+            border-color: rgba(168, 85, 247, 0.3);
+            box-shadow: 0 0 30px var(--glow-dim);
             transform: translateY(-4px);
-            border-color: rgba(168, 85, 247, 0.25);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: var(--purple);
         }
-        .feature-icon {
-            width: 50px; height: 50px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; margin-bottom: 20px;
-        }
-        .fi-1 { background: rgba(168, 85, 247, 0.12); }
-        .fi-2 { background: rgba(99, 102, 241, 0.12); }
-        .fi-3 { background: rgba(139, 92, 246, 0.12); }
-        .fi-4 { background: rgba(79, 70, 229, 0.12); }
-        .fi-5 { background: rgba(124, 58, 237, 0.12); }
-        .fi-6 { background: rgba(109, 40, 217, 0.12); }
-        .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-        .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
 
-        /* STEPS */
-        .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; counter-reset: step; }
-        .step-card { text-align: center; padding: 36px 20px; counter-increment: step; }
-        .step-number {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--purple), var(--purple-deep));
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: 900; margin: 0 auto 20px;
+        .social-btn:hover svg {
+            color: var(--purple);
         }
-        .step-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
-        .step-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
 
-        /* CTA */
-        .cta-section { padding: 100px 40px; text-align: center; }
+        /* Social button brand colors */
+        .social-tiktok {
+            border-color: rgba(255, 0, 80, 0.15);
+            color: #ff0050;
+        }
+        .social-tiktok svg { color: #ff0050; }
+        .social-tiktok:hover {
+            border-color: rgba(255, 0, 80, 0.4);
+            box-shadow: 0 0 30px rgba(255, 0, 80, 0.15);
+            color: #ff0050;
+        }
+        .social-tiktok:hover svg { color: #ff0050; }
+
+        .social-ig {
+            border-color: rgba(225, 48, 108, 0.15);
+            color: #e1306c;
+        }
+        .social-ig svg { color: #e1306c; }
+        .social-ig:hover {
+            border-color: rgba(225, 48, 108, 0.4);
+            box-shadow: 0 0 30px rgba(225, 48, 108, 0.15);
+            color: #e1306c;
+        }
+        .social-ig:hover svg { color: #e1306c; }
+
+        .social-x {
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .social-x svg { color: #fff; }
+        .social-x:hover {
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+        .social-x:hover svg { color: #fff; }
+
+        /* ===== CTA ===== */
+        .cta {
+            padding: 120px 40px;
+            text-align: center;
+        }
+
         .cta-box {
-            max-width: 780px; margin: 0 auto;
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 28px; padding: 72px 56px;
-            position: relative; overflow: hidden;
+            max-width: 820px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 80px 56px;
+            position: relative;
+            overflow: hidden;
         }
+
         .cta-box::before {
-            content: ''; position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, var(--purple-glow) 0%, transparent 70%);
-            opacity: 0.15; pointer-events: none;
+            content: '';
+            position: absolute;
+            top: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 400px;
+            background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+            opacity: 0.06;
+            pointer-events: none;
         }
+
+        .cta-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--purple), var(--pink), transparent);
+        }
+
         .cta-box h2 {
-            font-size: clamp(26px, 3.5vw, 40px); font-weight: 900;
-            letter-spacing: -1px; margin-bottom: 14px; position: relative;
+            font-size: clamp(28px, 4vw, 46px);
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 14px;
+            position: relative;
+            text-transform: uppercase;
         }
-        .cta-box p { font-size: 17px; color: var(--text-mid); margin-bottom: 36px; position: relative; }
-        .cta-buttons { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; }
 
-        /* FOOTER */
-        footer { border-top: 1px solid var(--border); padding: 50px 40px; }
+        .cta-box p {
+            font-size: 16px;
+            color: var(--text-mid);
+            margin-bottom: 36px;
+            position: relative;
+        }
+
+        .cta-row {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        /* ===== SUPPORT ===== */
+        .support {
+            padding: 80px 40px;
+            text-align: center;
+        }
+
+        .support h2 {
+            font-size: clamp(28px, 3.5vw, 40px);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        .support p {
+            font-size: 16px;
+            color: var(--text-mid);
+            line-height: 1.7;
+        }
+
+        .support a {
+            color: var(--purple);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .support a:hover {
+            color: var(--pink);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 56px 48px;
+        }
+
         .footer-inner {
-            max-width: 1200px; margin: 0 auto;
-            display: flex; justify-content: space-between; align-items: center;
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 40px;
+            align-items: start;
         }
-        .footer-left { display: flex; align-items: center; gap: 10px; }
-        .footer-left .nav-logo-icon { width: 30px; height: 30px; font-size: 13px; }
-        .footer-left span { font-weight: 700; font-size: 15px; }
-        .footer-links { display: flex; gap: 28px; }
-        .footer-links a { color: var(--text-dim); text-decoration: none; font-size: 13px; transition: color 0.2s; }
-        .footer-links a:hover { color: var(--text); }
-        .footer-copy { color: var(--text-dim); font-size: 12px; }
 
-        /* RESPONSIVE */
+        .footer-brand .nav-logo {
+            margin-bottom: 14px;
+        }
+
+        .footer-brand p {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            max-width: 260px;
+        }
+
+        .footer-col h4 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-mid);
+            margin-bottom: 18px;
+        }
+
+        .footer-col a {
+            display: block;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 12px;
+            transition: color 0.3s;
+        }
+
+        .footer-col a:hover {
+            color: var(--purple);
+        }
+
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 36px auto 0;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-copy {
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 22px;
+        }
+
+        .footer-links a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: var(--purple);
+        }
+
+        /* ===== SCROLL TOP ===== */
+        .scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 99;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), var(--pink));
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px var(--glow);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .scroll-top.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .scroll-top:hover {
+            box-shadow: 0 8px 30px var(--glow);
+        }
+
+        .scroll-top svg {
+            color: #fff;
+        }
+
+        /* ===== ANIM ===== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .reveal.on {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
-            nav { padding: 14px 20px; }
-            .nav-links { display: none; }
-            .hero { padding: 100px 20px 60px; }
-            .hero-content { grid-template-columns: 1fr; gap: 50px; text-align: center; }
-            .hero-text { max-width: 100%; }
-            .hero-desc { max-width: 100%; margin-left: auto; margin-right: auto; }
-            .hero-buttons { justify-content: center; }
-            .hero-stats { justify-content: center; }
-            .hero-visual { order: -1; }
-            .phone { width: 230px; height: 480px; }
-            .section { padding: 70px 20px; }
-            .features-grid { grid-template-columns: 1fr; }
-            .steps-grid { grid-template-columns: 1fr; }
-            .cta-box { padding: 44px 22px; }
-            .footer-inner { flex-direction: column; gap: 20px; text-align: center; }
-            .footer-links { flex-wrap: wrap; justify-content: center; }
-        }
+            nav {
+                padding: 14px 20px;
+            }
 
-        /* ANIMATIONS */
-        .fade-up { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .fade-up.visible { opacity: 1; transform: translateY(0); }
+            .nav-links {
+                display: none;
+            }
+
+            .nav-mobile {
+                display: block;
+            }
+
+            .hero {
+                padding: 100px 20px 50px;
+            }
+
+            .hero-title {
+                letter-spacing: -2px;
+            }
+
+            .hero-cards {
+                max-width: 360px;
+            }
+
+            .stats-row {
+                flex-direction: column;
+                gap: 28px;
+            }
+
+            .showcase {
+                padding: 80px 20px;
+            }
+
+            .phones-img {
+                max-width: 360px;
+            }
+
+            .how {
+                padding: 80px 20px;
+            }
+
+            .how-steps {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .how-steps::before {
+                display: none;
+            }
+
+            .social {
+                padding: 80px 20px;
+            }
+
+            .social-btn {
+                width: 90px;
+                height: 90px;
+            }
+
+            .cta {
+                padding: 60px 20px;
+            }
+
+            .cta-box {
+                padding: 48px 24px;
+            }
+
+            footer {
+                padding: 40px 20px;
+            }
+
+            .footer-inner {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: 14px;
+                text-align: center;
+            }
+        }
     </style>
 </head>
+
 <body>
 
-    <nav>
+    <!-- NAV -->
+    <nav id="nav">
         <a href="/" class="nav-logo">
-            <div class="nav-logo-icon">G</div>
+            <img src="logo.png" alt="GameTOK">
             <span>GameTOK</span>
         </a>
         <div class="nav-links">
-            <a href="#features">Features</a>
-            <a href="#how-it-works">How It Works</a>
+            <a href="#showcase">App</a>
+            <a href="#how">How It Works</a>
             <a href="#support">Support</a>
             <a href="#download" class="nav-cta">Download</a>
         </div>
+        <button class="nav-mobile" aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+        </button>
     </nav>
 
-    <section class="hero">
+    <!-- HERO -->
+    <section class="hero" id="hero">
+        <div class="hero-grid"></div>
         <div class="hero-glow"></div>
         <div class="hero-content">
-            <div class="hero-text">
-                <div class="hero-badge">
-                    <div class="hero-badge-dot"></div>
-                    Available on iOS and Android
-                </div>
-                <h1>Swipe. Play.<br><span class="accent">Compete.</span></h1>
-                <p class="hero-desc">
-                    Hundreds of instant games in a feed you can't stop swiping. 
-                    No downloads, no waiting. Challenge friends, climb leaderboards, 
-                    find your next obsession.
-                </p>
-                <div class="hero-buttons">
-                    <a href="https://apps.apple.com/app/gametok/id6738030629" class="btn-primary">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-                        App Store
-                    </a>
-                    <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn-secondary">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>
-                        Google Play
-                    </a>
-                </div>
-                <div class="hero-stats">
-                    <div class="stat-item">
-                        <h3>200+</h3>
-                        <p>Instant Games</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>50K+</h3>
-                        <p>Players</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>4.8</h3>
-                        <p>App Rating</p>
-                    </div>
-                </div>
+            <h1 class="hero-title reveal">
+                <span class="line1">Swipe</span><br>
+                <span class="line2">to</span> <span class="line2-fill">Play</span>
+            </h1>
+            <p class="hero-sub reveal">
+                Hundreds of instant games in a feed you can't stop swiping. No downloads, no waiting — just play.
+            </p>
+            <div class="hero-buttons reveal">
+                <a href="https://apps.apple.com/app/gametok/id6738030629" class="btn-main" id="hero-ios">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
+                    App Store
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn-ghost" id="hero-android">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+                    </svg>
+                    Google Play
+                </a>
             </div>
-            <div class="hero-visual">
-                <div class="orb orb-1"></div>
-                <div class="orb orb-2"></div>
-                <div class="phone">
-                    <div class="phone-notch"></div>
-                    <div class="phone-screen">
-                        <div class="phone-card">
-                            <div class="phone-card-inner">
-                                <div class="card-title">Tap to play</div>
-                                <div class="card-sub">Action</div>
-                            </div>
-                        </div>
-                        <div class="phone-card">
-                            <div class="phone-card-inner">
-                                <div class="card-title">Swipe up for more</div>
-                                <div class="card-sub">Puzzle</div>
-                            </div>
-                        </div>
-                        <div class="phone-card">
-                            <div class="phone-card-inner">
-                                <div class="card-title">Challenge friends</div>
-                                <div class="card-sub">Casual</div>
-                            </div>
-                        </div>
-                    </div>
+            <div class="hero-cards reveal">
+                <img src="game-cards-hero.png" alt="Games">
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats">
+        <div class="stats-row">
+            <div class="stat reveal">
+                <div class="stat-val" data-to="200" data-sfx="+">0</div>
+                <div class="stat-lbl">Instant Games</div>
+            </div>
+            <div class="stat reveal">
+                <div class="stat-val" data-to="50" data-sfx="K+">0</div>
+                <div class="stat-lbl">Players</div>
+            </div>
+            <div class="stat reveal">
+                <div class="stat-val" data-to="4.8" data-sfx="" data-dec="1">0</div>
+                <div class="stat-lbl">App Rating</div>
+            </div>
+            <div class="stat reveal">
+                <div class="stat-val" data-to="1" data-sfx="M+">0</div>
+                <div class="stat-lbl">Games Played</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- APP SHOWCASE -->
+    <section class="showcase" id="showcase">
+        <div class="showcase-ghost">GAMETOK</div>
+        <div class="showcase-inner">
+            <div class="tag reveal">Swipe & Play</div>
+            <h2 class="showcase-title reveal">Your next favorite<br>game is one swipe away</h2>
+            <p class="showcase-desc reveal">
+                A TikTok-style feed of instant games. Browse, play, compete with friends — all from one app.
+            </p>
+            <img src="phone-mockups.png" alt="GameTOK App" class="phones-img reveal">
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how" id="how">
+        <div class="how-inner">
+            <div class="tag reveal">How It Works</div>
+            <h2 class="how-title reveal">Start playing in seconds</h2>
+            <div class="how-steps">
+                <div class="how-step reveal">
+                    <div class="step-circle"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg></div>
+                    <h3>Download</h3>
+                    <p>Get GameTOK free on iOS or Android.</p>
+                </div>
+                <div class="how-step reveal">
+                    <div class="step-circle"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="17 1 21 5 17 9" />
+                            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                            <polyline points="7 23 3 19 7 15" />
+                            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                        </svg></div>
+                    <h3>Swipe</h3>
+                    <p>Browse an endless feed of games. Find your next obsession.</p>
+                </div>
+                <div class="how-step reveal">
+                    <div class="step-circle"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7" />
+                            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7" />
+                            <path d="M4 22h16" />
+                            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
+                            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
+                            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                        </svg></div>
+                    <h3>Compete</h3>
+                    <p>Challenge friends. Climb leaderboards. Win bragging rights.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="section" id="features">
-        <div class="fade-up">
-            <div class="section-label">Features</div>
-            <div class="section-title">Everything you need<br>to game on the go</div>
-            <p class="section-desc">Quick sessions, social competition, and an endless library at your fingertips.</p>
-        </div>
-        <div class="features-grid">
-            <div class="feature-card fade-up">
-                <div class="feature-icon fi-1">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                </div>
-                <h3>Swipe to Discover</h3>
-                <p>Browse games like you scroll social media. A personalized feed tailored to your taste.</p>
-            </div>
-            <div class="feature-card fade-up">
-                <div class="feature-icon fi-2">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                </div>
-                <h3>Instant Play</h3>
-                <p>No downloads, no installs. Every game loads instantly right in the app.</p>
-            </div>
-            <div class="feature-card fade-up">
-                <div class="feature-icon fi-3">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-                </div>
-                <h3>Leaderboards</h3>
-                <p>Compete globally or with friends. Every game has its own leaderboard.</p>
-            </div>
-            <div class="feature-card fade-up">
-                <div class="feature-icon fi-4">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <h3>Social</h3>
-                <p>Add friends, send messages, share scores. Gaming is better together.</p>
-            </div>
-            <div class="feature-card fade-up">
-                <div class="feature-icon fi-5">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
-                </div>
-                <h3>Daily Rewards</h3>
-                <p>Earn coins, unlock achievements, collect rewards. The more you play, the more you earn.</p>
-            </div>
-            <div class="feature-card fade-up">
-                <div class="feature-icon fi-6">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m6.8 15-3.5 2"/><path d="m20.7 7-3.5 2"/><path d="M6.8 9 3.3 7"/><path d="m20.7 17-3.5-2"/><circle cx="12" cy="12" r="4"/></svg>
-                </div>
-                <h3>New Games Weekly</h3>
-                <p>Fresh games added every week. Puzzles, action, casual — always something new.</p>
+    <!-- STAY CONNECTED -->
+    <section class="social" id="social">
+        <div class="social-inner">
+            <div class="tag reveal">Stay Connected</div>
+            <h2 class="social-title reveal">Join the community</h2>
+            <p class="social-desc reveal">Follow us for updates, events, and new game drops.</p>
+            <div class="social-row">
+                <a href="https://tiktok.com/@gametok.co" target="_blank" class="social-btn reveal social-tiktok" aria-label="TikTok">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.11V9a6.33 6.33 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.3 6.34 6.34 0 0 0 9.49 21.64a6.34 6.34 0 0 0 6.34-6.34V8.75a8.22 8.22 0 0 0 4.76 1.52V6.84a4.86 4.86 0 0 1-1-.15z" />
+                    </svg>
+                    TikTok
+                </a>
+                <a href="https://instagram.com/gametok.co" target="_blank" class="social-btn reveal social-ig"
+                    aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                    </svg>
+                    Instagram
+                </a>
+                <a href="https://x.com/thegametok" target="_blank" class="social-btn reveal social-x" aria-label="X">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                    X
+                </a>
             </div>
         </div>
     </section>
 
-    <section class="section" id="how-it-works">
-        <div class="fade-up" style="text-align: center;">
-            <div class="section-label">How It Works</div>
-            <div class="section-title">Start playing in seconds</div>
-            <p class="section-desc" style="margin: 14px auto 56px;">Three steps. That's it.</p>
-        </div>
-        <div class="steps-grid">
-            <div class="step-card fade-up">
-                <div class="step-number">1</div>
-                <h3>Download</h3>
-                <p>Get GameTOK free on the App Store or Google Play.</p>
-            </div>
-            <div class="step-card fade-up">
-                <div class="step-number">2</div>
-                <h3>Swipe</h3>
-                <p>Browse hundreds of games. Swipe up to find your next favorite.</p>
-            </div>
-            <div class="step-card fade-up">
-                <div class="step-number">3</div>
-                <h3>Compete</h3>
-                <p>Beat high scores, challenge friends, climb the ranks.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="cta-section" id="download">
-        <div class="cta-box fade-up">
-            <h2>Ready to play?</h2>
+    <!-- CTA -->
+    <section class="cta" id="download">
+        <div class="cta-box reveal">
+            <h2>Ready to Play?</h2>
             <p>Join thousands of players discovering new games every day.</p>
-            <div class="cta-buttons">
-                <a href="https://apps.apple.com/app/gametok/id6738030629" class="btn-primary">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            <div class="cta-row">
+                <a href="https://apps.apple.com/app/gametok/id6738030629" class="btn-main" id="cta-ios">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                    </svg>
                     Download for iOS
                 </a>
-                <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn-secondary">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>
+                <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn-ghost" id="cta-android">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+                    </svg>
                     Download for Android
                 </a>
             </div>
         </div>
     </section>
 
-    <section class="section" id="support">
-        <div class="fade-up" style="text-align: center;">
-            <div class="section-label">Support</div>
-            <div class="section-title">Need help?</div>
-            <p class="section-desc" style="margin: 14px auto 0;">
-                For support, bug reports, or feedback — reach out anytime.<br>
-                <a href="mailto:support@gametok.co" style="color: var(--purple); text-decoration: none; font-weight: 600;">support@gametok.co</a>
-            </p>
-        </div>
+    <!-- SUPPORT -->
+    <section class="support" id="support">
+        <h2 class="reveal">Need Help?</h2>
+        <p class="reveal">
+            For support, bug reports, or feedback — reach out anytime.<br>
+            <a href="mailto:support@gametok.co">support@gametok.co</a>
+        </p>
     </section>
 
+    <!-- FOOTER -->
     <footer>
         <div class="footer-inner">
-            <div class="footer-left">
-                <div class="nav-logo-icon">G</div>
-                <span>GameTOK</span>
+            <div class="footer-brand">
+                <a href="/" class="nav-logo">
+                    <img src="logo.png" alt="GameTOK">
+                    <span>GameTOK</span>
+                </a>
+                <p>The ultimate mobile gaming platform. Swipe, play, compete — all from one app.</p>
             </div>
-            <div class="footer-links">
+            <div class="footer-col">
+                <h4>Navigation</h4>
+                <a href="#hero">Home</a>
+                <a href="#showcase">App</a>
+                <a href="#how">How It Works</a>
+                <a href="#download">Download</a>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
                 <a href="privacy.html">Privacy Policy</a>
                 <a href="terms.html">Terms of Service</a>
                 <a href="mailto:support@gametok.co">Contact</a>
             </div>
+        </div>
+        <div class="footer-bottom">
             <div class="footer-copy">&copy; 2026 GameTOK. All rights reserved.</div>
+            <div class="footer-links">
+                <a href="privacy.html">Privacy</a>
+                <a href="terms.html">Terms</a>
+                <a href="mailto:support@gametok.co">Contact</a>
+            </div>
         </div>
     </footer>
 
-    <script>
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, i) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => entry.target.classList.add('visible'), i * 80);
-                    observer.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+    <!-- SCROLL TOP -->
+    <button class="scroll-top" id="topBtn" aria-label="Back to top">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15" />
+        </svg>
+    </button>
 
+    <script>
+        // Reveal on scroll
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); }
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -30px 0px' });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+        // Smooth anchor
         document.querySelectorAll('a[href^="#"]').forEach(a => {
-            a.addEventListener('click', function(e) {
+            a.addEventListener('click', e => {
                 e.preventDefault();
-                const t = document.querySelector(this.getAttribute('href'));
+                const t = document.querySelector(a.getAttribute('href'));
                 if (t) t.scrollIntoView({ behavior: 'smooth' });
             });
         });
+
+        // Nav scroll class
+        const nav = document.getElementById('nav');
+        const topBtn = document.getElementById('topBtn');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', scrollY > 80);
+            topBtn.classList.toggle('show', scrollY > 500);
+        });
+        topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+
+        // Counter animation
+        const cio = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (!e.isIntersecting) return;
+                const el = e.target;
+                const to = parseFloat(el.dataset.to);
+                const sfx = el.dataset.sfx || '';
+                const dec = parseInt(el.dataset.dec) || 0;
+                const dur = 2000, start = performance.now();
+                (function tick(now) {
+                    const p = Math.min((now - start) / dur, 1);
+                    const ease = 1 - Math.pow(1 - p, 3);
+                    el.textContent = (dec ? (ease * to).toFixed(dec) : Math.floor(ease * to)) + sfx;
+                    if (p < 1) requestAnimationFrame(tick);
+                })(start);
+                cio.unobserve(el);
+            });
+        }, { threshold: 0.5 });
+        document.querySelectorAll('.stat-val').forEach(el => cio.observe(el));
     </script>
 </body>
+
 </html>
