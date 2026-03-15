@@ -11,7 +11,7 @@ export async function onRequest(context) {
   
   // Format game name from ID as fallback
   let gameName = gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  let thumbnailUrl = `https://gametok-games.pages.dev/thumbnails/${gameId}.png`;
+  let thumbnailUrl = `https://games.gametok.co/thumbnails/${gameId}.png`;
   
   // Try to fetch game data from API to get actual name and thumbnail
   try {
@@ -30,7 +30,7 @@ export async function onRequest(context) {
     // Fallback to defaults
   }
   
-  const pageUrl = `https://gametok-landing.pages.dev/game.html?id=${gameId}`;
+  const pageUrl = `https://gametok.co/game.html?id=${gameId}`;
   
   const html = `<!DOCTYPE html>
 <html lang="en">
