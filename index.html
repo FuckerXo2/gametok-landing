@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GameTOK — Swipe. Play. Compete.</title>
-    <meta name="description" content="Discover and play hundreds of instant games. Swipe through an endless feed, compete with friends, climb leaderboards. Available on iOS and Android.">
+    <meta name="description" content="Discover and play hundreds of instant games. Swipe through an endless feed, compete with friends, climb leaderboards.">
     <meta property="og:title" content="GameTOK — Swipe. Play. Compete.">
     <meta property="og:description" content="Discover and play hundreds of instant games. No downloads needed.">
     <meta property="og:type" content="website">
@@ -14,26 +14,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         :root {
-            --accent: #FF6B35;
-            --accent-glow: rgba(255, 107, 53, 0.4);
-            --bg-dark: #050508;
-            --bg-card: #0d0d12;
-            --bg-card-hover: #13131a;
+            --purple: #a855f7;
+            --purple-deep: #7c3aed;
+            --purple-glow: rgba(168, 85, 247, 0.35);
+            --indigo: #6366f1;
+            --bg: #06060b;
+            --bg-card: #0c0c14;
+            --bg-card-hover: #111120;
             --text: #ffffff;
-            --text-dim: #6b6b80;
-            --text-mid: #9b9bb0;
-            --border: #1a1a25;
-            --gradient-1: linear-gradient(135deg, #FF6B35, #FF3366);
-            --gradient-2: linear-gradient(135deg, #7B61FF, #00D4FF);
+            --text-dim: #64648a;
+            --text-mid: #9898b8;
+            --border: #18182a;
         }
 
         html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
+            background: var(--bg);
             color: var(--text);
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
@@ -41,610 +41,282 @@
 
         /* NAV */
         nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            padding: 20px 40px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            backdrop-filter: blur(20px);
-            background: rgba(5, 5, 8, 0.8);
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            padding: 18px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            backdrop-filter: blur(24px);
+            background: rgba(6, 6, 11, 0.85);
             border-bottom: 1px solid rgba(255,255,255,0.04);
         }
 
         .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: var(--text);
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: var(--text);
         }
-
         .nav-logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--gradient-1);
+            width: 34px; height: 34px;
+            background: linear-gradient(135deg, var(--purple), var(--purple-deep));
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 15px;
         }
+        .nav-logo span { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
 
-        .nav-logo span {
-            font-weight: 800;
-            font-size: 20px;
-            letter-spacing: -0.5px;
-        }
-
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 32px;
-        }
-
+        .nav-links { display: flex; align-items: center; gap: 28px; }
         .nav-links a {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
+            color: var(--text-dim); text-decoration: none;
+            font-size: 14px; font-weight: 500; transition: color 0.2s;
         }
-
         .nav-links a:hover { color: var(--text); }
-
         .nav-cta {
-            background: var(--gradient-1) !important;
-            color: #fff !important;
-            padding: 10px 24px;
-            border-radius: 10px;
-            font-weight: 600 !important;
-            transition: transform 0.2s, box-shadow 0.2s;
+            background: linear-gradient(135deg, var(--purple), var(--purple-deep)) !important;
+            color: #fff !important; padding: 10px 22px; border-radius: 10px;
+            font-weight: 600 !important; transition: transform 0.2s, box-shadow 0.2s;
         }
-
-        .nav-cta:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 30px var(--accent-glow);
-        }
+        .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 30px var(--purple-glow); }
 
         /* HERO */
         .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 120px 40px 80px;
-            position: relative;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 120px 40px 80px; position: relative;
         }
-
-        .hero-bg-glow {
-            position: absolute;
-            top: -200px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-            opacity: 0.3;
-            pointer-events: none;
+        .hero-glow {
+            position: absolute; top: -300px; left: 50%; transform: translateX(-50%);
+            width: 900px; height: 900px;
+            background: radial-gradient(circle, var(--purple-glow) 0%, transparent 65%);
+            opacity: 0.25; pointer-events: none;
         }
-
         .hero-content {
-            max-width: 1200px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            align-items: center;
-            position: relative;
-            z-index: 1;
+            max-width: 1200px; width: 100%;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+            align-items: center; position: relative; z-index: 1;
         }
-
-        .hero-text { max-width: 560px; }
+        .hero-text { max-width: 540px; }
 
         .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 107, 53, 0.1);
-            border: 1px solid rgba(255, 107, 53, 0.2);
-            padding: 8px 16px;
-            border-radius: 100px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 32px;
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            padding: 8px 16px; border-radius: 100px;
+            font-size: 13px; font-weight: 600; color: var(--purple);
+            margin-bottom: 28px;
         }
-
-        .hero-badge::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
+        .hero-badge-dot {
+            width: 7px; height: 7px; background: var(--purple);
+            border-radius: 50%; animation: pulse 2s infinite;
         }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
         .hero h1 {
-            font-size: clamp(42px, 5.5vw, 72px);
-            font-weight: 900;
-            line-height: 1.05;
-            letter-spacing: -2px;
-            margin-bottom: 24px;
+            font-size: clamp(40px, 5.5vw, 68px); font-weight: 900;
+            line-height: 1.05; letter-spacing: -2.5px; margin-bottom: 22px;
         }
-
-        .hero h1 .gradient-text {
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .hero h1 .accent {
+            background: linear-gradient(135deg, var(--purple), var(--indigo));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-
         .hero-desc {
-            font-size: 18px;
-            line-height: 1.7;
-            color: var(--text-mid);
-            margin-bottom: 40px;
-            max-width: 460px;
+            font-size: 17px; line-height: 1.7; color: var(--text-mid);
+            margin-bottom: 36px; max-width: 440px;
         }
-
-        .hero-buttons {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
+        .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
 
         .btn-primary {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--gradient-1);
-            color: #fff;
-            padding: 16px 32px;
-            border-radius: 14px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 16px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: none;
-            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, var(--purple), var(--purple-deep));
+            color: #fff; padding: 15px 30px; border-radius: 14px;
+            text-decoration: none; font-weight: 700; font-size: 15px;
+            transition: transform 0.2s, box-shadow 0.2s; border: none; cursor: pointer;
         }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px var(--accent-glow);
-        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px var(--purple-glow); }
 
         .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: var(--bg-card);
-            color: var(--text);
-            padding: 16px 32px;
-            border-radius: 14px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 16px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s, background 0.2s;
-            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 10px;
+            background: var(--bg-card); color: var(--text);
+            padding: 15px 30px; border-radius: 14px;
+            text-decoration: none; font-weight: 700; font-size: 15px;
+            border: 1px solid var(--border); transition: transform 0.2s, background 0.2s; cursor: pointer;
         }
-
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            background: var(--bg-card-hover);
-        }
+        .btn-secondary:hover { transform: translateY(-2px); background: var(--bg-card-hover); }
 
         .hero-stats {
-            display: flex;
-            gap: 40px;
-            margin-top: 48px;
-            padding-top: 32px;
-            border-top: 1px solid var(--border);
+            display: flex; gap: 36px; margin-top: 44px;
+            padding-top: 28px; border-top: 1px solid var(--border);
         }
-
         .stat-item h3 {
-            font-size: 28px;
-            font-weight: 800;
-            background: var(--gradient-2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 26px; font-weight: 800;
+            background: linear-gradient(135deg, var(--purple), var(--indigo));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-
-        .stat-item p {
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-top: 4px;
-            font-weight: 500;
-        }
+        .stat-item p { font-size: 13px; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
 
         /* PHONE MOCKUP */
-        .hero-visual {
-            display: flex;
-            justify-content: center;
-            position: relative;
-        }
+        .hero-visual { display: flex; justify-content: center; position: relative; }
 
-        .phone-mockup {
-            width: 280px;
-            height: 580px;
-            background: #111118;
-            border-radius: 40px;
-            border: 3px solid #222230;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 80px var(--accent-glow);
+        .phone {
+            width: 270px; height: 560px;
+            background: #0e0e18; border-radius: 44px;
+            border: 3px solid #1e1e30; position: relative; overflow: hidden;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 80px var(--purple-glow);
         }
-
         .phone-notch {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            height: 28px;
-            background: #111118;
-            border-radius: 0 0 20px 20px;
-            z-index: 2;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 110px; height: 26px; background: #0e0e18;
+            border-radius: 0 0 18px 18px; z-index: 2;
         }
-
         .phone-screen {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(180deg, #0a0a15 0%, #12121f 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 48px 20px 20px;
-            gap: 12px;
+            width: 100%; height: 100%;
+            background: linear-gradient(180deg, #0a0a16 0%, #10101e 100%);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 50px 18px 18px; gap: 10px;
         }
-
-        .phone-game-card {
-            width: 100%;
-            height: 140px;
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
+        .phone-card {
+            width: 100%; height: 130px; border-radius: 16px;
+            position: relative; overflow: hidden;
             animation: cardFloat 6s ease-in-out infinite;
         }
-
-        .phone-game-card:nth-child(1) {
-            background: linear-gradient(135deg, #FF6B35, #FF3366);
+        .phone-card:nth-child(1) {
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
             animation-delay: 0s;
         }
-        .phone-game-card:nth-child(2) {
-            background: linear-gradient(135deg, #7B61FF, #00D4FF);
+        .phone-card:nth-child(2) {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
             animation-delay: 2s;
         }
-        .phone-game-card:nth-child(3) {
-            background: linear-gradient(135deg, #00C853, #00BFA5);
+        .phone-card:nth-child(3) {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
             animation-delay: 4s;
         }
-
-        .phone-game-card-inner {
-            padding: 16px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+        .phone-card-inner {
+            padding: 16px; height: 100%;
+            display: flex; flex-direction: column; justify-content: flex-end;
         }
+        .phone-card-inner .card-title { font-weight: 700; font-size: 14px; opacity: 0.9; }
+        .phone-card-inner .card-sub { font-size: 11px; opacity: 0.5; margin-top: 3px; }
 
-        .phone-game-card-inner .game-name {
-            font-weight: 800;
-            font-size: 32px;
-            margin-bottom: 4px;
+        @keyframes cardFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+        .orb {
+            position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none;
         }
+        .orb-1 { width: 200px; height: 200px; background: var(--purple); opacity: 0.12; top: -60px; right: -40px; }
+        .orb-2 { width: 150px; height: 150px; background: var(--indigo); opacity: 0.1; bottom: -40px; left: -30px; }
 
-        .phone-game-card-inner .game-cat {
-            font-size: 11px;
-            opacity: 0.7;
-        }
-
-        @keyframes cardFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-        }
-
-        .floating-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            pointer-events: none;
-        }
-
-        .orb-1 {
-            width: 200px;
-            height: 200px;
-            background: var(--accent);
-            opacity: 0.15;
-            top: -60px;
-            right: -40px;
-        }
-
-        .orb-2 {
-            width: 150px;
-            height: 150px;
-            background: #7B61FF;
-            opacity: 0.12;
-            bottom: -40px;
-            left: -30px;
-        }
-
-        /* FEATURES SECTION */
-        .section {
-            padding: 120px 40px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        /* SECTIONS */
+        .section { padding: 100px 40px; max-width: 1200px; margin: 0 auto; }
         .section-label {
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--accent);
-            margin-bottom: 16px;
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 2px; color: var(--purple); margin-bottom: 14px;
         }
-
         .section-title {
-            font-size: clamp(32px, 4vw, 48px);
-            font-weight: 900;
-            letter-spacing: -1.5px;
-            margin-bottom: 16px;
-            line-height: 1.1;
+            font-size: clamp(30px, 4vw, 46px); font-weight: 900;
+            letter-spacing: -1.5px; margin-bottom: 14px; line-height: 1.1;
         }
-
         .section-desc {
-            font-size: 18px;
-            color: var(--text-mid);
-            max-width: 500px;
-            line-height: 1.6;
-            margin-bottom: 64px;
+            font-size: 17px; color: var(--text-mid); max-width: 480px;
+            line-height: 1.6; margin-bottom: 56px;
         }
 
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-
+        /* FEATURES */
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
         .feature-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 36px;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 20px; padding: 32px;
             transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
         }
-
         .feature-card:hover {
             transform: translateY(-4px);
-            border-color: rgba(255, 107, 53, 0.3);
+            border-color: rgba(168, 85, 247, 0.25);
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-
         .feature-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 26px;
-            margin-bottom: 24px;
+            width: 50px; height: 50px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 20px;
         }
+        .fi-1 { background: rgba(168, 85, 247, 0.12); }
+        .fi-2 { background: rgba(99, 102, 241, 0.12); }
+        .fi-3 { background: rgba(139, 92, 246, 0.12); }
+        .fi-4 { background: rgba(79, 70, 229, 0.12); }
+        .fi-5 { background: rgba(124, 58, 237, 0.12); }
+        .fi-6 { background: rgba(109, 40, 217, 0.12); }
+        .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
 
-        .fi-1 { background: rgba(255, 107, 53, 0.12); }
-        .fi-2 { background: rgba(123, 97, 255, 0.12); }
-        .fi-3 { background: rgba(0, 200, 83, 0.12); }
-        .fi-4 { background: rgba(0, 212, 255, 0.12); }
-        .fi-5 { background: rgba(255, 51, 102, 0.12); }
-        .fi-6 { background: rgba(255, 193, 7, 0.12); }
-
-        .feature-card h3 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .feature-card p {
-            font-size: 14px;
-            color: var(--text-dim);
-            line-height: 1.6;
-        }
-
-        /* HOW IT WORKS */
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 32px;
-            counter-reset: step;
-        }
-
-        .step-card {
-            text-align: center;
-            padding: 40px 24px;
-            counter-increment: step;
-        }
-
+        /* STEPS */
+        .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; counter-reset: step; }
+        .step-card { text-align: center; padding: 36px 20px; counter-increment: step; }
         .step-number {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: var(--gradient-1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 900;
-            margin: 0 auto 24px;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--purple), var(--purple-deep));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: 900; margin: 0 auto 20px;
         }
+        .step-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+        .step-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
 
-        .step-card h3 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .step-card p {
-            font-size: 14px;
-            color: var(--text-dim);
-            line-height: 1.6;
-        }
-
-        /* CTA SECTION */
-        .cta-section {
-            padding: 120px 40px;
-            text-align: center;
-        }
-
+        /* CTA */
+        .cta-section { padding: 100px 40px; text-align: center; }
         .cta-box {
-            max-width: 800px;
-            margin: 0 auto;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 32px;
-            padding: 80px 60px;
-            position: relative;
-            overflow: hidden;
+            max-width: 780px; margin: 0 auto;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 28px; padding: 72px 56px;
+            position: relative; overflow: hidden;
         }
-
         .cta-box::before {
-            content: '';
-            position: absolute;
-            top: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-            opacity: 0.2;
-            pointer-events: none;
+            content: ''; position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, var(--purple-glow) 0%, transparent 70%);
+            opacity: 0.15; pointer-events: none;
         }
-
         .cta-box h2 {
-            font-size: clamp(28px, 3.5vw, 42px);
-            font-weight: 900;
-            letter-spacing: -1px;
-            margin-bottom: 16px;
-            position: relative;
+            font-size: clamp(26px, 3.5vw, 40px); font-weight: 900;
+            letter-spacing: -1px; margin-bottom: 14px; position: relative;
         }
-
-        .cta-box p {
-            font-size: 18px;
-            color: var(--text-mid);
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        .cta-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            position: relative;
-        }
+        .cta-box p { font-size: 17px; color: var(--text-mid); margin-bottom: 36px; position: relative; }
+        .cta-buttons { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; }
 
         /* FOOTER */
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 60px 40px;
-        }
-
+        footer { border-top: 1px solid var(--border); padding: 50px 40px; }
         .footer-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            max-width: 1200px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
-        .footer-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .footer-left .nav-logo-icon {
-            width: 32px;
-            height: 32px;
-            font-size: 14px;
-        }
-
-        .footer-left span {
-            font-weight: 700;
-            font-size: 16px;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 32px;
-        }
-
-        .footer-links a {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-
+        .footer-left { display: flex; align-items: center; gap: 10px; }
+        .footer-left .nav-logo-icon { width: 30px; height: 30px; font-size: 13px; }
+        .footer-left span { font-weight: 700; font-size: 15px; }
+        .footer-links { display: flex; gap: 28px; }
+        .footer-links a { color: var(--text-dim); text-decoration: none; font-size: 13px; transition: color 0.2s; }
         .footer-links a:hover { color: var(--text); }
-
-        .footer-copy {
-            color: var(--text-dim);
-            font-size: 13px;
-        }
+        .footer-copy { color: var(--text-dim); font-size: 12px; }
 
         /* RESPONSIVE */
         @media (max-width: 900px) {
-            nav { padding: 16px 20px; }
+            nav { padding: 14px 20px; }
             .nav-links { display: none; }
             .hero { padding: 100px 20px 60px; }
-            .hero-content {
-                grid-template-columns: 1fr;
-                gap: 60px;
-                text-align: center;
-            }
+            .hero-content { grid-template-columns: 1fr; gap: 50px; text-align: center; }
             .hero-text { max-width: 100%; }
             .hero-desc { max-width: 100%; margin-left: auto; margin-right: auto; }
             .hero-buttons { justify-content: center; }
             .hero-stats { justify-content: center; }
             .hero-visual { order: -1; }
-            .phone-mockup { width: 240px; height: 500px; }
-            .section { padding: 80px 20px; }
+            .phone { width: 230px; height: 480px; }
+            .section { padding: 70px 20px; }
             .features-grid { grid-template-columns: 1fr; }
             .steps-grid { grid-template-columns: 1fr; }
-            .cta-box { padding: 48px 24px; }
-            .footer-inner { flex-direction: column; gap: 24px; text-align: center; }
+            .cta-box { padding: 44px 22px; }
+            .footer-inner { flex-direction: column; gap: 20px; text-align: center; }
             .footer-links { flex-wrap: wrap; justify-content: center; }
         }
 
         /* ANIMATIONS */
-        .fade-up {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-        }
-
-        .fade-up.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .fade-up { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
 
-    <!-- NAV -->
     <nav>
         <a href="/" class="nav-logo">
             <div class="nav-logo-icon">G</div>
@@ -658,28 +330,27 @@
         </div>
     </nav>
 
-    <!-- HERO -->
     <section class="hero">
-        <div class="hero-bg-glow"></div>
+        <div class="hero-glow"></div>
         <div class="hero-content">
             <div class="hero-text">
-                <div class="hero-badge">Now Available on iOS & Android</div>
-                <h1>
-                    Swipe. Play.<br>
-                    <span class="gradient-text">Compete.</span>
-                </h1>
+                <div class="hero-badge">
+                    <div class="hero-badge-dot"></div>
+                    Available on iOS and Android
+                </div>
+                <h1>Swipe. Play.<br><span class="accent">Compete.</span></h1>
                 <p class="hero-desc">
-                    Discover hundreds of instant games in a TikTok-style feed. 
-                    No downloads, no waiting — just swipe and play. Challenge friends, 
-                    climb leaderboards, and find your next obsession.
+                    Hundreds of instant games in a feed you can't stop swiping. 
+                    No downloads, no waiting. Challenge friends, climb leaderboards, 
+                    find your next obsession.
                 </p>
                 <div class="hero-buttons">
                     <a href="https://apps.apple.com/app/gametok/id6738030629" class="btn-primary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
                         App Store
                     </a>
                     <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn-secondary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>
                         Google Play
                     </a>
                 </div>
@@ -693,33 +364,33 @@
                         <p>Players</p>
                     </div>
                     <div class="stat-item">
-                        <h3>4.8★</h3>
+                        <h3>4.8</h3>
                         <p>App Rating</p>
                     </div>
                 </div>
             </div>
             <div class="hero-visual">
-                <div class="floating-orb orb-1"></div>
-                <div class="floating-orb orb-2"></div>
-                <div class="phone-mockup">
+                <div class="orb orb-1"></div>
+                <div class="orb orb-2"></div>
+                <div class="phone">
                     <div class="phone-notch"></div>
                     <div class="phone-screen">
-                        <div class="phone-game-card">
-                            <div class="phone-game-card-inner">
-                                <div class="game-name">🎮</div>
-                                <div class="game-cat">Swipe to play</div>
+                        <div class="phone-card">
+                            <div class="phone-card-inner">
+                                <div class="card-title">Tap to play</div>
+                                <div class="card-sub">Action</div>
                             </div>
                         </div>
-                        <div class="phone-game-card">
-                            <div class="phone-game-card-inner">
-                                <div class="game-name">🧩</div>
-                                <div class="game-cat">200+ games</div>
+                        <div class="phone-card">
+                            <div class="phone-card-inner">
+                                <div class="card-title">Swipe up for more</div>
+                                <div class="card-sub">Puzzle</div>
                             </div>
                         </div>
-                        <div class="phone-game-card">
-                            <div class="phone-game-card-inner">
-                                <div class="game-name">🏆</div>
-                                <div class="game-cat">Compete & win</div>
+                        <div class="phone-card">
+                            <div class="phone-card-inner">
+                                <div class="card-title">Challenge friends</div>
+                                <div class="card-sub">Casual</div>
                             </div>
                         </div>
                     </div>
@@ -728,104 +399,111 @@
         </div>
     </section>
 
-    <!-- FEATURES -->
     <section class="section" id="features">
         <div class="fade-up">
             <div class="section-label">Features</div>
             <div class="section-title">Everything you need<br>to game on the go</div>
-            <p class="section-desc">Built for the way you play. Quick sessions, social competition, and an endless library of games at your fingertips.</p>
+            <p class="section-desc">Quick sessions, social competition, and an endless library at your fingertips.</p>
         </div>
         <div class="features-grid">
             <div class="feature-card fade-up">
-                <div class="feature-icon fi-1">👆</div>
+                <div class="feature-icon fi-1">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                </div>
                 <h3>Swipe to Discover</h3>
-                <p>Browse games like you scroll social media. Swipe through a personalized feed of games tailored to your taste.</p>
+                <p>Browse games like you scroll social media. A personalized feed tailored to your taste.</p>
             </div>
             <div class="feature-card fade-up">
-                <div class="feature-icon fi-2">⚡</div>
+                <div class="feature-icon fi-2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
                 <h3>Instant Play</h3>
-                <p>No downloads, no installs, no waiting. Every game loads instantly right in the app. Just tap and you're in.</p>
+                <p>No downloads, no installs. Every game loads instantly right in the app.</p>
             </div>
             <div class="feature-card fade-up">
-                <div class="feature-icon fi-3">🏆</div>
+                <div class="feature-icon fi-3">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                </div>
                 <h3>Leaderboards</h3>
-                <p>Compete globally or with friends. Every game has its own leaderboard. See where you rank and climb to the top.</p>
+                <p>Compete globally or with friends. Every game has its own leaderboard.</p>
             </div>
             <div class="feature-card fade-up">
-                <div class="feature-icon fi-4">👥</div>
-                <h3>Social & Connect</h3>
-                <p>Add friends, send messages, share your best scores. Gaming is better together.</p>
+                <div class="feature-icon fi-4">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <h3>Social</h3>
+                <p>Add friends, send messages, share scores. Gaming is better together.</p>
             </div>
             <div class="feature-card fade-up">
-                <div class="feature-icon fi-5">🎯</div>
+                <div class="feature-icon fi-5">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
+                </div>
                 <h3>Daily Rewards</h3>
-                <p>Log in daily to earn coins, unlock achievements, and collect exclusive rewards. The more you play, the more you earn.</p>
+                <p>Earn coins, unlock achievements, collect rewards. The more you play, the more you earn.</p>
             </div>
             <div class="feature-card fade-up">
-                <div class="feature-icon fi-6">🔥</div>
+                <div class="feature-icon fi-6">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6d28d9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m6.8 15-3.5 2"/><path d="m20.7 7-3.5 2"/><path d="M6.8 9 3.3 7"/><path d="m20.7 17-3.5-2"/><circle cx="12" cy="12" r="4"/></svg>
+                </div>
                 <h3>New Games Weekly</h3>
-                <p>Fresh games added every week. From puzzles to action, there's always something new to discover.</p>
+                <p>Fresh games added every week. Puzzles, action, casual — always something new.</p>
             </div>
         </div>
     </section>
 
-    <!-- HOW IT WORKS -->
     <section class="section" id="how-it-works">
         <div class="fade-up" style="text-align: center;">
             <div class="section-label">How It Works</div>
             <div class="section-title">Start playing in seconds</div>
-            <p class="section-desc" style="margin: 16px auto 64px;">Three steps. That's it.</p>
+            <p class="section-desc" style="margin: 14px auto 56px;">Three steps. That's it.</p>
         </div>
         <div class="steps-grid">
             <div class="step-card fade-up">
                 <div class="step-number">1</div>
-                <h3>Download the App</h3>
-                <p>Get GameTOK free on the App Store or Google Play. Takes less than a minute.</p>
+                <h3>Download</h3>
+                <p>Get GameTOK free on the App Store or Google Play.</p>
             </div>
             <div class="step-card fade-up">
                 <div class="step-number">2</div>
-                <h3>Swipe & Discover</h3>
-                <p>Browse through hundreds of games. Swipe up to find your next favorite.</p>
+                <h3>Swipe</h3>
+                <p>Browse hundreds of games. Swipe up to find your next favorite.</p>
             </div>
             <div class="step-card fade-up">
                 <div class="step-number">3</div>
-                <h3>Play & Compete</h3>
-                <p>Tap to play instantly. Beat high scores, challenge friends, and climb the ranks.</p>
+                <h3>Compete</h3>
+                <p>Beat high scores, challenge friends, climb the ranks.</p>
             </div>
         </div>
     </section>
 
-    <!-- CTA -->
     <section class="cta-section" id="download">
         <div class="cta-box fade-up">
             <h2>Ready to play?</h2>
             <p>Join thousands of players discovering new games every day.</p>
             <div class="cta-buttons">
                 <a href="https://apps.apple.com/app/gametok/id6738030629" class="btn-primary">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
                     Download for iOS
                 </a>
                 <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn-secondary">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"/></svg>
                     Download for Android
                 </a>
             </div>
         </div>
     </section>
 
-    <!-- SUPPORT -->
     <section class="section" id="support">
         <div class="fade-up" style="text-align: center;">
             <div class="section-label">Support</div>
             <div class="section-title">Need help?</div>
-            <p class="section-desc" style="margin: 16px auto 0;">
+            <p class="section-desc" style="margin: 14px auto 0;">
                 For support, bug reports, or feedback — reach out anytime.<br>
-                <a href="mailto:support@gametok.co" style="color: var(--accent); text-decoration: none; font-weight: 600;">support@gametok.co</a>
+                <a href="mailto:support@gametok.co" style="color: var(--purple); text-decoration: none; font-weight: 600;">support@gametok.co</a>
             </p>
         </div>
     </section>
 
-    <!-- FOOTER -->
     <footer>
         <div class="footer-inner">
             <div class="footer-left">
@@ -837,31 +515,26 @@
                 <a href="terms.html">Terms of Service</a>
                 <a href="mailto:support@gametok.co">Contact</a>
             </div>
-            <div class="footer-copy">© 2026 GameTOK. All rights reserved.</div>
+            <div class="footer-copy">&copy; 2026 GameTOK. All rights reserved.</div>
         </div>
     </footer>
 
     <script>
-        // Intersection Observer for fade-up animations
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, index) => {
+            entries.forEach((entry, i) => {
                 if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.classList.add('visible');
-                    }, index * 100);
+                    setTimeout(() => entry.target.classList.add('visible'), i * 80);
                     observer.unobserve(entry.target);
                 }
             });
         }, { threshold: 0.1 });
-
         document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
 
-        // Smooth scroll for nav links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', function(e) {
                 e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) target.scrollIntoView({ behavior: 'smooth' });
+                const t = document.querySelector(this.getAttribute('href'));
+                if (t) t.scrollIntoView({ behavior: 'smooth' });
             });
         });
     </script>
