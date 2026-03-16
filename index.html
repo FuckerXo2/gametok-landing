@@ -825,7 +825,7 @@
             .hero { padding: 100px 20px 50px; }
             .hero-title { letter-spacing: -2px; }
             .hero-cards { max-width: 360px; }
-            .stats-row { flex-direction: column; gap: 28px; }
+            .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 20px; }
             .showcase { padding: 80px 20px; }
             .showcase-ghost { font-size: clamp(80px, 15vw, 120px); letter-spacing: -4px; top: 30%; }
             .phones-img { max-width: 360px; }
@@ -836,8 +836,9 @@
             .social-btn { width: 90px; height: 90px; }
             .cta { padding: 60px 20px; }
             .cta-box { padding: 48px 24px; }
-            footer { padding: 40px 20px; text-align: center; }
-            .footer-inner { grid-template-columns: 1fr; gap: 40px; }
+            footer { padding: 40px 20px; }
+            .footer-inner { grid-template-columns: 1fr 1fr; gap: 40px 20px; text-align: left; }
+            .footer-brand { grid-column: 1 / -1; text-align: center; }
             .footer-brand p { margin: 0 auto; }
             .footer-bottom { flex-direction: column; gap: 14px; text-align: center; }
         }
@@ -855,7 +856,10 @@
             .social-btn { width: calc(50% - 10px); height: 80px; }
             
             .stat-val { font-size: 36px; }
+            .stat-lbl { font-size: 11px; }
             .showcase-title { font-size: 30px; }
+            
+            .footer-inner { gap: 30px 10px; }
         }
     </style>
 </head>
