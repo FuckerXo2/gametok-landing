@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloading GameTOK...</title>
+    <style>
+        body {
+            background-color: #0d0d14; /* Match landing page dark bg */
+            color: #fff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            padding: 40px;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #a855f7; /* Match landing page purple */
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        p {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+    <script>
+        // Redirect logic 
+        window.onload = function() {
+            var iosStore = "https://apps.apple.com/app/gametok/id6738030629";
+            var androidStore = "https://play.google.com/store/apps/details?id=com.vogeza";
+            
+            var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+            // Give it a tiny delay just to show that the page worked before zipping them to the App Store
+            setTimeout(function() {
+                if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                    window.location.href = iosStore;
+                } else if (/android/i.test(userAgent)) {
+                    window.location.href = androidStore;
+                } else {
+                    // Fallback to the main website if they're on a desktop PC
+                    window.location.href = "https://gametok.co/#download";
+                }
+            }, 600);
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="loader"></div>
+        <p>Taking you to the App Store...</p>
+    </div>
+</body>
+</html>
