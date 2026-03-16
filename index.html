@@ -819,87 +819,43 @@
 
         /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
-            nav {
-                padding: 14px 20px;
-            }
+            nav { padding: 14px 20px; }
+            .nav-links { display: none; }
+            .nav-mobile { display: block; }
+            .hero { padding: 100px 20px 50px; }
+            .hero-title { letter-spacing: -2px; }
+            .hero-cards { max-width: 360px; }
+            .stats-row { flex-direction: column; gap: 28px; }
+            .showcase { padding: 80px 20px; }
+            .showcase-ghost { font-size: clamp(80px, 15vw, 120px); letter-spacing: -4px; top: 30%; }
+            .phones-img { max-width: 360px; }
+            .how { padding: 80px 20px; }
+            .how-steps { flex-direction: column; align-items: center; gap: 48px; }
+            .how-steps::before { display: none; }
+            .social { padding: 80px 20px; }
+            .social-btn { width: 90px; height: 90px; }
+            .cta { padding: 60px 20px; }
+            .cta-box { padding: 48px 24px; }
+            footer { padding: 40px 20px; text-align: center; }
+            .footer-inner { grid-template-columns: 1fr; gap: 40px; }
+            .footer-brand p { margin: 0 auto; }
+            .footer-bottom { flex-direction: column; gap: 14px; text-align: center; }
+        }
 
-            .nav-links {
-                display: none;
-            }
-
-            .nav-mobile {
-                display: block;
-            }
-
-            .hero {
-                padding: 100px 20px 50px;
-            }
-
-            .hero-title {
-                letter-spacing: -2px;
-            }
-
-            .hero-cards {
-                max-width: 360px;
-            }
-
-            .stats-row {
-                flex-direction: column;
-                gap: 28px;
-            }
-
-            .showcase {
-                padding: 80px 20px;
-            }
-
-            .phones-img {
-                max-width: 360px;
-            }
-
-            .how {
-                padding: 80px 20px;
-            }
-
-            .how-steps {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .how-steps::before {
-                display: none;
-            }
-
-            .social {
-                padding: 80px 20px;
-            }
-
-            .social-btn {
-                width: 90px;
-                height: 90px;
-            }
-
-            .cta {
-                padding: 60px 20px;
-            }
-
-            .cta-box {
-                padding: 48px 24px;
-            }
-
-            footer {
-                padding: 40px 20px;
-            }
-
-            .footer-inner {
-                grid-template-columns: 1fr;
-                gap: 32px;
-            }
-
-            .footer-bottom {
-                flex-direction: column;
-                gap: 14px;
-                text-align: center;
-            }
+        @media (max-width: 480px) {
+            .hero-title { font-size: 42px; letter-spacing: -1px; }
+            .hero-sub { font-size: 15px; }
+            .hero-buttons { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; }
+            .btn-main, .btn-ghost { justify-content: center; width: 100%; }
+            
+            .cta-row { flex-direction: column; align-items: stretch; }
+            .cta-box h2 { font-size: 26px; }
+            
+            .social-row { gap: 10px; }
+            .social-btn { width: calc(50% - 10px); height: 80px; }
+            
+            .stat-val { font-size: 36px; }
+            .showcase-title { font-size: 30px; }
         }
     </style>
 </head>
