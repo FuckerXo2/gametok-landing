@@ -228,6 +228,7 @@
             <button class="btn btn-danger btn-small" onclick="deleteLargeGames()" id="deleteLargeBtn" style="margin-left: 8px;">🗑️ Delete Large Games (>8MB)</button>
             <button class="btn btn-danger btn-small" onclick="deleteLandscapeGames()" id="deleteLandscapeBtn" style="margin-left: 8px;">🗑️ Delete Landscape Games</button>
             <button class="btn btn-danger btn-small" onclick="deleteNoDeveloperGames()" id="deleteNoDeveloperBtn" style="margin-left: 8px;">🗑️ Delete Unknown Developer</button>
+            <button class="btn btn-danger btn-small" onclick="deleteAllExternalGames()" id="deleteExternalBtn" style="margin-left: 8px;">🌐 Delete ALL External Games</button>
           </div>
           <div class="form-row" style="margin-top: 12px;">
             <input type="text" id="deleteByDeveloper" placeholder="Developer name to delete" style="flex: 1;">
@@ -941,6 +942,38 @@
       
       btn.disabled = false;
       btn.textContent = '🗑️ Delete by Developer';
+    }
+    
+    async function deleteAllExternalGames() {
+      if (!confirm('⚠️ WARNING: This will delete ALL external games (games with embed URLs from GameMonetize, etc). Only self-hosted games will remain. Continue?')) return;
+      
+      const btn = document.getElementById('deleteExternalBtn');
+      const status = document.getElementById('importStatus');
+      
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      status.textContent = '⏳ Deleting all external games...';
+      
+      try {
+        const res = await fetch(`${API}/api/admin/games-external/bulk`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          status.innerHTML = `✅ <strong>Deleted ${data.deleted} external games!</strong><br>Games removed: ${data.games.map(g => g.name).join(', ')}`;
+          loadGames();
+          loadStats();
+        } else {
+          status.innerHTML = `❌ Error: ${data.error}`;
+        }
+      } catch (e) {
+        status.innerHTML = `❌ Failed to delete: ${e.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🌐 Delete ALL External Games';
     }
     
     async function stopScan() {
