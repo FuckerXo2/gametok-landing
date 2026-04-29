@@ -35,6 +35,25 @@
         p {
             font-size: 16px;
             color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 24px;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 15px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .fallback {
+            display: none;
+            margin-top: 20px;
         }
     </style>
     <script>
@@ -44,17 +63,30 @@
             var androidStore = "https://play.google.com/store/apps/details?id=com.vogeza";
             
             var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+            var isAndroid = /android/i.test(userAgent);
 
             // Give it a tiny delay just to show that the page worked before zipping them to the App Store
             setTimeout(function() {
-                if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-                    window.location.href = iosStore;
-                } else if (/android/i.test(userAgent)) {
-                    window.location.href = androidStore;
-                } else {
-                    // Fallback to the main website if they're on a desktop PC
-                    window.location.href = "https://gametok.co/#download";
+                var targetUrl = "https://gametok.co/#download";
+                
+                if (isIOS) {
+                    targetUrl = iosStore;
+                    document.getElementById('manual-btn').href = iosStore;
+                    document.getElementById('manual-btn').innerText = "Open App Store";
+                } else if (isAndroid) {
+                    targetUrl = androidStore;
+                    document.getElementById('manual-btn').href = androidStore;
+                    document.getElementById('manual-btn').innerText = "Open Google Play";
                 }
+
+                // Show the fallback button in case the redirect is blocked by the in-app browser (e.g. WhatsApp)
+                document.getElementById('fallback-container').style.display = 'block';
+                document.querySelector('.loader').style.display = 'none';
+                document.getElementById('status-text').innerText = "If you are not redirected automatically, tap below:";
+
+                // Attempt the automatic redirect
+                window.location.href = targetUrl;
             }, 600);
         };
     </script>
@@ -62,7 +94,10 @@
 <body>
     <div class="container">
         <div class="loader"></div>
-        <p>Taking you to the App Store...</p>
+        <p id="status-text">Taking you to the App Store...</p>
+        <div id="fallback-container" class="fallback">
+            <a href="#" id="manual-btn" class="btn">Continue</a>
+        </div>
     </div>
 </body>
 </html>

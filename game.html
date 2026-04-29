@@ -12,7 +12,7 @@
     <meta property="og:title" content="Play this game on GameTOK! 🎮">
     <meta property="og:description" content="Swipe. Play. Compete. Join me on GameTOK!">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://gametok.co/game-cards-hero.png">
+    <meta property="og:image" content="https://gametok.co/game-cards-hero-sm.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://gametok.app">
@@ -22,7 +22,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Play this game on GameTOK! 🎮">
     <meta name="twitter:description" content="Swipe. Play. Compete. Join me on GameTOK!">
-    <meta name="twitter:image" content="https://gametok.co/game-cards-hero.png">
+    <meta name="twitter:image" content="https://gametok.co/game-cards-hero-sm.png">
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -118,12 +118,15 @@
             <p class="loading">Opening app...</p>
         </div>
         
-        <div id="fallback" style="display: none;">
-            <a href="https://apps.apple.com/app/gametok/id6757498584" class="btn">
-                Download GameTOK
+        <div id="fallback" style="display: none; margin-top: 24px;">
+            <a href="https://apps.apple.com/app/gametok/id6757498584" class="btn" id="ios-fallback" style="display: none;">
+                Download on App Store
             </a>
-            <a href="https://apps.apple.com/app/gametok/id6757498584" class="btn-secondary">
-                Free on the App Store
+            <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn" id="android-fallback" style="display: none;">
+                Download on Google Play
+            </a>
+            <a href="https://gametok.co" class="btn-secondary" style="margin-top: 16px;">
+                Visit Website
             </a>
         </div>
     </div>
@@ -157,7 +160,14 @@
             : 'https://gametok.app';
         
         const appStoreUrl = 'https://apps.apple.com/app/gametok/id6757498584';
+        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.vogeza';
         
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        const isAndroid = /android/i.test(userAgent);
+        
+        const storeUrl = isAndroid ? playStoreUrl : appStoreUrl;
+
         // Try to open app
         let appOpened = false;
         
@@ -175,7 +185,18 @@
         // If still here after 1.5 seconds, app not installed - go straight to App Store
         setTimeout(() => {
             if (!document.hidden) {
-                window.location.href = appStoreUrl;
+                // Show manual fallback buttons since some in-app browsers (like WhatsApp) block automatic redirects
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('fallback').style.display = 'block';
+                
+                if (isAndroid) {
+                    document.getElementById('android-fallback').style.display = 'inline-block';
+                } else {
+                    document.getElementById('ios-fallback').style.display = 'inline-block';
+                }
+
+                // Still attempt the redirect just in case it works
+                window.location.href = storeUrl;
             }
         }, 1500);
         
