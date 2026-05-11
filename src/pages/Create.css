@@ -1,0 +1,199 @@
+.studio-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #060714;
+  height: 100vh;
+}
+
+.studio-content {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+}
+
+.studio-hero {
+  text-align: center;
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-icon-glow {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 0 30px rgba(192, 38, 211, 0.5));
+}
+
+.studio-hero h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 24px;
+  color: white;
+}
+
+.inspire-btn {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.inspire-btn:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.divider {
+  width: 100%;
+  text-align: center;
+  position: relative;
+  margin-bottom: 40px;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: 1;
+}
+
+.divider span {
+  position: relative;
+  background-color: #060714;
+  padding: 0 16px;
+  color: #888;
+  font-size: 16px;
+  z-index: 2;
+}
+
+.prompt-container {
+  width: 100%;
+}
+
+.prompt-container form {
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  transition: border-color 0.2s;
+}
+
+.prompt-container form:focus-within {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.prompt-container textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 16px;
+  resize: none;
+  padding-bottom: 40px;
+  font-family: inherit;
+}
+
+.prompt-container textarea:focus {
+  outline: none;
+}
+
+.prompt-actions {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.submit-prompt-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #888;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-prompt-btn:not(:disabled) {
+  background: var(--primary);
+  color: white;
+}
+
+.submit-prompt-btn:not(:disabled):hover {
+  transform: scale(1.1);
+}
+
+.generating-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+.generating-state h2 {
+  font-size: 24px;
+  color: white;
+  margin: 0;
+}
+
+.generating-state p {
+  color: #888;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

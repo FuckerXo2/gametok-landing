@@ -56,7 +56,7 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# Node (if you add npm later)
+# Node (React/Vite)
 node_modules/
 dist/
 dist-ssr/
@@ -66,3 +66,6 @@ dist-ssr/
 *.bak
 *.backup
 *~
+
+# Build output (keep assets/ since it's the compiled app)
+# Don't ignore dist/ or assets/ - they're needed for deployment

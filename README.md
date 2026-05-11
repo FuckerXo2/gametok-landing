@@ -15,18 +15,40 @@ This is the **web platform** for GameTOK - it includes:
 
 ```
 gametok-landing/
-├── index.html          # Web game player (React app entry)
-├── assets/             # React app compiled assets (JS, CSS)
-├── game.html           # Individual game player page
-├── admin.html          # AI game maker admin panel
-├── more/               # Marketing landing page (accessible via More tab in app)
-│   ├── index.html      # Landing page
-│   ├── download.html   # App download page
-│   └── *.png           # Landing page images
-├── functions/          # Cloudflare Pages Functions (API routes)
-├── .well-known/        # Apple App Site Association (deep linking)
-└── ads.txt             # Ad network verification
+├── src/                    # React source code (EDIT THESE!)
+│   ├── components/         # Reusable React components
+│   │   ├── Sidebar.tsx     # Left navigation sidebar
+│   │   └── AstrocadeLogo.tsx
+│   ├── pages/              # Page components (routes)
+│   │   ├── Home.tsx        # Home feed
+│   │   ├── Play.tsx        # Game player
+│   │   ├── Create.tsx      # AI game maker
+│   │   ├── Profile.tsx     # User profile
+│   │   ├── More.tsx        # More/settings (includes landing page)
+│   │   ├── Search.tsx      # Search games
+│   │   ├── Messages.tsx    # Chat/messages
+│   │   ├── SignIn.tsx      # Authentication
+│   │   └── Multiplayer.tsx # PK mode
+│   ├── services/           # API calls
+│   │   └── api.ts          # Backend API integration
+│   ├── App.tsx             # Main app component + routing
+│   └── main.tsx            # React entry point
+├── index.html              # Vite entry (compiled React app)
+├── assets/                 # Compiled JS/CSS (auto-generated)
+├── game.html               # Individual game player page
+├── admin.html              # AI game maker admin panel
+├── more/                   # Old marketing landing page (legacy)
+├── functions/              # Cloudflare Pages Functions (API routes)
+├── .well-known/            # Apple App Site Association (deep linking)
+├── package.json            # Dependencies
+├── vite.config.ts          # Vite configuration
+└── tsconfig.json           # TypeScript configuration
 ```
+
+**Important**: 
+- Edit files in `src/` directory
+- Run `npm run build` to compile to root `index.html` + `assets/`
+- Commit both source (`src/`) and built files (`index.html`, `assets/`)
 
 ---
 
@@ -34,6 +56,7 @@ gametok-landing/
 
 ### Prerequisites
 - Git installed
+- Node.js 18+ and npm installed
 - GitHub account with collaborator access
 - Text editor (VS Code recommended)
 - Kiro AI assistant (optional but helpful!)
@@ -47,35 +70,51 @@ cd gametok-landing
 
 ### Local Development
 
-This is a **static site** - no build process needed! Just open the HTML files:
+This is a **React + Vite app** that needs to be built:
 
 ```bash
-# Option 1: Open directly in browser
-open index.html
+# Install dependencies
+npm install
 
-# Option 2: Use a local server (recommended)
-python3 -m http.server 8000
-# Then visit: http://localhost:8000
+# Start development server (hot reload enabled)
+npm run dev
+# Then visit: http://localhost:5173
 
-# Option 3: Use VS Code Live Server extension
-# Right-click index.html → "Open with Live Server"
+# Build for production
+npm run build
+# Output goes to root directory (index.html + assets/)
+
+# Preview production build
+npm run preview
 ```
+
+### Quick Start for Editing
+
+1. **Install dependencies**: `npm install`
+2. **Start dev server**: `npm run dev`
+3. **Edit files in `src/`** - changes auto-reload
+4. **Build when done**: `npm run build`
+5. **Commit everything** including the built files
 
 ---
 
 ## 🔧 Tech Stack
 
-- **Frontend**: Pure HTML, CSS, JavaScript (no frameworks!)
+- **Frontend**: React 19 + TypeScript + Vite
+- **Styling**: Tailwind CSS + Custom CSS
+- **Routing**: React Router v7
+- **Icons**: Lucide React
+- **Animations**: Framer Motion
 - **Hosting**: Cloudflare Pages
 - **Backend API**: https://gametok-backend-production.up.railway.app
 - **Deep Linking**: Apple Universal Links, Android App Links
 
-### Why No Framework?
+### Why React + Vite?
 
-- ⚡ **Blazing fast** - No build step, instant deploys
-- 🎯 **Simple** - Easy for anyone to edit
-- 📦 **Lightweight** - No dependencies to manage
-- 🚀 **SEO-friendly** - Pure HTML for search engines
+- ⚡ **Lightning fast** - Vite's instant HMR and optimized builds
+- 🎯 **Component-based** - Reusable UI components
+- 📦 **Type-safe** - TypeScript for better DX
+- 🚀 **Modern** - Latest React 19 features
 
 ---
 
@@ -97,19 +136,33 @@ python3 -m http.server 8000
 git checkout main
 git pull origin main
 
+# Install dependencies if you haven't
+npm install
+
 # Create a new branch for your feature
 git checkout -b feature/update-homepage
 ```
 
 #### 2. Make Your Changes
 
-Edit the files, test locally, then:
+Edit files in `src/`, start dev server to see changes:
 
 ```bash
+# Start dev server (auto-reloads on changes)
+npm run dev
+# Visit http://localhost:5173
+```
+
+When satisfied with changes:
+
+```bash
+# Build for production
+npm run build
+
 # See what you changed
 git status
 
-# Stage your changes
+# Stage your changes (source + built files)
 git add .
 
 # Commit with a clear message
@@ -148,39 +201,55 @@ git branch -d feature/update-homepage
 
 ## 🎨 Key Files to Edit
 
-### `index.html` - Web Game Player
-The main React app - TikTok-style game feed.
+### `src/pages/Home.tsx` - Home Feed
+The main game feed page (TikTok-style).
 
 **Common edits:**
-- This is a compiled React app from gametok-web
-- To edit the app, work in the gametok-web repo
-- This file is auto-generated, don't edit directly
+- Feed layout and styling
+- Game card components
+- Infinite scroll logic
 
-### `more/index.html` - Landing Page
-Marketing page accessible via the "More" tab in the web app.
-
-**Common edits:**
-- Hero section copy
-- Feature descriptions
-- Call-to-action buttons
-- Footer links
-
-### `game.html` - Game Player
-Where users play individual games in browser.
+### `src/pages/Play.tsx` - Game Player
+Where users play games in the web app.
 
 **Common edits:**
-- Loading screen design
-- App download prompts
-- Social sharing metadata
+- Game iframe integration
+- Controls and UI
+- Loading states
 
-### `admin.html` - AI Game Maker
-Admin panel for generating games with AI.
+### `src/pages/Create.tsx` - AI Game Maker
+AI-powered game generation interface.
 
 **Common edits:**
 - Form fields
-- Game categories
-- Admin authentication
-- UI improvements
+- Game generation flow
+- Preview functionality
+
+### `src/pages/More.tsx` - More/Settings
+Includes the marketing landing page content.
+
+**Common edits:**
+- Settings options
+- About/help content
+- Landing page sections
+
+### `src/components/Sidebar.tsx` - Navigation
+Left sidebar navigation.
+
+**Common edits:**
+- Navigation links
+- Active states
+- Icons and labels
+
+### `admin.html` - Admin Panel (Legacy)
+Standalone admin panel for AI game generation.
+
+**Note**: This is a legacy file, consider migrating to React component.
+
+### `game.html` - Standalone Game Player (Legacy)
+Individual game player page for deep links.
+
+**Note**: This is used for direct game links and app redirects.
 
 ---
 
@@ -228,8 +297,14 @@ Every push to `main` automatically deploys to production:
 
 1. Push to `main` branch
 2. Cloudflare Pages detects the change
-3. Builds and deploys in ~30 seconds
-4. Live at https://gametok.co
+3. Runs `npm run build` automatically
+4. Deploys in ~30 seconds
+5. Live at https://gametok.co
+
+**Build Settings on Cloudflare:**
+- Build command: `npm run build`
+- Build output directory: `/` (root)
+- Node version: 18+
 
 ### Manual Deployment
 
@@ -275,6 +350,40 @@ git commit -m "Resolved merge conflicts"
 - Clear browser cache (Cmd+Shift+R on Mac, Ctrl+Shift+R on Windows)
 - Check Cloudflare Pages deployment logs
 - Wait 1-2 minutes for CDN to update
+- Verify `npm run build` ran successfully
+
+### `npm install` fails
+
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Delete node_modules and package-lock.json
+rm -rf node_modules package-lock.json
+
+# Reinstall
+npm install
+```
+
+### Dev server won't start
+
+```bash
+# Check if port 5173 is in use
+lsof -ti:5173 | xargs kill -9
+
+# Restart dev server
+npm run dev
+```
+
+### TypeScript errors
+
+```bash
+# Check for type errors
+npm run lint
+
+# If you need to ignore errors temporarily (not recommended)
+# Add // @ts-ignore above the line
+```
 
 ---
 
@@ -283,17 +392,30 @@ git commit -m "Resolved merge conflicts"
 If you're using Kiro AI assistant, you can ask it to:
 
 - **Read this README**: `#README.md` to understand the project
-- **Edit files**: "Update the hero section in index.html"
+- **Edit React components**: "Update the hero section in src/pages/Home.tsx"
 - **Create branches**: "Create a new branch for homepage updates"
+- **Build the app**: "Run npm run build"
 - **Commit changes**: "Commit these changes with a good message"
-- **Review code**: "Check if this HTML is valid"
+- **Review code**: "Check if this TypeScript code is correct"
+- **Debug issues**: "Why is my component not rendering?"
 
 Kiro can read this file and understand the entire project structure!
 
+### Example Kiro Commands
+
+```
+"Read src/App.tsx and explain the routing"
+"Update the sidebar navigation in src/components/Sidebar.tsx"
+"Build the app and commit the changes"
+"Create a new page component for settings"
+"Fix TypeScript errors in src/pages/Play.tsx"
+```
+
 ---
 
-## 📚 Useful Git Commands
+## 📚 Useful Commands
 
+### Git Commands
 ```bash
 # Check current branch and status
 git status
@@ -323,33 +445,121 @@ git reset --soft HEAD~1
 git reset --hard HEAD
 ```
 
+### NPM Commands
+```bash
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run linter
+npm run lint
+
+# Update dependencies
+npm update
+
+# Check for outdated packages
+npm outdated
+```
+
 ---
 
 ## 🎯 Common Tasks
 
 ### Adding a New Page
 
-1. Create `new-page.html` in root directory
-2. Copy structure from `index.html`
-3. Update content
-4. Test locally
+1. Create `src/pages/NewPage.tsx`:
+```tsx
+export default function NewPage() {
+  return (
+    <div>
+      <h1>New Page</h1>
+    </div>
+  );
+}
+```
+
+2. Add route in `src/App.tsx`:
+```tsx
+import NewPage from './pages/NewPage';
+// ...
+<Route path="/new" element={<NewPage />} />
+```
+
+3. Add navigation link in `src/components/Sidebar.tsx`
+4. Build and test: `npm run build && npm run preview`
 5. Commit and push
+
+### Adding a New Component
+
+1. Create `src/components/MyComponent.tsx`:
+```tsx
+interface MyComponentProps {
+  title: string;
+}
+
+export default function MyComponent({ title }: MyComponentProps) {
+  return <div>{title}</div>;
+}
+```
+
+2. Import and use in a page:
+```tsx
+import MyComponent from '../components/MyComponent';
+// ...
+<MyComponent title="Hello" />
+```
 
 ### Updating Styles
 
-All styles are inline in `<style>` tags in each HTML file. To update:
+Styles are in `.css` files next to components:
+- `src/App.css` - Global app styles
+- `src/pages/Home.css` - Home page styles
+- `src/components/Sidebar.css` - Sidebar styles
 
-1. Find the `<style>` section in the HTML file
-2. Edit CSS rules
-3. Refresh browser to see changes
-4. Commit when satisfied
+Or use Tailwind classes directly in JSX:
+```tsx
+<div className="flex items-center justify-center bg-blue-500">
+  Content
+</div>
+```
 
 ### Adding Images
 
-1. Add image file to root directory
-2. Reference in HTML: `<img src="/your-image.png">`
-3. Optimize images before adding (use TinyPNG.com)
-4. Commit the image file
+1. Add image to `src/assets/` or `public/`
+2. Import in component:
+```tsx
+import myImage from './assets/my-image.png';
+// ...
+<img src={myImage} alt="Description" />
+```
+
+Or reference from public:
+```tsx
+<img src="/my-image.png" alt="Description" />
+```
+
+### Making API Calls
+
+Use the API service in `src/services/api.ts`:
+
+```tsx
+import { fetchGames } from '../services/api';
+
+// In your component
+const [games, setGames] = useState([]);
+
+useEffect(() => {
+  fetchGames().then(setGames);
+}, []);
+```
 
 ---
 
@@ -396,12 +606,15 @@ Proprietary - GameTOK © 2024
 ## 🎉 Quick Start Checklist
 
 - [ ] Clone the repository
-- [ ] Open in VS Code or your editor
-- [ ] Test locally (open index.html in browser)
+- [ ] Install Node.js 18+ if not installed
+- [ ] Run `npm install` to install dependencies
+- [ ] Run `npm run dev` to start dev server
+- [ ] Open http://localhost:5173 in browser
+- [ ] Make changes in `src/` directory
+- [ ] See changes auto-reload in browser
+- [ ] Run `npm run build` when done
 - [ ] Create a feature branch
-- [ ] Make your changes
-- [ ] Test again
-- [ ] Commit with clear message
+- [ ] Commit both source and built files
 - [ ] Push branch to GitHub
 - [ ] Create Pull Request
 - [ ] Wait for review
