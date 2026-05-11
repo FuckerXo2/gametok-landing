@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#FF8E53">
   <title>GameTOK Admin</title>
   <link rel="canonical" href="https://gametok.co/" />
   <style>
@@ -173,6 +174,104 @@
     }
     .upload-text { color: #888; font-size: 14px; }
     .upload-text span { color: #FF8E53; }
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      body { padding: 16px; }
+      .container { padding: 0; }
+      h1 { font-size: 24px; margin-bottom: 20px; }
+      
+      .login-form { 
+        margin: 60px auto; 
+        padding: 24px; 
+        max-width: 100%;
+      }
+      
+      .tabs { 
+        flex-wrap: wrap; 
+        gap: 8px; 
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab { 
+        padding: 8px 16px; 
+        font-size: 14px; 
+        white-space: nowrap;
+      }
+      
+      .add-game-form { padding: 20px; }
+      .form-row { 
+        flex-direction: column; 
+        gap: 12px; 
+      }
+      .form-row input, .form-row select { 
+        width: 100%; 
+      }
+      
+      .stats-grid { 
+        grid-template-columns: 1fr 1fr; 
+        gap: 12px; 
+      }
+      .stat-card { padding: 16px; }
+      .stat-value { font-size: 28px; }
+      .stat-label { font-size: 13px; }
+      
+      .game-item { 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 12px; 
+      }
+      .game-actions { 
+        width: 100%; 
+        flex-direction: column; 
+      }
+      .game-actions button { 
+        width: 100%; 
+      }
+      
+      .thumbnail-upload { padding: 16px; }
+    }
+    
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      h1 { font-size: 22px; }
+      
+      .login-form { 
+        margin: 40px auto; 
+        padding: 20px; 
+      }
+      .login-form h2 { font-size: 20px; }
+      .login-form input { 
+        padding: 12px; 
+        font-size: 15px; 
+      }
+      
+      .tabs { gap: 6px; }
+      .tab { 
+        padding: 7px 14px; 
+        font-size: 13px; 
+      }
+      
+      .add-game-form { padding: 16px; }
+      .btn { 
+        padding: 10px 20px; 
+        font-size: 13px; 
+      }
+      
+      .stats-grid { 
+        grid-template-columns: 1fr; 
+        gap: 10px; 
+      }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 24px; }
+      
+      .game-icon, .game-thumb { 
+        width: 44px; 
+        height: 44px; 
+      }
+      .game-name { font-size: 15px; }
+      .game-url { font-size: 11px; }
+    }
   </style>
 </head>
 <body>
