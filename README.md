@@ -1,12 +1,12 @@
-# GameTOK Landing & Web Platform
+# GameTOK Web Platform
 
 **Live Site**: https://gametok.co  
 **Repository**: https://github.com/FuckerXo2/gametok-landing
 
 This is the **web platform** for GameTOK - it includes:
-- 🎮 **Web game player** - Play games directly in browser
+- 🎮 **Web game player** - TikTok-style feed to play games in browser (React app)
 - 🤖 **AI game maker** - Generate games using AI (admin panel)
-- 🌐 **Landing pages** - Marketing site, download page, game sharing
+- 🌐 **Marketing pages** - Landing page in the "More" section
 - 📱 **Deep linking** - Smart app redirects for mobile users
 
 ---
@@ -15,13 +15,16 @@ This is the **web platform** for GameTOK - it includes:
 
 ```
 gametok-landing/
-├── index.html          # Main landing page (marketing)
+├── index.html          # Web game player (React app entry)
+├── assets/             # React app compiled assets (JS, CSS)
 ├── game.html           # Individual game player page
 ├── admin.html          # AI game maker admin panel
-├── download.html       # App download page
+├── more/               # Marketing landing page (accessible via More tab in app)
+│   ├── index.html      # Landing page
+│   ├── download.html   # App download page
+│   └── *.png           # Landing page images
 ├── functions/          # Cloudflare Pages Functions (API routes)
 ├── .well-known/        # Apple App Site Association (deep linking)
-├── *.png               # Images and assets
 └── ads.txt             # Ad network verification
 ```
 
@@ -145,8 +148,16 @@ git branch -d feature/update-homepage
 
 ## 🎨 Key Files to Edit
 
-### `index.html` - Landing Page
-The main marketing page visitors see first.
+### `index.html` - Web Game Player
+The main React app - TikTok-style game feed.
+
+**Common edits:**
+- This is a compiled React app from gametok-web
+- To edit the app, work in the gametok-web repo
+- This file is auto-generated, don't edit directly
+
+### `more/index.html` - Landing Page
+Marketing page accessible via the "More" tab in the web app.
 
 **Common edits:**
 - Hero section copy
@@ -170,14 +181,6 @@ Admin panel for generating games with AI.
 - Game categories
 - Admin authentication
 - UI improvements
-
-### `download.html` - App Download
-Smart download page that detects iOS/Android.
-
-**Common edits:**
-- App Store links
-- Download instructions
-- Screenshots
 
 ---
 
