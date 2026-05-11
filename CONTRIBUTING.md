@@ -13,24 +13,29 @@ git clone https://github.com/FuckerXo2/gametok-landing.git
 cd gametok-landing
 ```
 
-### 3. Open and Test
+### 3. Install Dependencies
 ```bash
-# Open index.html in your browser
-open index.html
-
-# Or use a local server
-python3 -m http.server 8000
+npm install
 ```
 
-### 4. Make Changes
+### 4. Start Dev Server
+```bash
+npm run dev
+# Visit http://localhost:5173
+```
+
+### 5. Make Changes
 ```bash
 # Create a branch
 git checkout -b feature/my-changes
 
-# Edit files in your editor
-# Test in browser
+# Edit files in src/ directory
+# Changes auto-reload in browser
 
-# Commit
+# Build for production
+npm run build
+
+# Commit (both source and built files)
 git add .
 git commit -m "Describe what you changed"
 
@@ -57,33 +62,49 @@ Use these prefixes:
 
 ## ✅ Before You Push
 
+- [ ] Test in dev server (`npm run dev`)
+- [ ] Build successfully (`npm run build`)
 - [ ] Test in browser (Chrome, Safari, Firefox)
 - [ ] Test on mobile (responsive design)
 - [ ] Check for console errors (F12 → Console)
+- [ ] Check for TypeScript errors (`npm run lint`)
 - [ ] Spell check your copy
 - [ ] Commit message is clear
+- [ ] Committed both source (`src/`) and built files
 
 ---
 
 ## 🎨 Code Style
 
-### HTML
-- Use 4 spaces for indentation
+### React/TypeScript
+- Use functional components with hooks
+- Use TypeScript interfaces for props
+- Use PascalCase for component names (e.g., `GameCard`)
+- Use camelCase for variables (e.g., `gameList`)
+- Add type annotations for function parameters
+- Keep components small and focused
+- Extract reusable logic into custom hooks
+
+### HTML/JSX
+- Use 2 spaces for indentation
 - Keep lines under 120 characters
 - Use semantic HTML tags
 - Add comments for complex sections
+- Use self-closing tags for components without children
 
 ### CSS
 - Use kebab-case for class names (e.g., `.hero-section`)
 - Group related styles together
 - Add comments for color variables
 - Mobile-first responsive design
+- Prefer Tailwind utility classes when possible
 
-### JavaScript
+### JavaScript/TypeScript
 - Use `const` and `let`, not `var`
-- Use camelCase for variables (e.g., `gameList`)
+- Use arrow functions for callbacks
 - Add comments for complex logic
 - Handle errors gracefully
+- Use async/await instead of promises chains
 
 ---
 
@@ -167,6 +188,17 @@ Why was this change needed?
 - [GitHub Git Cheat Sheet](https://education.github.com/git-cheat-sheet-education.pdf)
 - [Learn Git Branching](https://learngitbranching.js.org/)
 
+### React & TypeScript
+- [React Docs](https://react.dev/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/)
+
+### Vite
+- [Vite Guide](https://vite.dev/guide/)
+
+### Tailwind CSS
+- [Tailwind Docs](https://tailwindcss.com/docs)
+
 ### HTML/CSS/JS
 - [MDN Web Docs](https://developer.mozilla.org/)
 - [CSS Tricks](https://css-tricks.com/)
@@ -178,11 +210,13 @@ Why was this change needed?
 
 Not sure where to start? Try these beginner-friendly tasks:
 
-1. Fix a typo in the landing page
+1. Fix a typo in a React component
 2. Update a color in the CSS
-3. Add a new game category
+3. Add a new icon to the sidebar
 4. Improve button hover effects
-5. Update the footer links
+5. Update the footer in More page
+6. Add a new game category option
+7. Improve TypeScript types
 
 Look for issues labeled `good-first-issue` on GitHub!
 
