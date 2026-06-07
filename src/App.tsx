@@ -8,6 +8,7 @@ import Create from './pages/Create';
 import Search from './pages/Search';
 import Messages from './pages/Messages';
 import More from './pages/More';
+import Download from './pages/Download';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/more" element={<More />} />
+            <Route path="/download" element={<Download />} />
           </Routes>
         </main>
       </div>
