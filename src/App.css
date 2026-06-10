@@ -2877,7 +2877,7 @@ textarea {
 
 .desktop-create-card-row button {
   position: relative;
-  min-height: 210px;
+  min-height: 150px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2896,7 +2896,7 @@ textarea {
 
 .desktop-create-card-row img {
   width: 100%;
-  height: 136px;
+  height: 104px;
   flex: 0 0 auto;
   object-fit: cover;
 }
@@ -2921,10 +2921,10 @@ textarea {
   flex: 1;
   display: -webkit-box;
   overflow: hidden;
-  padding: 13px 16px 15px;
+  padding: 11px 14px 13px;
   color: rgba(255, 255, 255, 0.82);
-  font-size: 16px;
-  line-height: 1.42;
+  font-size: 14px;
+  line-height: 1.4;
   font-weight: 500;
   -webkit-line-clamp: 7;
   -webkit-box-orient: vertical;
