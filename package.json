@@ -4,15 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cp index.source.html index.html && vite",
-    "build": "cp index.source.html index.html && tsc -b && vite build",
-    "ship": "npm run build && cp -R dist/. . && echo 'Root updated from dist — commit and push to deploy gametok.co'",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dicebear/adventurer": "^9.4.2",
-    "@dicebear/core": "^9.4.2",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",

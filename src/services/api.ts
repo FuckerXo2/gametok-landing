@@ -257,33 +257,6 @@ export const moderation = {
 };
 
 // ─── DreamStream AI Engine API ───────────────────────────────
-
-export type DreamJobProgressUpdate = {
-  progress?: number;
-  phase?: string;
-  statusMessage?: string | null;
-  queuePosition?: number;
-  queuedAhead?: number;
-};
-
-type DreamJobPollOptions = {
-  onJobStarted?: (jobId: string) => void;
-  onJobProgress?: (update: DreamJobProgressUpdate) => void;
-};
-
-function emitDreamJobProgress(statusRes: any, options?: DreamJobPollOptions) {
-  if (!statusRes || statusRes.status === 'complete' || statusRes.status === 'error' || statusRes.status === 'canceled') {
-    return;
-  }
-  options?.onJobProgress?.({
-    progress: typeof statusRes.progress === 'number' ? statusRes.progress : undefined,
-    phase: typeof statusRes.phase === 'string' ? statusRes.phase : undefined,
-    statusMessage: statusRes.statusMessage ?? null,
-    queuePosition: typeof statusRes.queuePosition === 'number' ? statusRes.queuePosition : undefined,
-    queuedAhead: typeof statusRes.queuedAhead === 'number' ? statusRes.queuedAhead : undefined,
-  });
-}
-
 export const ai = {
   cancelDreamJob: async (jobId: string) => request(`/ai/dream/cancel/${jobId}`, { method: 'POST' }),
 
@@ -291,7 +264,7 @@ export const ai = {
     return request('/ai/narrative/chat', { method: 'POST', body: JSON.stringify({ messages }) }, 45000);
   },
 
-  dreamLabs: (prompt: string, attachments: any[] = [], options?: DreamJobPollOptions) => {
+  dreamLabs: (prompt: string, attachments: any[] = [], options?: { onJobStarted?: (jobId: string) => void }) => {
     const controller = new AbortController();
     let remoteJobId: string | null = null;
 
@@ -320,12 +293,11 @@ export const ai = {
           if (controller.signal.aborted) { clearInterval(interval); reject(new Error('aborted')); return; }
           try {
             const statusRes = await request(`/ai/dream/status/${jobId}`);
-            emitDreamJobProgress(statusRes, options);
             if (statusRes.status === 'complete') { clearInterval(interval); resolve(statusRes); }
             else if (statusRes.status === 'error') { clearInterval(interval); reject(new Error(statusRes.error || 'Unknown AI error')); }
             else if (statusRes.status === 'canceled') { clearInterval(interval); reject(new Error(statusRes.error || 'Cancelled')); }
           } catch (e) {}
-        }, 2000);
+        }, 5000);
         controller.signal.addEventListener('abort', () => clearInterval(interval));
       } catch (err) { reject(err); }
     });
@@ -333,7 +305,7 @@ export const ai = {
     return { promise, cancel: () => controller.abort(), cancelRemote: cancelRemoteJob };
   },
 
-  dream: (prompt: string, attachments: any[] = [], options?: DreamJobPollOptions) => {
+  dream: (prompt: string, attachments: any[] = [], options?: { onJobStarted?: (jobId: string) => void }) => {
     const controller = new AbortController();
     let remoteJobId: string | null = null;
 
@@ -362,12 +334,11 @@ export const ai = {
           if (controller.signal.aborted) { clearInterval(interval); reject(new Error('aborted')); return; }
           try {
             const statusRes = await request(`/ai/dream/status/${jobId}`);
-            emitDreamJobProgress(statusRes, options);
             if (statusRes.status === 'complete') { clearInterval(interval); resolve(statusRes); }
             else if (statusRes.status === 'error') { clearInterval(interval); reject(new Error(statusRes.error || 'Unknown AI error')); }
             else if (statusRes.status === 'canceled') { clearInterval(interval); reject(new Error(statusRes.error || 'Cancelled')); }
           } catch (e) {}
-        }, 2000);
+        }, 5000);
         controller.signal.addEventListener('abort', () => clearInterval(interval));
       } catch (err) { reject(err); }
     });
@@ -375,13 +346,12 @@ export const ai = {
     return { promise, cancel: () => controller.abort(), cancelRemote: cancelRemoteJob };
   },
 
-  resumeDreamJob: (jobId: string, options?: Pick<DreamJobPollOptions, 'onJobProgress'>) => {
+  resumeDreamJob: (jobId: string) => {
     const controller = new AbortController();
     const promise = new Promise(async (resolve, reject) => {
       try {
         const checkStatus = async () => {
           const statusRes = await request(`/ai/dream/status/${jobId}`);
-          emitDreamJobProgress(statusRes, options);
           if (statusRes.status === 'complete') { resolve(statusRes); return true; }
           if (statusRes.status === 'error') { reject(new Error(statusRes.error || 'Unknown AI error')); return true; }
           if (statusRes.status === 'canceled') { reject(new Error(statusRes.error || 'Cancelled')); return true; }
@@ -391,14 +361,14 @@ export const ai = {
         const interval = setInterval(async () => {
           if (controller.signal.aborted) { clearInterval(interval); reject(new Error('aborted')); return; }
           try { if (await checkStatus()) clearInterval(interval); } catch (e) {}
-        }, 2000);
+        }, 5000);
         controller.signal.addEventListener('abort', () => clearInterval(interval));
       } catch (err) { reject(err); }
     });
     return { promise, cancel: () => controller.abort() };
   },
 
-  edit: (draftId: string, instructions: string, newAsset?: any, attachments: any[] = [], options?: DreamJobPollOptions) => {
+  edit: (draftId: string, instructions: string, newAsset?: any, attachments: any[] = []) => {
     const controller = new AbortController();
     const promise = new Promise(async (resolve, reject) => {
       try {
@@ -413,12 +383,11 @@ export const ai = {
           if (controller.signal.aborted) { clearInterval(interval); reject(new Error('aborted')); return; }
           try {
             const statusRes = await request(`/ai/dream/status/${jobId}`);
-            emitDreamJobProgress(statusRes, options);
             if (statusRes.status === 'complete') { clearInterval(interval); resolve(statusRes); }
             else if (statusRes.status === 'error') { clearInterval(interval); reject(new Error(statusRes.error || 'Unknown AI error')); }
             else if (statusRes.status === 'canceled') { clearInterval(interval); reject(new Error(statusRes.error || 'Cancelled')); }
           } catch (e) {}
-        }, 2000);
+        }, 5000);
         controller.signal.addEventListener('abort', () => clearInterval(interval));
       } catch (err) { reject(err); }
     });
