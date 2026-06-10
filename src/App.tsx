@@ -2023,6 +2023,7 @@ function DesktopHomeHero({
 }) {
   const [videoIndex, setVideoIndex] = useState(0);
   const [brief, setBrief] = useState('');
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2031,18 +2032,31 @@ function DesktopHomeHero({
     return () => window.clearInterval(timer);
   }, []);
 
-  const activeVideo = HOME_VIDEOS[videoIndex];
+  // All hero clips are mounted and preloaded up front; we only play the active one
+  // and crossfade via CSS opacity, so switching is instant with no re-fetch/pop-in.
+  useEffect(() => {
+    videoRefs.current.forEach((vid, i) => {
+      if (!vid) return;
+      if (i === videoIndex) vid.play().catch(() => {});
+      else vid.pause();
+    });
+  }, [videoIndex]);
+
   return (
     <section className="desktop-home-hero">
-      <video
-        key={activeVideo}
-        className="desktop-hero-video"
-        src={activeVideo}
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
+      {HOME_VIDEOS.map((src, i) => (
+        <video
+          key={src}
+          ref={(el) => { videoRefs.current[i] = el; }}
+          className={`desktop-hero-video ${i === videoIndex ? 'is-active' : ''}`}
+          src={src}
+          preload="auto"
+          muted
+          loop
+          playsInline
+          autoPlay={i === 0}
+        />
+      ))}
       <div className="desktop-hero-shade" />
 
       <header className="desktop-home-topbar">
