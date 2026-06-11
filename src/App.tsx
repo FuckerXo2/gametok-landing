@@ -114,6 +114,13 @@ async function fetchFreesoundTracks(type: 'bgm' | 'sfx', query = ''): Promise<Fr
 const API_URL = 'https://gametok-backend-production.up.railway.app/api';
 const API_ORIGIN = API_URL.replace(/\/api$/, '');
 const GAMES_HOST = 'https://games.gametok.co';
+const DESKTOP_CREATE_PROMPTS = [
+  'Make a neon drifting game with midnight streets, police chases, and upgradeable cars',
+  'Make a cozy farming RPG where every crop unlocks a new magical creature',
+  'Make a boss-rush platformer where the level changes every time you jump',
+  'Make a multiplayer arena where players build traps, steal coins, and survive the storm',
+  'Make a cooking chaos game where orders mutate, kitchens move, and combos explode',
+];
 
 // Google Sign-In (web). This is the SAME Google Cloud project the mobile app uses
 // (its "web client id"). For GIS to work the web origin must be listed under
@@ -2437,6 +2444,41 @@ function DesktopCreateWorkspace({
   onBuild: () => void;
 }) {
   const [brief, setBrief] = useState('');
+  const [animatedPrompt, setAnimatedPrompt] = useState('');
+  const [promptIndex, setPromptIndex] = useState(0);
+  const [isDeletingPrompt, setIsDeletingPrompt] = useState(false);
+  useEffect(() => {
+    const prompt = DESKTOP_CREATE_PROMPTS[promptIndex];
+    let delay = isDeletingPrompt ? 24 : 42;
+
+    if (!isDeletingPrompt && animatedPrompt === prompt) {
+      delay = 1400;
+    } else if (isDeletingPrompt && animatedPrompt === '') {
+      delay = 360;
+    }
+
+    const timeout = window.setTimeout(() => {
+      if (!isDeletingPrompt && animatedPrompt === prompt) {
+        setIsDeletingPrompt(true);
+        return;
+      }
+
+      if (isDeletingPrompt && animatedPrompt === '') {
+        setPromptIndex((index) => (index + 1) % DESKTOP_CREATE_PROMPTS.length);
+        setIsDeletingPrompt(false);
+        return;
+      }
+
+      setAnimatedPrompt((current) => (
+        isDeletingPrompt
+          ? current.slice(0, -1)
+          : prompt.slice(0, current.length + 1)
+      ));
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [animatedPrompt, isDeletingPrompt, promptIndex]);
+
   const promptCards = [
     {
       label: 'Cozy',
@@ -2490,7 +2532,7 @@ function DesktopCreateWorkspace({
           <textarea
             value={brief}
             onChange={(event) => setBrief(event.target.value)}
-            placeholder="A space shooter with me and the guys"
+            placeholder={animatedPrompt || DESKTOP_CREATE_PROMPTS[0]}
           />
           <div className="desktop-create-composer-row">
             <button aria-label="Add image"><ImageIcon size={18} /></button>
