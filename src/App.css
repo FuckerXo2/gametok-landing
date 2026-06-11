@@ -800,7 +800,10 @@ textarea {
 .create-bg {
   position: absolute;
   inset: 0;
-  background: #08080c;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.68) 58%, rgba(0, 0, 0, 0.94)),
+    url("/app-assets/create-background.png") center top / cover no-repeat,
+    #08080c;
   opacity: 1;
 }
 
@@ -809,8 +812,9 @@ textarea {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 11%, rgba(168, 85, 247, 0.12), transparent 31%),
-    #08080c;
+    radial-gradient(circle at 50% 11%, rgba(168, 85, 247, 0.2), transparent 31%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.72), transparent 46%, rgba(0, 0, 0, 0.6));
+  pointer-events: none;
 }
 
 .create-mobile-header,
