@@ -30,6 +30,9 @@
 
 .gametok-shell.create-mode {
   grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  background: #000;
 }
 
 .phone-stage {
@@ -2816,7 +2819,7 @@ textarea {
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 0;
   width: 100%;
-  min-height: calc(100vh - 48px);
+  min-height: 100vh;
   color: #fff;
   border-radius: 0;
   background: #000;
@@ -2826,12 +2829,12 @@ textarea {
 
 .desktop-create-canvas {
   position: relative;
-  min-height: calc(100vh - 48px);
+  min-height: 100vh;
   overflow: hidden;
-  margin: 14px;
-  border-radius: 8px;
+  margin: 0;
+  border-radius: 0;
   background: #05050a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 0;
 }
 
 .desktop-create-backdrop,
