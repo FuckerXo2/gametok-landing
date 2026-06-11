@@ -900,7 +900,10 @@ function App() {
           activeTab={activeTab}
           onTab={goTab}
           user={authUser}
-          onBuild={() => openAuth('signup')}
+          onBuild={() => {
+            if (authUser || getToken()) return;
+            openAuth('signup');
+          }}
         />
       )}
 
@@ -1109,6 +1112,7 @@ function ExploreScreen({
 }) {
   const [active, setActive] = useState<ExploreTab>('For You');
   const [query, setQuery] = useState('');
+  const [showAllCreators, setShowAllCreators] = useState(false);
 
   const filtered = useMemo(() => {
     const tabbed = active === 'For You' || active === 'Games'
@@ -1121,10 +1125,11 @@ function ExploreScreen({
 
   const heroGame = filtered[0] || games[0] || FALLBACK_GAMES[0];
   const sections = [
-    { title: active === 'For You' ? 'Trending Now' : `${active} Picks`, games: filtered.slice(0, 10) },
-    { title: 'Made For You', games: [...filtered].reverse().slice(0, 10) },
-    { title: 'Creators To Watch', games: games.slice(2, 12) },
+    { title: active === 'For You' ? 'Trending Now' : `${active} Picks`, games: filtered },
+    { title: 'Made For You', games: [...filtered].reverse() },
+    { title: 'Creators To Watch', games: games.slice(2) },
   ];
+  const visibleCreators = showAllCreators ? creators : creators.slice(0, 8);
 
   return (
     <section className="page-scroll explore-screen">
@@ -1178,10 +1183,14 @@ function ExploreScreen({
       <section className="creator-section">
         <div className="section-heading">
           <h3>Recommended creators</h3>
-          <button>See all</button>
+          {creators.length > 8 && (
+            <button type="button" onClick={() => setShowAllCreators((value) => !value)}>
+              {showAllCreators ? 'Show less' : 'See all'}
+            </button>
+          )}
         </div>
         <div className="creator-row-list">
-          {creators.slice(0, 8).map((creator) => (
+          {visibleCreators.map((creator) => (
             <div className="creator-card" key={creator.id}>
               <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
               <strong>{creator.displayName || creator.username}</strong>
@@ -1196,14 +1205,20 @@ function ExploreScreen({
 }
 
 function GameLane({ title, games, onOpenGame }: { title: string; games: Game[]; onOpenGame: (game: Game) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const visibleGames = expanded ? games : games.slice(0, 10);
   return (
     <section className="game-lane">
       <div className="section-heading">
         <h3>{title}</h3>
-        <button>See all</button>
+        {games.length > 10 && (
+          <button type="button" onClick={() => setExpanded((value) => !value)}>
+            {expanded ? 'Show less' : 'See all'}
+          </button>
+        )}
       </div>
       <div className="game-card-row">
-        {games.map((game) => (
+        {visibleGames.map((game) => (
           <button className="poster-card" key={`${title}-${game.id}`} onClick={() => onOpenGame(game)}>
             <span className="poster" style={{ backgroundImage: `url(${getThumbnailUrl(game)})`, backgroundColor: game.color || '#111' }}>
               <span className="poster-play"><Play size={24} fill="currentColor" /></span>
