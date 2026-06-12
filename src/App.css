@@ -2870,6 +2870,253 @@ textarea {
   font-weight: 430;
 }
 
+.desktop-forge-layout {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.82fr) minmax(520px, 1.18fr);
+  gap: clamp(18px, 2vw, 32px);
+  padding: clamp(28px, 4vw, 58px);
+}
+
+.desktop-forge-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+
+.desktop-forge-panel h1 {
+  max-width: 680px;
+  margin: 0;
+  font-size: clamp(34px, 4vw, 66px);
+  line-height: 0.98;
+  font-weight: 780;
+}
+
+.desktop-forge-panel p {
+  max-width: 540px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.desktop-forge-panel .desktop-create-card-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  margin: 8px 0 0;
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.desktop-forge-panel .desktop-create-card-row button {
+  min-height: 128px;
+  border-radius: 14px;
+}
+
+.desktop-forge-panel .desktop-create-card-row img {
+  height: 74px;
+}
+
+.desktop-forge-panel .desktop-create-card-row strong {
+  font-size: 13px;
+  -webkit-line-clamp: 3;
+}
+
+.desktop-forge-panel .desktop-create-composer {
+  position: static;
+  width: 100%;
+  transform: none;
+  padding: 16px;
+  border-radius: 18px;
+}
+
+.desktop-forge-panel .desktop-create-composer textarea {
+  min-height: 78px;
+}
+
+.desktop-forge-panel .desktop-create-composer-row {
+  justify-content: flex-end;
+}
+
+.desktop-create-composer-row .stop {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(248, 113, 113, 0.42);
+}
+
+.desktop-forge-stage {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+}
+
+.desktop-forge-card {
+  min-height: min(760px, calc(100vh - 116px));
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 48% 42%, rgba(168, 85, 247, 0.18), transparent 26%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(13, 13, 16, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.55);
+}
+
+.forge-status-pill {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  transform: translate(-50%, -168px);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(12px);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.forge-animation {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+  opacity: 0.72;
+}
+
+.forge-animation.active {
+  opacity: 1;
+}
+
+.forge-glow {
+  position: absolute;
+  width: 124px;
+  height: 124px;
+  border-radius: 999px;
+  background: #a855f7;
+  filter: blur(34px);
+  opacity: 0.45;
+  animation: forge-glow 2.4s ease-in-out infinite;
+}
+
+.forge-shape {
+  position: absolute;
+  overflow: visible;
+  fill: none;
+}
+
+.forge-shape path {
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.forge-hex {
+  width: 154px;
+  height: 154px;
+  animation: forge-spin 8s linear infinite, forge-scale-a 4s ease-in-out infinite;
+}
+
+.forge-hex path {
+  stroke: #a855f7;
+  stroke-width: 2;
+  opacity: 0.86;
+}
+
+.forge-diamond {
+  width: 112px;
+  height: 112px;
+  animation: forge-spin-reverse 5s linear infinite, forge-scale-b 3s ease-in-out infinite;
+}
+
+.forge-diamond path {
+  stroke: #06b6d4;
+  stroke-width: 2;
+  opacity: 0.86;
+}
+
+.forge-triangle {
+  width: 74px;
+  height: 74px;
+  animation: forge-spin 3s linear infinite, forge-scale-c 2s ease-in-out infinite;
+}
+
+.forge-triangle path {
+  stroke: #f472b6;
+  stroke-width: 2.5;
+  opacity: 0.95;
+}
+
+.forge-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.9);
+}
+
+.desktop-forge-copy {
+  position: absolute;
+  bottom: clamp(54px, 9vh, 90px);
+  left: 50%;
+  width: min(420px, calc(100% - 52px));
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+  transform: translateX(-50%);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.desktop-forge-copy strong {
+  font-size: 20px;
+}
+
+.desktop-forge-copy small {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+@keyframes forge-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes forge-spin-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes forge-glow {
+  50% { opacity: 0.9; transform: scale(1.12); }
+}
+
+@keyframes forge-scale-a {
+  50% { scale: 1.14; }
+}
+
+@keyframes forge-scale-b {
+  50% { scale: 0.76; }
+}
+
+@keyframes forge-scale-c {
+  50% { scale: 1.2; }
+}
+
 .desktop-create-card-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(170px, 1fr));
@@ -3035,11 +3282,159 @@ textarea {
 
 .desktop-create-preview {
   width: 100%;
-  height: min(42vh, 420px);
-  margin-top: 14px;
+  height: min(760px, calc(100vh - 116px));
+  margin: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
+  border-radius: 24px;
   background: #000;
+}
+
+.explore-game-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 4px 0 24px;
+}
+
+.explore-game-grid button {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 16px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+}
+
+.explore-game-grid img {
+  width: 88px;
+  height: 68px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.explore-game-grid span,
+.social-row span,
+.creator-profile-sheet header span,
+.message-composer-sheet header span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.explore-game-grid strong,
+.social-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.creator-card button.following,
+.creator-profile-actions button.following {
+  color: #fff;
+  background: rgba(168, 85, 247, 0.34);
+  border-color: rgba(192, 132, 252, 0.5);
+}
+
+.social-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  color: #fff;
+  cursor: pointer;
+}
+
+.social-row img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.social-row button,
+.creator-profile-actions button,
+.message-composer-sheet button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #101014;
+  background: #fff;
+  font-weight: 850;
+}
+
+.creator-profile-sheet,
+.message-composer-sheet {
+  display: grid;
+  gap: 18px;
+}
+
+.creator-profile-sheet header,
+.message-composer-sheet header {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.creator-profile-sheet header img,
+.message-composer-sheet header img {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.creator-profile-sheet header strong,
+.message-composer-sheet header strong {
+  color: #fff;
+  font-size: 24px;
+}
+
+.creator-profile-sheet header small,
+.message-composer-sheet header small,
+.explore-game-grid small,
+.social-row small {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.creator-profile-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.message-composer-sheet textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+}
+
+.message-composer-sheet button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.message-composer-sheet p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 760;
 }
 
 .feed-action.like-action.active span,

@@ -43,7 +43,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { ai, auth, users, likes as likesApi, savedGames as savedGamesApi, getToken, setToken } from './services/api';
+import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, getToken, setToken } from './services/api';
 import './App.css';
 
 const FREESOUND_API_KEY = 'mgD2q6sEgb7r8seRdGqRVBgszcAgMqPAzGpHPAkk';
@@ -185,7 +185,7 @@ function decodeJwt(token: string): any {
 type Tab = 'home' | 'explore' | 'create' | 'connect' | 'profile';
 type ExploreTab = 'For You' | 'Games' | 'Horror' | 'Quiz' | 'Roleplay';
 type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview' | 'publish';
-type Modal = 'comments' | 'leaderboard' | 'share' | 'auth' | 'search' | 'notifications';
+type Modal = 'comments' | 'leaderboard' | 'share' | 'auth' | 'search' | 'notifications' | 'creator-profile' | 'message';
 type MarketingPage = 'games' | 'pricing' | 'blog' | 'changelog' | 'earn' | 'faq' | 'privacy' | 'terms';
 type AuthMode = 'signup' | 'login';
 
@@ -602,6 +602,23 @@ function extractIdSet(data: any, keys: string[]) {
   return set;
 }
 
+function creatorIdFrom(creator: Creator | null) {
+  return creator?.id || creator?.username || '';
+}
+
+function creatorFromGame(game: Game | null): Creator | null {
+  if (!game) return null;
+  const id = game.creatorId || game.userId || game.createdBy || game.creatorUsername || '';
+  if (!id && !game.creatorUsername && !game.creatorDisplayName) return null;
+  return {
+    id: String(id || game.creatorUsername || game.creatorDisplayName),
+    username: game.creatorUsername || game.creatorDisplayName || 'creator',
+    displayName: game.creatorDisplayName || game.creatorUsername || 'GameTok creator',
+    avatar: game.creatorAvatar || undefined,
+    verified: game.creatorVerified,
+  };
+}
+
 function App() {
   const { games, creators, loading, offline } = useGameTokData();
   const [activeTab, setActiveTab] = useState<Tab>('home');
@@ -615,6 +632,7 @@ function App() {
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
 
   // Restore session from the shared backend token (same token the mobile app uses).
   useEffect(() => {
@@ -735,6 +753,22 @@ function App() {
     if (!activeCreatorId) return;
     toggleBackendSet(setFollowedCreators, activeCreatorId, () => users.follow(activeCreatorId));
   };
+  const toggleCreatorFollow = (creator: Creator | null) => {
+    const id = creatorIdFrom(creator);
+    if (!id) return;
+    toggleBackendSet(setFollowedCreators, id, () => users.follow(id));
+  };
+  const openCreatorProfile = (creator: Creator | null) => {
+    if (!creator) return;
+    setSelectedCreator(creator);
+    setModal('creator-profile');
+  };
+  const openCreatorMessage = (creator: Creator | null) => {
+    if (!creator) return;
+    if (requireAuth('login')) return;
+    setSelectedCreator(creator);
+    setModal('message');
+  };
 
   const openGame = (game: Game) => {
     const index = games.findIndex((item) => item.id === game.id);
@@ -837,10 +871,28 @@ function App() {
             )
           )}
           {activeTab === 'explore' && (
-            <ExploreScreen games={games} creators={creators} onOpenGame={openGame} onCreate={() => goTab('create')} />
+            <ExploreScreen
+              games={games}
+              creators={creators}
+              followedCreators={followedCreators}
+              onOpenGame={openGame}
+              onCreate={() => goTab('create')}
+              onOpenCreator={openCreatorProfile}
+              onToggleFollow={toggleCreatorFollow}
+            />
           )}
           {activeTab === 'create' && <CreateScreen onOpenGame={openGame} fallbackGame={activeGame || null} />}
-          {activeTab === 'connect' && <ConnectScreen creators={creators} games={games} onOpenGame={openGame} />}
+          {activeTab === 'connect' && (
+            <ConnectScreen
+              creators={creators}
+              games={games}
+              followedCreators={followedCreators}
+              onOpenGame={openGame}
+              onOpenCreator={openCreatorProfile}
+              onMessage={openCreatorMessage}
+              onToggleFollow={toggleCreatorFollow}
+            />
+          )}
           {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
         </main>
 
@@ -901,6 +953,7 @@ function App() {
           onNext={nextGame}
           onPrevious={previousGame}
           onOpenModal={setModal}
+          onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
           onToggleLike={toggleActiveLike}
           onToggleSave={toggleActiveSave}
           onToggleFollow={toggleActiveFollow}
@@ -929,6 +982,22 @@ function App() {
           {modal === 'auth' && <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setModal(null)} />}
           {modal === 'search' && <SearchSheet games={games} creators={creators} onOpenGame={openGame} onCreate={() => { setModal(null); goTab('create'); }} />}
           {modal === 'notifications' && <NotificationsSheet games={games} creators={creators} onOpenGame={openGame} />}
+          {modal === 'creator-profile' && selectedCreator && (
+            <CreatorProfileSheet
+              creator={selectedCreator}
+              games={games}
+              following={followedCreators.has(creatorIdFrom(selectedCreator))}
+              onOpenGame={openGame}
+              onToggleFollow={() => toggleCreatorFollow(selectedCreator)}
+              onMessage={() => openCreatorMessage(selectedCreator)}
+            />
+          )}
+          {modal === 'message' && selectedCreator && (
+            <MessageComposerSheet
+              creator={selectedCreator}
+              onSent={() => setModal('creator-profile')}
+            />
+          )}
         </Sheet>
       )}
     </div>
@@ -941,6 +1010,8 @@ function modalTitle(modal: Modal) {
   if (modal === 'share') return 'Share Game';
   if (modal === 'search') return 'Games';
   if (modal === 'notifications') return 'Notifications';
+  if (modal === 'creator-profile') return 'Creator';
+  if (modal === 'message') return 'Message';
   return 'Join GameTok';
 }
 
@@ -1130,17 +1201,24 @@ function ActionButton({ icon, label, active, tone, onClick }: { icon: React.Reac
 function ExploreScreen({
   games,
   creators,
+  followedCreators,
   onOpenGame,
   onCreate,
+  onOpenCreator,
+  onToggleFollow,
 }: {
   games: Game[];
   creators: Creator[];
+  followedCreators: Set<string>;
   onOpenGame: (game: Game) => void;
   onCreate: () => void;
+  onOpenCreator: (creator: Creator) => void;
+  onToggleFollow: (creator: Creator) => void;
 }) {
   const [active, setActive] = useState<ExploreTab>('For You');
   const [query, setQuery] = useState('');
   const [showAllCreators, setShowAllCreators] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<{ title: string; games: Game[] } | null>(null);
 
   const filtered = useMemo(() => {
     const tabbed = active === 'For You' || active === 'Games'
@@ -1158,6 +1236,32 @@ function ExploreScreen({
     { title: 'Creators To Watch', games: games.slice(2) },
   ];
   const visibleCreators = showAllCreators ? creators : creators.slice(0, 8);
+
+  if (expandedSection) {
+    return (
+      <section className="page-scroll explore-screen explore-grid-view">
+        <header className="screen-header">
+          <button className="icon-button" onClick={() => setExpandedSection(null)}><ChevronLeft size={20} /></button>
+          <div>
+            <p>{expandedSection.games.length} games</p>
+            <h2>{expandedSection.title}</h2>
+          </div>
+        </header>
+        <div className="explore-game-grid">
+          {expandedSection.games.map((game) => (
+            <button key={game.id} onClick={() => onOpenGame(game)}>
+              <img src={getThumbnailUrl(game)} alt="" />
+              <span>
+                <strong>{game.name}</strong>
+                <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
+              </span>
+              <Play size={16} fill="currentColor" />
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="page-scroll explore-screen">
@@ -1205,7 +1309,7 @@ function ExploreScreen({
       )}
 
       {sections.map((section) => (
-        <GameLane key={section.title} title={section.title} games={section.games} onOpenGame={onOpenGame} />
+        <GameLane key={section.title} title={section.title} games={section.games} onOpenGame={onOpenGame} onSeeAll={() => setExpandedSection(section)} />
       ))}
 
       <section className="creator-section">
@@ -1219,11 +1323,19 @@ function ExploreScreen({
         </div>
         <div className="creator-row-list">
           {visibleCreators.map((creator) => (
-            <div className="creator-card" key={creator.id}>
+            <div className="creator-card" key={creator.id} onClick={() => onOpenCreator(creator)} role="button" tabIndex={0}>
               <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
               <strong>{creator.displayName || creator.username}</strong>
               <span>@{creator.username}</span>
-              <button>Follow</button>
+              <button
+                className={followedCreators.has(creatorIdFrom(creator)) ? 'following' : ''}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleFollow(creator);
+                }}
+              >
+                {followedCreators.has(creatorIdFrom(creator)) ? 'Following' : 'Follow'}
+              </button>
             </div>
           ))}
         </div>
@@ -1232,16 +1344,15 @@ function ExploreScreen({
   );
 }
 
-function GameLane({ title, games, onOpenGame }: { title: string; games: Game[]; onOpenGame: (game: Game) => void }) {
-  const [expanded, setExpanded] = useState(false);
-  const visibleGames = expanded ? games : games.slice(0, 10);
+function GameLane({ title, games, onOpenGame, onSeeAll }: { title: string; games: Game[]; onOpenGame: (game: Game) => void; onSeeAll: () => void }) {
+  const visibleGames = games.slice(0, 10);
   return (
     <section className="game-lane">
       <div className="section-heading">
         <h3>{title}</h3>
         {games.length > 10 && (
-          <button type="button" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? 'Show less' : 'See all'}
+          <button type="button" onClick={onSeeAll}>
+            See all
           </button>
         )}
       </div>
@@ -1854,7 +1965,23 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
   );
 }
 
-function ConnectScreen({ creators, games, onOpenGame }: { creators: Creator[]; games: Game[]; onOpenGame: (game: Game) => void }) {
+function ConnectScreen({
+  creators,
+  games,
+  followedCreators,
+  onOpenGame,
+  onOpenCreator,
+  onMessage,
+  onToggleFollow,
+}: {
+  creators: Creator[];
+  games: Game[];
+  followedCreators: Set<string>;
+  onOpenGame: (game: Game) => void;
+  onOpenCreator: (creator: Creator) => void;
+  onMessage: (creator: Creator) => void;
+  onToggleFollow: (creator: Creator) => void;
+}) {
   const [lane, setLane] = useState<'chats' | 'requests' | 'activity'>('chats');
   return (
     <section className="page-scroll connect-screen">
@@ -1869,7 +1996,7 @@ function ConnectScreen({ creators, games, onOpenGame }: { creators: Creator[]; g
       <div className="story-strip">
         <button className="story-bubble add"><Plus size={20} /><span>Story</span></button>
         {creators.map((creator) => (
-          <button className="story-bubble" key={creator.id}>
+          <button className="story-bubble" key={creator.id} onClick={() => onOpenCreator(creator)}>
             <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
             <span>{creator.username}</span>
           </button>
@@ -1884,13 +2011,37 @@ function ConnectScreen({ creators, games, onOpenGame }: { creators: Creator[]; g
 
       {lane === 'chats' && (
         <div className="message-list">
-          <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />
+          {creators.slice(0, 10).map((creator) => (
+            <div className="social-row" key={creator.id} onClick={() => onOpenCreator(creator)} role="button" tabIndex={0}>
+              <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+              <span>
+                <strong>{creator.displayName || creator.username}</strong>
+                <small>@{creator.username}</small>
+              </span>
+              <button onClick={(event) => { event.stopPropagation(); onMessage(creator); }}><MessageCircle size={16} /> DM</button>
+            </div>
+          ))}
+          {creators.length === 0 && <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />}
         </div>
       )}
 
       {lane === 'requests' && (
         <div className="request-grid">
-          <EmptyListState title="No requests yet" text="Friend and co-create requests will show here." />
+          {creators.slice(0, 12).map((creator) => {
+            const following = followedCreators.has(creatorIdFrom(creator));
+            return (
+              <div className="creator-card" key={creator.id} onClick={() => onOpenCreator(creator)} role="button" tabIndex={0}>
+                <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
+                <strong>{creator.displayName || creator.username}</strong>
+                <span>@{creator.username}</span>
+                <small>{following ? 'Following' : 'Suggested creator'}</small>
+                <button onClick={(event) => { event.stopPropagation(); onToggleFollow(creator); }}>
+                  {following ? 'Following' : 'Follow'}
+                </button>
+              </div>
+            );
+          })}
+          {creators.length === 0 && <EmptyListState title="No requests yet" text="Friend and co-create requests will show here." />}
         </div>
       )}
 
@@ -2028,7 +2179,7 @@ function BottomNav({
   const items: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
     { tab: 'home', label: 'Home', icon: <Home size={23} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={23} /> },
-    { tab: 'create', label: 'Home', icon: <Plus size={24} /> },
+    { tab: 'create', label: 'Create', icon: <Plus size={24} /> },
     { tab: 'connect', label: 'Connect', icon: <Users size={23} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={23} /> },
   ];
@@ -2168,6 +2319,7 @@ function DesktopPlayHome({
   onNext,
   onPrevious,
   onOpenModal,
+  onOpenCreator,
   onToggleLike,
   onToggleSave,
   onToggleFollow,
@@ -2183,6 +2335,7 @@ function DesktopPlayHome({
   onNext: () => void;
   onPrevious: () => void;
   onOpenModal: (modal: Modal) => void;
+  onOpenCreator: () => void;
   onToggleLike: () => void;
   onToggleSave: () => void;
   onToggleFollow: () => void;
@@ -2210,13 +2363,13 @@ function DesktopPlayHome({
           </div>
         </article>
 
-        <div className="desktop-feed-creator">
+        <div className="desktop-feed-creator" onClick={onOpenCreator} role="button" tabIndex={0}>
           <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
           <span>
             <strong>{creator}</strong>
             <small>Browse their games</small>
           </span>
-          <button onClick={onToggleFollow}>{following ? 'Following' : 'Follow'}</button>
+          <button onClick={(event) => { event.stopPropagation(); onToggleFollow(); }}>{following ? 'Following' : 'Follow'}</button>
         </div>
 
         <div className="desktop-feed-controls">
@@ -2229,7 +2382,7 @@ function DesktopPlayHome({
           <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(game.commentsCount || 0)}</span></button>
           <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
           <button onClick={onToggleSave} className={saved ? 'active' : ''}><Bookmark size={25} fill={saved ? 'currentColor' : 'none'} /><span>Favorite</span></button>
-          <button className="desktop-feed-avatar-action" onClick={() => onTab('profile')}>
+          <button className="desktop-feed-avatar-action" onClick={onOpenCreator}>
             <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
             <Plus size={18} />
           </button>
@@ -2490,6 +2643,7 @@ function DesktopCreateWorkspace({
   const [buildMessage, setBuildMessage] = useState('');
   const [buildError, setBuildError] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const cancelBuildRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     const prompt = DESKTOP_CREATE_PROMPTS[promptIndex];
     let delay = isDeletingPrompt ? 24 : 42;
@@ -2563,7 +2717,7 @@ function DesktopCreateWorkspace({
     setPreviewHtml(null);
     setBuildMessage('Starting Dream Forge...');
     try {
-      const { promise } = ai.dream(finalPrompt, [], {
+      const dreamJob = ai.dream(finalPrompt, [], {
         onJobStarted: () => setBuildMessage('Dream Forge queued your game...'),
         onJobProgress: ({ phase, progress, statusMessage, queuePosition }) => {
           if (statusMessage) {
@@ -2575,7 +2729,8 @@ function DesktopCreateWorkspace({
           }
         },
       });
-      const result: any = await promise;
+      cancelBuildRef.current = dreamJob.cancelRemote || dreamJob.cancel;
+      const result: any = await dreamJob.promise;
       if (result?.htmlPreview) {
         setPreviewHtml(result.htmlPreview);
         setBuildMessage('Preview ready.');
@@ -2583,11 +2738,23 @@ function DesktopCreateWorkspace({
         setBuildMessage('Dream Forge finished.');
       }
     } catch (error: any) {
-      setBuildError(error?.message || 'Dream Forge failed.');
-      setBuildMessage('');
+      if (error?.name === 'AbortError') {
+        setBuildMessage('Generation stopped.');
+      } else {
+        setBuildError(error?.message || 'Dream Forge failed.');
+        setBuildMessage('');
+      }
     } finally {
       setIsBuilding(false);
+      cancelBuildRef.current = null;
     }
+  };
+  const stopDreamForge = () => {
+    if (!cancelBuildRef.current) return;
+    cancelBuildRef.current();
+    cancelBuildRef.current = null;
+    setIsBuilding(false);
+    setBuildMessage('Generation stopped.');
   };
 
   return (
@@ -2597,54 +2764,94 @@ function DesktopCreateWorkspace({
       <div className="desktop-create-canvas">
         <div className="desktop-create-backdrop" />
         <div className="desktop-create-shade" />
-        <div className="desktop-create-content">
-          <span className="desktop-live-pill"><span /> New game model is live <ChevronRight size={14} /></span>
-          <h1>What game should we make now?</h1>
+        <div className="desktop-forge-layout">
+          <aside className="desktop-forge-panel">
+            <span className="desktop-live-pill"><span /> Dream Forge live <ChevronRight size={14} /></span>
+            <h1>What game should we make now?</h1>
+            <p>Describe the world, rules, camera, enemies, and win condition. Dream Forge will turn it into a playable draft.</p>
 
-          <div className="desktop-create-card-row">
-            {promptCards.map((card) => (
-              <button key={card.label} onClick={() => setBrief(card.prompt)}>
-                <img src={card.image} alt="" />
-                <span>{card.label}</span>
-                <strong>{card.prompt}</strong>
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="desktop-create-card-row">
+              {promptCards.map((card) => (
+                <button key={card.label} onClick={() => setBrief(card.prompt)}>
+                  <img src={card.image} alt="" />
+                  <span>{card.label}</span>
+                  <strong>{card.prompt}</strong>
+                </button>
+              ))}
+            </div>
 
-        <div className="desktop-create-composer">
-          <textarea
-            value={brief}
-            onChange={(event) => setBrief(event.target.value)}
-            placeholder={animatedPrompt || DESKTOP_CREATE_PROMPTS[0]}
-          />
-          <div className="desktop-create-composer-row">
-            <button aria-label="Add image"><ImageIcon size={18} /></button>
-            <button aria-label="Attach reference"><Plus size={18} /></button>
-            <button className="smart"><Sparkles size={18} /> Smart</button>
-            <span>{brief.length}/500</span>
-            <button className="plan"><Sparkles size={18} /> Plan</button>
-            <button aria-label="Voice prompt"><Mic size={18} /></button>
-            <button className="primary" disabled={isBuilding} onClick={startDreamForge}>
-              {isBuilding ? 'Forging...' : 'Create game'}
-            </button>
+            <div className="desktop-create-composer">
+              <textarea
+                value={brief}
+                onChange={(event) => setBrief(event.target.value)}
+                placeholder={animatedPrompt || DESKTOP_CREATE_PROMPTS[0]}
+              />
+              <div className="desktop-create-composer-row">
+                <button className="primary" disabled={isBuilding} onClick={startDreamForge}>
+                  {isBuilding ? 'Forging...' : 'Create game'}
+                </button>
+                {isBuilding && (
+                  <button className="stop" onClick={stopDreamForge}>
+                    <X size={17} /> Stop
+                  </button>
+                )}
+              </div>
+              {(buildMessage || buildError) && (
+                <p className={`desktop-create-status ${buildError ? 'is-error' : ''}`}>
+                  {buildError || buildMessage}
+                </p>
+              )}
+            </div>
+          </aside>
+
+          <div className="desktop-forge-stage">
+            {previewHtml ? (
+              <iframe
+                className="desktop-create-preview"
+                title="Dream Forge preview"
+                srcDoc={previewHtml}
+                sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+              />
+            ) : (
+              <div className="desktop-forge-card">
+                <span className="forge-status-pill">
+                  {isBuilding ? <RefreshCw className="spin" size={15} /> : <Gamepad2 size={15} />}
+                  {isBuilding ? (buildMessage || 'Generating your first version') : 'Ready to forge'}
+                </span>
+                <ForgeAnimation active={isBuilding} />
+                <div className="desktop-forge-copy">
+                  <Gamepad2 size={28} />
+                  <strong>{isBuilding ? 'Generating your first version' : 'Dream Forge is standing by'}</strong>
+                  <small>
+                    {isBuilding
+                      ? 'You can stop this anytime. The preview will replace this forge screen as soon as the backend returns the game.'
+                      : 'Your game preview will appear here after you click Create game.'}
+                  </small>
+                </div>
+              </div>
+            )}
           </div>
-          {(buildMessage || buildError) && (
-            <p className={`desktop-create-status ${buildError ? 'is-error' : ''}`}>
-              {buildError || buildMessage}
-            </p>
-          )}
-          {previewHtml && (
-            <iframe
-              className="desktop-create-preview"
-              title="Dream Forge preview"
-              srcDoc={previewHtml}
-              sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-            />
-          )}
         </div>
       </div>
     </section>
+  );
+}
+
+function ForgeAnimation({ active }: { active: boolean }) {
+  return (
+    <div className={`forge-animation ${active ? 'active' : ''}`}>
+      <div className="forge-glow" />
+      <svg className="forge-shape forge-hex" viewBox="0 0 120 120" aria-hidden="true">
+        <path d="M60 10 L105 35 L105 85 L60 110 L15 85 L15 35 Z" />
+      </svg>
+      <svg className="forge-shape forge-diamond" viewBox="0 0 90 90" aria-hidden="true">
+        <path d="M45 5 L85 45 L45 85 L5 45 Z" />
+      </svg>
+      <svg className="forge-shape forge-triangle" viewBox="0 0 60 60" aria-hidden="true">
+        <path d="M30 8 L55 52 L5 52 Z" />
+      </svg>
+      <span className="forge-dot" />
+    </div>
   );
 }
 
@@ -2658,10 +2865,9 @@ function DesktopAppSidebar({
   onTab: (tab: Tab) => void;
 }) {
   const navItems: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
-    { tab: 'home', label: 'Home', icon: <Home size={22} /> },
+    { tab: 'create', label: 'Home', icon: <Home size={22} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={22} /> },
     { tab: 'connect', label: 'Connect', icon: <Users size={22} /> },
-    { tab: 'create', label: 'Home', icon: <Plus size={22} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={22} /> },
   ];
   const username = user?.displayName || user?.username || 'Player';
@@ -2785,6 +2991,106 @@ function SearchSheet({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CreatorProfileSheet({
+  creator,
+  games,
+  following,
+  onOpenGame,
+  onToggleFollow,
+  onMessage,
+}: {
+  creator: Creator;
+  games: Game[];
+  following: boolean;
+  onOpenGame: (game: Game) => void;
+  onToggleFollow: () => void;
+  onMessage: () => void;
+}) {
+  const creatorGames = games.filter((game) => (
+    game.creatorId === creator.id
+    || game.userId === creator.id
+    || game.createdBy === creator.id
+    || game.creatorUsername === creator.username
+    || game.creatorDisplayName === creator.displayName
+  ));
+
+  return (
+    <div className="creator-profile-sheet">
+      <header>
+        <img src={avatarUrl(creator.username, creator.avatar, 180)} alt="" />
+        <span>
+          <strong>{creator.displayName || creator.username}</strong>
+          <small>@{creator.username}</small>
+        </span>
+      </header>
+      <div className="creator-profile-actions">
+        <button className={following ? 'following' : ''} onClick={onToggleFollow}>
+          {following ? 'Following' : 'Follow'}
+        </button>
+        <button onClick={onMessage}><MessageCircle size={16} /> Message</button>
+      </div>
+      <div className="sheet-section-title">Games</div>
+      <div className="search-game-list">
+        {creatorGames.slice(0, 18).map((game) => (
+          <button key={game.id} onClick={() => onOpenGame(game)}>
+            <img src={getThumbnailUrl(game)} alt="" />
+            <span>
+              <strong>{game.name}</strong>
+              <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
+            </span>
+            <Play size={16} fill="currentColor" />
+          </button>
+        ))}
+        {creatorGames.length === 0 && <EmptyListState title="No games here yet" text="This creator profile is live, but the backend did not return their games." />}
+      </div>
+    </div>
+  );
+}
+
+function MessageComposerSheet({ creator, onSent }: { creator: Creator; onSent: () => void }) {
+  const [text, setText] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const sendMessage = async () => {
+    const body = text.trim();
+    if (!body || sending) return;
+    setSending(true);
+    setStatus(null);
+    try {
+      await messages.send({ recipientId: creatorIdFrom(creator), text: body });
+      setText('');
+      setStatus('Message sent.');
+      window.setTimeout(onSent, 600);
+    } catch (error: any) {
+      setStatus(error?.message || 'Message failed.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="message-composer-sheet">
+      <header>
+        <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+        <span>
+          <strong>{creator.displayName || creator.username}</strong>
+          <small>@{creator.username}</small>
+        </span>
+      </header>
+      <textarea
+        autoFocus
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        placeholder={`Message ${creator.displayName || creator.username}`}
+      />
+      <button disabled={!text.trim() || sending} onClick={sendMessage}>
+        <Send size={16} /> {sending ? 'Sending...' : 'Send message'}
+      </button>
+      {status && <p>{status}</p>}
     </div>
   );
 }
