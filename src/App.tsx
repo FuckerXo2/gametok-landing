@@ -43,7 +43,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { ai, auth, users, getToken, setToken } from './services/api';
+import { ai, auth, users, likes as likesApi, savedGames as savedGamesApi, getToken, setToken } from './services/api';
 import './App.css';
 
 const FREESOUND_API_KEY = 'mgD2q6sEgb7r8seRdGqRVBgszcAgMqPAzGpHPAkk';
@@ -138,6 +138,9 @@ type AuthUser = {
   avatar?: string | null;
   bio?: string | null;
   verified?: boolean;
+  followingCount?: number;
+  followersCount?: number;
+  likesCount?: number;
 };
 
 declare global {
@@ -188,6 +191,9 @@ type AuthMode = 'signup' | 'login';
 
 type Game = {
   id: string;
+  creatorId?: string | null;
+  userId?: string | null;
+  createdBy?: string | null;
   name: string;
   title?: string;
   description?: string;
@@ -283,96 +289,6 @@ const CHANGELOG_ITEMS = [
   { date: 'June 2026', title: 'Google Sign-In web shell', text: 'Google Identity Services are wired on the frontend and ready for end-to-end OAuth verification.' },
 ];
 
-const FALLBACK_GAMES: Game[] = [
-  {
-    id: 'fruit-slicer',
-    name: 'Fruit Slicer',
-    description: 'Swipe through flying fruit, dodge bombs, and chase combo streaks.',
-    thumbnail: '/games/fruit-slicer/thumbnail.png',
-    plays: 128400,
-    likes: 18200,
-    saves: 6800,
-    commentsCount: 439,
-    category: 'Arcade',
-    color: '#ff5f57',
-    creatorDisplayName: 'slicequeen',
-    creatorUsername: 'slicequeen',
-  },
-  {
-    id: 'hextris',
-    name: 'Hextris',
-    description: 'Rotate the hex, stack colors, and survive the speed ramp.',
-    plays: 98000,
-    likes: 12100,
-    saves: 4200,
-    commentsCount: 271,
-    category: 'Puzzle',
-    color: '#22d3ee',
-    creatorDisplayName: 'hexlabs',
-    creatorUsername: 'hexlabs',
-  },
-  {
-    id: 'tomb-of-mask-1',
-    name: 'Tomb of Mask',
-    description: 'Dash wall to wall through traps, coins, spikes, and secret paths.',
-    plays: 251900,
-    likes: 31100,
-    saves: 15400,
-    commentsCount: 882,
-    category: 'Adventure',
-    color: '#a855f7',
-    creatorDisplayName: 'maskmaker',
-    creatorUsername: 'maskmaker',
-  },
-  {
-    id: 'tower-blocks-3d',
-    name: 'Tower Blocks 3D',
-    description: 'Drop blocks with perfect timing and build into the clouds.',
-    plays: 76200,
-    likes: 9300,
-    saves: 3900,
-    commentsCount: 145,
-    category: 'Casual',
-    color: '#f59e0b',
-    creatorDisplayName: 'buildmode',
-    creatorUsername: 'buildmode',
-  },
-  {
-    id: 'doodle-jump',
-    name: 'Doodle Jump',
-    description: 'Hop higher, dodge hazards, and keep the run alive.',
-    plays: 64100,
-    likes: 7600,
-    saves: 2100,
-    commentsCount: 98,
-    category: 'Platformer',
-    color: '#10b981',
-    creatorDisplayName: 'jumpclub',
-    creatorUsername: 'jumpclub',
-  },
-  {
-    id: 'block-blast',
-    name: 'Block Blast',
-    description: 'Clean lines, tight grids, and one more move energy.',
-    plays: 184500,
-    likes: 22900,
-    saves: 9700,
-    commentsCount: 501,
-    category: 'Puzzle',
-    color: '#38bdf8',
-    creatorDisplayName: 'gridwitch',
-    creatorUsername: 'gridwitch',
-  },
-];
-
-const FALLBACK_CREATORS: Creator[] = [
-  { id: '1', username: 'dreamforge', displayName: 'Dream Forge', verified: true },
-  { id: '2', username: 'arcadeabi', displayName: 'Arcade Abi', verified: true },
-  { id: '3', username: 'pixelmuse', displayName: 'Pixel Muse' },
-  { id: '4', username: 'speedrunner', displayName: 'Speed Runner' },
-  { id: '5', username: 'quizqueen', displayName: 'Quiz Queen' },
-];
-
 const EXPLORE_TABS: ExploreTab[] = ['For You', 'Games', 'Horror', 'Quiz', 'Roleplay'];
 
 const HOME_VIDEOS = [
@@ -420,10 +336,6 @@ const readStoredSet = (key: string) => {
   } catch {
     return new Set<string>();
   }
-};
-
-const writeStoredSet = (key: string, value: Set<string>) => {
-  localStorage.setItem(key, JSON.stringify([...value]));
 };
 
 const formatCount = (value?: number) => {
@@ -636,8 +548,8 @@ async function request(endpoint: string, timeoutMs = 9000) {
 }
 
 function useGameTokData() {
-  const [games, setGames] = useState<Game[]>(FALLBACK_GAMES);
-  const [creators, setCreators] = useState<Creator[]>(FALLBACK_CREATORS);
+  const [games, setGames] = useState<Game[]>([]);
+  const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
 
@@ -650,13 +562,13 @@ function useGameTokData() {
           request('/users/recommended'),
         ]);
         if (!mounted) return;
-        if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games) && gamesRes.value.games.length > 0) {
+        if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
           setGames(gamesRes.value.games);
           setOffline(false);
         } else {
           setOffline(true);
         }
-        if (creatorsRes.status === 'fulfilled' && Array.isArray(creatorsRes.value?.users) && creatorsRes.value.users.length > 0) {
+        if (creatorsRes.status === 'fulfilled' && Array.isArray(creatorsRes.value?.users)) {
           setCreators(creatorsRes.value.users);
         }
       } catch {
@@ -672,6 +584,22 @@ function useGameTokData() {
   }, []);
 
   return { games, creators, loading, offline };
+}
+
+function extractIdSet(data: any, keys: string[]) {
+  const set = new Set<string>();
+  const add = (item: any) => {
+    const id = typeof item === 'string'
+      ? item
+      : item?.id || item?.gameId || item?.userId || item?.creatorId || item?.username;
+    if (id) set.add(String(id));
+  };
+  keys.forEach((key) => {
+    const value = data?.[key];
+    if (Array.isArray(value)) value.forEach(add);
+  });
+  if (Array.isArray(data)) data.forEach(add);
+  return set;
 }
 
 function App() {
@@ -720,9 +648,93 @@ function App() {
   const handleLogout = useCallback(() => {
     void auth.logout();
     setAuthUser(null);
+    setLikedGames(new Set());
+    setSavedGames(new Set());
+    setFollowedCreators(new Set());
   }, []);
 
-  const activeGame = games[gameIndex % games.length] || FALLBACK_GAMES[0];
+  useEffect(() => {
+    if (!getToken() || games.length === 0) return;
+    const gameIds = games.map((game) => game.id).filter(Boolean);
+    let mounted = true;
+    likesApi.check(gameIds)
+      .then((data: any) => {
+        if (!mounted) return;
+        const ids = extractIdSet(data, ['likedGameIds', 'likedGames', 'likes', 'gameIds']);
+        if (ids.size > 0 || Array.isArray(data?.likedGameIds) || Array.isArray(data?.likedGames)) setLikedGames(ids);
+      })
+      .catch(() => {});
+    savedGamesApi.check(gameIds)
+      .then((data: any) => {
+        if (!mounted) return;
+        const ids = extractIdSet(data, ['savedGameIds', 'savedGames', 'saves', 'gameIds']);
+        if (ids.size > 0 || Array.isArray(data?.savedGameIds) || Array.isArray(data?.savedGames)) setSavedGames(ids);
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [authUser?.id, games]);
+
+  useEffect(() => {
+    if (!authUser?.id) return;
+    users.following(authUser.id)
+      .then((data: any) => setFollowedCreators(extractIdSet(data, ['users', 'following', 'creators'])))
+      .catch(() => {});
+  }, [authUser?.id]);
+
+  const activeGame = games.length > 0 ? games[((gameIndex % games.length) + games.length) % games.length] : null;
+
+  const requireAuth = (mode: AuthMode = 'signup') => {
+    if (authUser || getToken()) return false;
+    openAuth(mode);
+    return true;
+  };
+
+  const toggleBackendSet = (
+    setter: Dispatch<SetStateAction<Set<string>>>,
+    id: string,
+    requestToggle: () => Promise<any>,
+  ) => {
+    if (!id || requireAuth('login')) return;
+    let shouldAdd = true;
+    setter((previous) => {
+      const next = new Set(previous);
+      shouldAdd = !next.has(id);
+      shouldAdd ? next.add(id) : next.delete(id);
+      return next;
+    });
+    requestToggle().then((data: any) => {
+      if (typeof data?.liked === 'boolean' || typeof data?.saved === 'boolean' || typeof data?.following === 'boolean') {
+        const confirmed = Boolean(data.liked ?? data.saved ?? data.following);
+        setter((previous) => {
+          const next = new Set(previous);
+          confirmed ? next.add(id) : next.delete(id);
+          return next;
+        });
+      }
+    }).catch(() => {
+      setter((previous) => {
+        const next = new Set(previous);
+        shouldAdd ? next.delete(id) : next.add(id);
+        return next;
+      });
+    });
+  };
+
+  const activeCreatorId = activeGame?.creatorId || activeGame?.userId || activeGame?.createdBy || activeGame?.creatorUsername || activeGame?.creatorDisplayName || '';
+  const toggleActiveLike = () => {
+    if (!activeGame) return;
+    toggleBackendSet(setLikedGames, activeGame.id, () => likesApi.toggle(activeGame.id));
+  };
+  const toggleActiveSave = () => {
+    if (!activeGame) return;
+    toggleBackendSet(setSavedGames, activeGame.id, () => savedGamesApi.toggle(activeGame.id));
+  };
+  const toggleActiveFollow = () => {
+    if (!activeCreatorId) return;
+    toggleBackendSet(setFollowedCreators, activeCreatorId, () => users.follow(activeCreatorId));
+  };
 
   const openGame = (game: Game) => {
     const index = games.findIndex((item) => item.id === game.id);
@@ -754,17 +766,14 @@ function App() {
     setModal('auth');
   };
 
-  const nextGame = () => setGameIndex((value) => (value + 1) % games.length);
-  const previousGame = () => setGameIndex((value) => (value - 1 + games.length) % games.length);
-  const toggleStored = (key: string, setter: Dispatch<SetStateAction<Set<string>>>, id: string) => {
-    setter((previous) => {
-      const next = new Set(previous);
-      next.has(id) ? next.delete(id) : next.add(id);
-      writeStoredSet(key, next);
-      return next;
-    });
+  const nextGame = () => {
+    if (games.length === 0) return;
+    setGameIndex((value) => (value + 1) % games.length);
   };
-
+  const previousGame = () => {
+    if (games.length === 0) return;
+    setGameIndex((value) => (value - 1 + games.length) % games.length);
+  };
   useEffect(() => {
     const storedGameId = localStorage.getItem(STORAGE_KEYS.activeGame);
     if (!storedGameId || games.length === 0) return;
@@ -800,33 +809,37 @@ function App() {
       {!marketingPage && <div className="phone-stage">
         <main className="app-screen">
           {activeTab === 'home' && (
-            <HomeFeed
-              games={games}
-              game={activeGame}
-              index={gameIndex}
-              loading={loading}
-              offline={offline}
-              hudHidden={hudHidden}
-              gameDeckMode={gameDeckMode}
-              liked={likedGames.has(activeGame.id)}
-              saved={savedGames.has(activeGame.id)}
-              following={followedCreators.has(activeGame.creatorUsername || activeGame.creatorDisplayName || 'anonymous')}
-              onNext={nextGame}
-              onPrevious={previousGame}
-              onOpenModal={setModal}
-              onToggleLike={() => toggleStored(STORAGE_KEYS.likedGames, setLikedGames, activeGame.id)}
-              onToggleSave={() => toggleStored(STORAGE_KEYS.savedGames, setSavedGames, activeGame.id)}
-              onToggleFollow={() => toggleStored(STORAGE_KEYS.followedCreators, setFollowedCreators, activeGame.creatorUsername || activeGame.creatorDisplayName || 'anonymous')}
-              onOpenExplore={() => {
-                setGameDeckMode(false);
-                setActiveTab('explore');
-              }}
-            />
+            activeGame ? (
+              <HomeFeed
+                games={games}
+                game={activeGame}
+                index={gameIndex}
+                loading={loading}
+                offline={offline}
+                hudHidden={hudHidden}
+                gameDeckMode={gameDeckMode}
+                liked={likedGames.has(activeGame.id)}
+                saved={savedGames.has(activeGame.id)}
+                following={followedCreators.has(activeCreatorId)}
+                onNext={nextGame}
+                onPrevious={previousGame}
+                onOpenModal={setModal}
+                onToggleLike={toggleActiveLike}
+                onToggleSave={toggleActiveSave}
+                onToggleFollow={toggleActiveFollow}
+                onOpenExplore={() => {
+                  setGameDeckMode(false);
+                  setActiveTab('explore');
+                }}
+              />
+            ) : (
+              <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
+            )
           )}
           {activeTab === 'explore' && (
             <ExploreScreen games={games} creators={creators} onOpenGame={openGame} onCreate={() => goTab('create')} />
           )}
-          {activeTab === 'create' && <CreateScreen onOpenGame={openGame} fallbackGame={activeGame} />}
+          {activeTab === 'create' && <CreateScreen onOpenGame={openGame} fallbackGame={activeGame || null} />}
           {activeTab === 'connect' && <ConnectScreen creators={creators} games={games} onOpenGame={openGame} />}
           {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
         </main>
@@ -875,7 +888,7 @@ function App() {
         />
       )}
 
-      {activeTab === 'home' && !marketingPage && authUser && (
+      {activeTab === 'home' && !marketingPage && authUser && activeGame && (
         <DesktopPlayHome
           user={authUser}
           game={activeGame}
@@ -883,14 +896,14 @@ function App() {
           index={gameIndex}
           liked={likedGames.has(activeGame.id)}
           saved={savedGames.has(activeGame.id)}
-          following={followedCreators.has(activeGame.creatorUsername || activeGame.creatorDisplayName || 'anonymous')}
+          following={followedCreators.has(activeCreatorId)}
           onTab={goTab}
           onNext={nextGame}
           onPrevious={previousGame}
           onOpenModal={setModal}
-          onToggleLike={() => toggleStored(STORAGE_KEYS.likedGames, setLikedGames, activeGame.id)}
-          onToggleSave={() => toggleStored(STORAGE_KEYS.savedGames, setSavedGames, activeGame.id)}
-          onToggleFollow={() => toggleStored(STORAGE_KEYS.followedCreators, setFollowedCreators, activeGame.creatorUsername || activeGame.creatorDisplayName || 'anonymous')}
+          onToggleLike={toggleActiveLike}
+          onToggleSave={toggleActiveSave}
+          onToggleFollow={toggleActiveFollow}
         />
       )}
 
@@ -900,10 +913,7 @@ function App() {
           activeTab={activeTab}
           onTab={goTab}
           user={authUser}
-          onBuild={() => {
-            if (authUser || getToken()) return;
-            openAuth('signup');
-          }}
+          onAuthRequired={() => openAuth('signup')}
         />
       )}
 
@@ -913,9 +923,9 @@ function App() {
 
       {modal && (
         <Sheet title={modalTitle(modal)} onClose={() => setModal(null)} variant={modal === 'auth' ? 'auth' : undefined}>
-          {modal === 'comments' && <CommentsSheet game={activeGame} creators={creators} />}
-          {modal === 'leaderboard' && <LeaderboardSheet game={activeGame} creators={creators} />}
-          {modal === 'share' && <ShareSheet game={activeGame} />}
+          {modal === 'comments' && activeGame && <CommentsSheet game={activeGame} creators={creators} />}
+          {modal === 'leaderboard' && activeGame && <LeaderboardSheet game={activeGame} creators={creators} />}
+          {modal === 'share' && activeGame && <ShareSheet game={activeGame} />}
           {modal === 'auth' && <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setModal(null)} />}
           {modal === 'search' && <SearchSheet games={games} creators={creators} onOpenGame={openGame} onCreate={() => { setModal(null); goTab('create'); }} />}
           {modal === 'notifications' && <NotificationsSheet games={games} creators={creators} onOpenGame={openGame} />}
@@ -932,6 +942,25 @@ function modalTitle(modal: Modal) {
   if (modal === 'search') return 'Games';
   if (modal === 'notifications') return 'Notifications';
   return 'Join GameTok';
+}
+
+function EmptyAppState({ loading, title, text }: { loading?: boolean; title: string; text: string }) {
+  return (
+    <section className="empty-app-state">
+      {loading ? <RefreshCw className="spin" size={34} /> : <Gamepad2 size={34} />}
+      <h2>{loading ? 'Loading games...' : title}</h2>
+      <p>{loading ? 'Pulling the live GameTok feed from the backend.' : text}</p>
+    </section>
+  );
+}
+
+function EmptyListState({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="empty-list-state">
+      <strong>{title}</strong>
+      <span>{text}</span>
+    </div>
+  );
 }
 
 function HomeFeed({
@@ -1039,17 +1068,16 @@ function HomeFeed({
               <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
             </div>
           )}
-          {offline && <div className="offline-pill">Offline fallback</div>}
+          {offline && <div className="offline-pill">Offline</div>}
         </div>
       )}
 
       {!hudHidden && (
         <>
           <div className="feed-actions">
-            <ActionButton icon={<Trophy size={22} />} label="Scores" onClick={() => onOpenModal('leaderboard')} />
             <ActionButton icon={<Share2 size={22} />} label="Share" onClick={() => onOpenModal('share')} />
             <ActionButton icon={<MessageCircle size={22} />} label={formatCount(game.commentsCount || 0)} onClick={() => onOpenModal('comments')} />
-            <ActionButton active={liked} icon={<Heart size={22} fill={liked ? 'currentColor' : 'none'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
+            <ActionButton active={liked} tone="like" icon={<Heart size={22} fill={liked ? 'currentColor' : 'none'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
             <ActionButton active={saved} icon={<Bookmark size={22} fill={saved ? 'currentColor' : 'none'} />} label={saved ? 'Saved' : 'Save'} onClick={onToggleSave} />
           </div>
 
@@ -1080,9 +1108,9 @@ function HomeFeed({
       )}
 
       <div className="swipe-hint">
-        <ChevronUp size={18} />
+        <button type="button" onClick={onPrevious} aria-label="Previous game"><ChevronUp size={18} /></button>
         <span>{index + 1}/{games.length}</span>
-        <ChevronDown size={18} />
+        <button type="button" onClick={onNext} aria-label="Next game"><ChevronDown size={18} /></button>
       </div>
 
       {!gameDeckMode && <div className="deck-shadow" />}
@@ -1090,9 +1118,9 @@ function HomeFeed({
   );
 }
 
-function ActionButton({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+function ActionButton({ icon, label, active, tone, onClick }: { icon: React.ReactNode; label: string; active?: boolean; tone?: 'like'; onClick?: () => void }) {
   return (
-    <button className={`feed-action ${active ? 'active' : ''}`} onClick={onClick}>
+    <button className={`feed-action ${active ? 'active' : ''} ${tone === 'like' ? 'like-action' : ''}`} onClick={onClick}>
       <span>{icon}</span>
       <small>{label}</small>
     </button>
@@ -1123,7 +1151,7 @@ function ExploreScreen({
     return tabbed.filter((game) => `${game.name} ${game.category} ${game.description}`.toLowerCase().includes(q));
   }, [active, games, query]);
 
-  const heroGame = filtered[0] || games[0] || FALLBACK_GAMES[0];
+  const heroGame = filtered[0] || games[0] || null;
   const sections = [
     { title: active === 'For You' ? 'Trending Now' : `${active} Picks`, games: filtered },
     { title: 'Made For You', games: [...filtered].reverse() },
@@ -1155,15 +1183,15 @@ function ExploreScreen({
         ))}
       </div>
 
-      <div className="explore-hero" style={{ backgroundImage: `url(${active === 'For You' ? '/app-assets/dream-forge-hero.png' : getThumbnailUrl(heroGame)})` }}>
+      <div className="explore-hero" style={{ backgroundImage: `url(${active === 'For You' || !heroGame ? '/app-assets/dream-forge-hero.png' : getThumbnailUrl(heroGame)})` }}>
         <div className="hero-scrim" />
         <div className="hero-pill"><Sparkles size={13} /> {active === 'For You' ? 'Dream Forge' : 'Instant Play'}</div>
         <div className="explore-hero-copy">
-          <h1>{active === 'For You' ? <>Make a playable <span>world.</span></> : <>{heroGame.name}<span> play now.</span></>}</h1>
-          <p>{active === 'For You' ? 'You imagine it. We build it.' : heroGame.description}</p>
-          <button onClick={active === 'For You' ? onCreate : () => onOpenGame(heroGame)}>
-            {active === 'For You' ? <Wand2 size={16} /> : <Play size={16} fill="currentColor" />}
-            {active === 'For You' ? 'Create Now' : 'Play Now'}
+          <h1>{active === 'For You' || !heroGame ? <>Make a playable <span>world.</span></> : <>{heroGame.name}<span> play now.</span></>}</h1>
+          <p>{active === 'For You' || !heroGame ? 'You imagine it. We build it.' : heroGame.description}</p>
+          <button onClick={active === 'For You' || !heroGame ? onCreate : () => onOpenGame(heroGame)}>
+            {active === 'For You' || !heroGame ? <Wand2 size={16} /> : <Play size={16} fill="currentColor" />}
+            {active === 'For You' || !heroGame ? 'Create Now' : 'Play Now'}
           </button>
         </div>
       </div>
@@ -1233,7 +1261,7 @@ function GameLane({ title, games, onOpenGame }: { title: string; games: Game[]; 
   );
 }
 
-function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) => void; fallbackGame: Game }) {
+function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) => void; fallbackGame: Game | null }) {
   const FORGE_STEPS = useMemo(() => ([
     { label: 'Design', phases: ['maker_workspace', 'spec', 'foundation', 'queued'] },
     { label: 'Art', phases: ['assets'] },
@@ -1272,9 +1300,7 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
     return 'Detailed games with lots of characters, vehicles, or art usually take 15–25 minutes — most of that is AI art generation.';
   }, [prompt, selectedIdea]);
   const drafts = useMemo(() => [
-    { id: 'draft-1', title: 'Neon Rhythm Rush', status: 'Playable draft', game: fallbackGame },
-    { id: 'draft-2', title: 'Haunted Quiz Room', status: 'Needs polish', game: fallbackGame },
-    { id: 'draft-3', title: 'Basket Dunk Lab', status: 'Prototype', game: fallbackGame },
+    ...(fallbackGame ? [{ id: 'draft-1', title: fallbackGame.name, status: 'Playable draft', game: fallbackGame }] : []),
   ], [fallbackGame]);
   const genreRows = useMemo(() => [
     GENRE_CHIPS.filter((_, index) => index % 3 === 0),
@@ -1660,7 +1686,7 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
       {(phase === 'idle' || studioTab === 'drafts') && (
         <div className="create-bottom-tabs">
           <button className={studioTab === 'create' ? 'active' : ''} onClick={() => setStudioTab('create')}>
-            <Home size={20} /> <span>Create</span>
+            <Home size={20} /> <span>Home</span>
           </button>
           <button className={studioTab === 'drafts' ? 'active' : ''} onClick={() => setStudioTab('drafts')}>
             <Gamepad2 size={20} /> <span>Drafts{drafts.length ? ` (${drafts.length})` : ''}</span>
@@ -1723,13 +1749,13 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
           <div className="preview-game">
             <iframe
               title="Preview game"
-              src={previewHtml ? undefined : getGameUrl(fallbackGame)}
+              src={previewHtml || !fallbackGame ? undefined : getGameUrl(fallbackGame)}
               srcDoc={previewHtml || undefined}
             />
           </div>
           <div className="publish-bar">
             <button onClick={() => setPhase('idle')}>Keep Editing</button>
-            <button className="primary" onClick={() => onOpenGame(fallbackGame)}><Play size={16} fill="currentColor" /> Publish</button>
+            <button className="primary" disabled={!fallbackGame} onClick={() => fallbackGame && onOpenGame(fallbackGame)}><Play size={16} fill="currentColor" /> Publish</button>
           </div>
         </div>
       )}
@@ -1858,44 +1884,29 @@ function ConnectScreen({ creators, games, onOpenGame }: { creators: Creator[]; g
 
       {lane === 'chats' && (
         <div className="message-list">
-          {creators.slice(0, 7).map((creator, index) => (
-            <button className="message-row" key={creator.id}>
-              <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
-              <span>
-                <strong>{creator.displayName || creator.username}</strong>
-                <small>{index % 2 ? 'Sent you a game challenge' : 'Want to co-create a horror quiz?'}</small>
-              </span>
-              <em>{index + 1}m</em>
-            </button>
-          ))}
+          <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />
         </div>
       )}
 
       {lane === 'requests' && (
         <div className="request-grid">
-          {creators.slice(1, 5).map((creator) => (
-            <div className="request-card" key={creator.id}>
-              <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
-              <strong>{creator.displayName || creator.username}</strong>
-              <span>@{creator.username}</span>
-              <button>Accept</button>
-            </div>
-          ))}
+          <EmptyListState title="No requests yet" text="Friend and co-create requests will show here." />
         </div>
       )}
 
       {lane === 'activity' && (
         <div className="activity-list">
-          {games.slice(0, 8).map((game, index) => (
+          {games.slice(0, 8).map((game) => (
             <button className="activity-row" key={game.id} onClick={() => onOpenGame(game)}>
-              <span className="activity-icon">{index % 3 === 0 ? <Trophy size={17} /> : index % 3 === 1 ? <Heart size={17} /> : <Play size={17} />}</span>
+              <span className="activity-icon"><Play size={17} /></span>
               <span>
                 <strong>@{game.creatorDisplayName || 'creator'}</strong>
-                <small>{index % 2 ? 'liked your score in' : 'is playing'} {game.name}</small>
+                <small>Published {game.name}</small>
               </span>
               <img src={getThumbnailUrl(game)} alt="" />
             </button>
           ))}
+          {games.length === 0 && <EmptyListState title="No activity yet" text="Live backend activity will appear here." />}
         </div>
       )}
     </section>
@@ -1906,7 +1917,15 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
   const [tab, setTab] = useState<'created' | 'played' | 'liked'>('created');
   const handle = user?.username || 'guest';
   const displayName = user?.displayName || user?.username || 'Guest Player';
-  const activeGames = tab === 'created' ? games.slice(0, 9) : tab === 'played' ? [...games].reverse().slice(0, 9) : games.slice(2, 11);
+  const createdGames = user
+    ? games.filter((game) => (
+      game.creatorId === user.id
+      || game.userId === user.id
+      || game.createdBy === user.id
+      || game.creatorUsername === user.username
+    ))
+    : [];
+  const activeGames = tab === 'created' ? createdGames : [];
   return (
     <section className="page-scroll profile-screen">
       <header className="profile-top">
@@ -1929,10 +1948,10 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
       </div>
 
       <div className="profile-stats">
-        <span><strong>42</strong><small>Following</small></span>
-        <span><strong>8.2K</strong><small>Followers</small></span>
-        <span><strong>{games.length}</strong><small>Created</small></span>
-        <span><strong>91K</strong><small>Likes</small></span>
+        <span><strong>{formatCount(user?.followingCount || 0)}</strong><small>Following</small></span>
+        <span><strong>{formatCount(user?.followersCount || 0)}</strong><small>Followers</small></span>
+        <span><strong>{createdGames.length}</strong><small>Created</small></span>
+        <span><strong>{formatCount(user?.likesCount || 0)}</strong><small>Likes</small></span>
       </div>
 
       <div className="profile-actions">
@@ -1959,6 +1978,12 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
             <span><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</span>
           </button>
         ))}
+        {activeGames.length === 0 && (
+          <EmptyListState
+            title={tab === 'created' ? 'No created games yet' : `No ${tab} games yet`}
+            text="This section will populate from the account backend."
+          />
+        )}
       </div>
     </section>
   );
@@ -2003,7 +2028,7 @@ function BottomNav({
   const items: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
     { tab: 'home', label: 'Home', icon: <Home size={23} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={23} /> },
-    { tab: 'create', label: 'Create', icon: <Plus size={24} /> },
+    { tab: 'create', label: 'Home', icon: <Plus size={24} /> },
     { tab: 'connect', label: 'Connect', icon: <Users size={23} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={23} /> },
   ];
@@ -2200,10 +2225,9 @@ function DesktopPlayHome({
         </div>
 
         <aside className="desktop-feed-actions">
-          <button onClick={() => onOpenModal('leaderboard')}><Trophy size={25} /><span>Scores</span></button>
           <button onClick={() => onOpenModal('share')}><Send size={25} /><span>Share</span></button>
           <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(game.commentsCount || 0)}</span></button>
-          <button onClick={onToggleLike} className={liked ? 'active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount(game.likes || 0)}</span></button>
+          <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
           <button onClick={onToggleSave} className={saved ? 'active' : ''}><Bookmark size={25} fill={saved ? 'currentColor' : 'none'} /><span>Favorite</span></button>
           <button className="desktop-feed-avatar-action" onClick={() => onTab('profile')}>
             <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
@@ -2450,18 +2474,22 @@ function DesktopCreateWorkspace({
   activeTab,
   onTab,
   user,
-  onBuild,
+  onAuthRequired,
 }: {
   games: Game[];
   activeTab: Tab;
   onTab: (tab: Tab) => void;
   user: AuthUser | null;
-  onBuild: () => void;
+  onAuthRequired: () => void;
 }) {
   const [brief, setBrief] = useState('');
   const [animatedPrompt, setAnimatedPrompt] = useState('');
   const [promptIndex, setPromptIndex] = useState(0);
   const [isDeletingPrompt, setIsDeletingPrompt] = useState(false);
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [buildMessage, setBuildMessage] = useState('');
+  const [buildError, setBuildError] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   useEffect(() => {
     const prompt = DESKTOP_CREATE_PROMPTS[promptIndex];
     let delay = isDeletingPrompt ? 24 : 42;
@@ -2497,30 +2525,71 @@ function DesktopCreateWorkspace({
   const promptCards = [
     {
       label: 'Cozy',
-      image: getThumbnailUrl(games[0] || FALLBACK_GAMES[0]),
+      image: games[0] ? getThumbnailUrl(games[0]) : '/app-assets/dream-forge-hero.png',
       prompt: 'Make a cozy fruit ninja game where you slice fruit, dodge bombs, and chase combo streaks',
     },
     {
       label: 'FPS',
-      image: getThumbnailUrl(games[1] || FALLBACK_GAMES[1]),
+      image: games[1] ? getThumbnailUrl(games[1]) : '/app-assets/dream-forge-hero.png',
       prompt: 'Make a multiplayer FPS arena where players fight waves, upgrade weapons, and hold the zone',
     },
     {
       label: 'Mobile',
-      image: getThumbnailUrl(games[2] || FALLBACK_GAMES[2]),
+      image: games[2] ? getThumbnailUrl(games[2]) : '/app-assets/dream-forge-hero.png',
       prompt: 'Make a 2D endless runner where you jump through a jungle and dodge traps',
     },
     {
       label: 'Platformer',
-      image: getThumbnailUrl(games[3] || FALLBACK_GAMES[3]),
+      image: games[3] ? getThumbnailUrl(games[3]) : '/app-assets/dream-forge-hero.png',
       prompt: 'Make a swamp platformer where ninjas defeat enemies and collect power-ups',
     },
     {
       label: 'RPG',
-      image: getThumbnailUrl(games[4] || FALLBACK_GAMES[4]),
+      image: games[4] ? getThumbnailUrl(games[4]) : '/app-assets/dream-forge-hero.png',
       prompt: 'Make a fantasy RPG where every quest changes the village and unlocks new powers',
     },
   ];
+  const startDreamForge = async () => {
+    if (!user && !getToken()) {
+      onAuthRequired();
+      return;
+    }
+
+    const finalPrompt = (brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]).trim();
+    if (!finalPrompt) return;
+
+    setIsBuilding(true);
+    setBuildError(null);
+    setPreviewHtml(null);
+    setBuildMessage('Starting Dream Forge...');
+    try {
+      const { promise } = ai.dream(finalPrompt, [], {
+        onJobStarted: () => setBuildMessage('Dream Forge queued your game...'),
+        onJobProgress: ({ phase, progress, statusMessage, queuePosition }) => {
+          if (statusMessage) {
+            setBuildMessage(statusMessage);
+          } else if (queuePosition) {
+            setBuildMessage(`Queued — position ${queuePosition} in line...`);
+          } else if (phase) {
+            setBuildMessage(`${phase.replace(/_/g, ' ')}${typeof progress === 'number' ? ` · ${Math.round(progress)}%` : ''}`);
+          }
+        },
+      });
+      const result: any = await promise;
+      if (result?.htmlPreview) {
+        setPreviewHtml(result.htmlPreview);
+        setBuildMessage('Preview ready.');
+      } else {
+        setBuildMessage('Dream Forge finished.');
+      }
+    } catch (error: any) {
+      setBuildError(error?.message || 'Dream Forge failed.');
+      setBuildMessage('');
+    } finally {
+      setIsBuilding(false);
+    }
+  };
+
   return (
     <section className="desktop-app-main desktop-create-workspace">
       <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} />
@@ -2556,8 +2625,23 @@ function DesktopCreateWorkspace({
             <span>{brief.length}/500</span>
             <button className="plan"><Sparkles size={18} /> Plan</button>
             <button aria-label="Voice prompt"><Mic size={18} /></button>
-            <button className="primary" onClick={onBuild}>Create game</button>
+            <button className="primary" disabled={isBuilding} onClick={startDreamForge}>
+              {isBuilding ? 'Forging...' : 'Create game'}
+            </button>
           </div>
+          {(buildMessage || buildError) && (
+            <p className={`desktop-create-status ${buildError ? 'is-error' : ''}`}>
+              {buildError || buildMessage}
+            </p>
+          )}
+          {previewHtml && (
+            <iframe
+              className="desktop-create-preview"
+              title="Dream Forge preview"
+              srcDoc={previewHtml}
+              sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+            />
+          )}
         </div>
       </div>
     </section>
@@ -2577,7 +2661,7 @@ function DesktopAppSidebar({
     { tab: 'home', label: 'Home', icon: <Home size={22} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={22} /> },
     { tab: 'connect', label: 'Connect', icon: <Users size={22} /> },
-    { tab: 'create', label: 'Create', icon: <Plus size={22} /> },
+    { tab: 'create', label: 'Home', icon: <Plus size={22} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={22} /> },
   ];
   const username = user?.displayName || user?.username || 'Player';
@@ -2663,7 +2747,7 @@ function SearchSheet({
             <button key={category} onClick={() => setQuery(category)}>
               <span>{['🕹️', '🧩', '⚔️', '🎯', '🏀', '🏁'][index]}</span>
               <strong>{category}</strong>
-              <small>{Math.max(3, games.filter((game) => (game.category || '').toLowerCase().includes(category.toLowerCase())).length)} games</small>
+              <small>{games.filter((game) => (game.category || '').toLowerCase().includes(category.toLowerCase())).length} games</small>
             </button>
           ))}
         </div>
@@ -2706,11 +2790,11 @@ function SearchSheet({
 }
 
 function NotificationsSheet({ games, creators, onOpenGame }: { games: Game[]; creators: Creator[]; onOpenGame: (game: Game) => void }) {
-  const items = games.slice(0, 8).map((game, index) => ({
+  const items = creators.length === 0 ? [] : games.slice(0, 8).map((game, index) => ({
     id: `${game.id}-${index}`,
     game,
-    creator: creators[index % Math.max(creators.length, 1)] || FALLBACK_CREATORS[0],
-    text: index % 3 === 0 ? 'sent you a score challenge' : index % 3 === 1 ? 'liked your run' : 'published a new game',
+    creator: creators[index % creators.length],
+    text: 'published a new game',
   }));
 
   return (
@@ -2718,7 +2802,7 @@ function NotificationsSheet({ games, creators, onOpenGame }: { games: Game[]; cr
       {items.map((item, index) => (
         <button key={item.id} onClick={() => onOpenGame(item.game)}>
           <span className="notification-icon">
-            {index % 3 === 0 ? <Trophy size={18} /> : index % 3 === 1 ? <Heart size={18} /> : <Gamepad2 size={18} />}
+            {index % 2 === 0 ? <Gamepad2 size={18} /> : <Heart size={18} />}
           </span>
           <span>
             <strong>@{item.creator.username}</strong>
@@ -2727,6 +2811,7 @@ function NotificationsSheet({ games, creators, onOpenGame }: { games: Game[]; cr
           <img src={getThumbnailUrl(item.game)} alt="" />
         </button>
       ))}
+      {items.length === 0 && <EmptyListState title="No notifications yet" text="Backend notifications will appear here." />}
     </div>
   );
 }
@@ -2761,18 +2846,10 @@ function Sheet({
   );
 }
 
-function CommentsSheet({ game, creators }: { game: Game; creators: Creator[] }) {
+function CommentsSheet({ game }: { game: Game; creators: Creator[] }) {
   const [draft, setDraft] = useState('');
   const [localComments, setLocalComments] = useState<Array<{ id: string; username: string; text: string; likes: number }>>([]);
-  const comments = [
-    ...localComments,
-    ...creators.slice(0, 6).map((creator, index) => ({
-      id: creator.id,
-      username: creator.username,
-      text: index % 2 ? `The polish on ${game.name} is wild.` : 'This needs a speedrun leaderboard immediately.',
-      likes: Math.max(0, 18 - index * 3),
-    })),
-  ];
+  const comments = localComments;
 
   const postComment = () => {
     if (!draft.trim()) return;
@@ -2796,6 +2873,7 @@ function CommentsSheet({ game, creators }: { game: Game; creators: Creator[] }) 
           <Heart size={16} />
         </div>
       ))}
+      {comments.length === 0 && <EmptyListState title="No comments yet" text={`Be the first to comment on ${game.name}.`} />}
       <div className="comment-composer">
         <input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') postComment(); }} placeholder="Add a comment..." />
         <button onClick={postComment}><Send size={17} /></button>
@@ -2804,17 +2882,8 @@ function CommentsSheet({ game, creators }: { game: Game; creators: Creator[] }) 
   );
 }
 
-function LeaderboardSheet({ game, creators }: { game: Game; creators: Creator[] }) {
-  const rows = [
-    { id: 'guest', username: 'guest', score: Math.round((game.plays || 12000) / 1.7), current: true },
-    ...creators.slice(0, 7).map((creator, index) => ({
-      id: creator.id,
-      username: creator.username,
-      score: Math.round((game.plays || 9000) / (index + 2)),
-      current: false,
-    })),
-  ].sort((a, b) => b.score - a.score);
-
+function LeaderboardSheet({ game }: { game: Game; creators: Creator[] }) {
+  const rows: Array<{ id: string; username: string; score: number; current: boolean }> = [];
   return (
     <div className="leaderboard-list">
       <div className="leaderboard-summary">
@@ -2832,6 +2901,7 @@ function LeaderboardSheet({ game, creators }: { game: Game; creators: Creator[] 
           <em>{row.score.toLocaleString()}</em>
         </div>
       ))}
+      {rows.length === 0 && <EmptyListState title="No scores yet" text="Leaderboard rows will appear when scores come from the backend." />}
     </div>
   );
 }

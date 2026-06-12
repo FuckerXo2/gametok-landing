@@ -3017,6 +3017,72 @@ textarea {
   border: 1px solid #fff;
 }
 
+.desktop-create-composer-row .primary:disabled {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+.desktop-create-status {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.desktop-create-status.is-error {
+  color: #ff8a8a;
+}
+
+.desktop-create-preview {
+  width: 100%;
+  height: min(42vh, 420px);
+  margin-top: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: #000;
+}
+
+.feed-action.like-action.active span,
+.desktop-feed-actions button.like-active {
+  color: #fff;
+  background: rgba(239, 68, 68, 0.42);
+  border-color: rgba(248, 113, 113, 0.78);
+}
+
+.swipe-hint button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.empty-app-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 28px;
+  text-align: center;
+  color: #fff;
+  background: #000;
+}
+
+.empty-app-state h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.empty-app-state p {
+  max-width: 360px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
 .marketing-page {
   min-height: 100vh;
   color: #fff;
