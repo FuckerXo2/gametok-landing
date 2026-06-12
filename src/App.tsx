@@ -2643,6 +2643,8 @@ function DesktopCreateWorkspace({
   const [buildMessage, setBuildMessage] = useState('');
   const [buildError, setBuildError] = useState<string | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [activeGameTitle, setActiveGameTitle] = useState('Untitled Dream');
   const cancelBuildRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     const prompt = DESKTOP_CREATE_PROMPTS[promptIndex];
@@ -2715,6 +2717,8 @@ function DesktopCreateWorkspace({
     setIsBuilding(true);
     setBuildError(null);
     setPreviewHtml(null);
+    setActiveDraftId(null);
+    setActiveGameTitle('Untitled Dream');
     setBuildMessage('Starting Dream Forge...');
     try {
       const dreamJob = ai.dream(finalPrompt, [], {
@@ -2733,6 +2737,8 @@ function DesktopCreateWorkspace({
       const result: any = await dreamJob.promise;
       if (result?.htmlPreview) {
         setPreviewHtml(result.htmlPreview);
+        setActiveDraftId(result.draftId || result.id || null);
+        setActiveGameTitle(result.title || result.name || 'Untitled Dream');
         setBuildMessage('Preview ready.');
       } else {
         setBuildMessage('Dream Forge finished.');
@@ -2764,20 +2770,72 @@ function DesktopCreateWorkspace({
       <div className="desktop-create-canvas">
         <div className="desktop-create-backdrop" />
         <div className="desktop-create-shade" />
-        <div className="desktop-forge-layout">
-          <aside className="desktop-forge-panel">
-            <span className="desktop-live-pill"><span /> Dream Forge live <ChevronRight size={14} /></span>
-            <h1>What game should we make now?</h1>
-            <p>Describe the world, rules, camera, enemies, and win condition. Dream Forge will turn it into a playable draft.</p>
+        {isBuilding || previewHtml ? (
+          <div className="desktop-forge-layout">
+            <aside className="desktop-forge-panel">
+              <span className="desktop-live-pill"><span /> Dream Forge live <ChevronRight size={14} /></span>
+              {previewHtml && activeDraftId ? (
+                <DesktopRefinePanel
+                  draftId={activeDraftId}
+                  gameTitle={activeGameTitle}
+                  currentSummary={brief}
+                  onApplied={(result) => {
+                    if (result?.htmlPreview) setPreviewHtml(result.htmlPreview);
+                    if (result?.title || result?.name) setActiveGameTitle(result.title || result.name);
+                  }}
+                />
+              ) : (
+                <>
+                  <h1>Forging your world.</h1>
+                  <p>Dream Forge is building the playable version now.</p>
+                  {(buildMessage || buildError) && (
+                    <p className={`desktop-create-status ${buildError ? 'is-error' : ''}`}>
+                      {buildError || buildMessage}
+                    </p>
+                  )}
+                  {isBuilding && (
+                    <button className="desktop-forge-stop" onClick={stopDreamForge}>
+                      <X size={17} /> Stop generation
+                    </button>
+                  )}
+                </>
+              )}
+            </aside>
 
-            <div className="desktop-create-card-row">
-              {promptCards.map((card) => (
-                <button key={card.label} onClick={() => setBrief(card.prompt)}>
-                  <img src={card.image} alt="" />
-                  <span>{card.label}</span>
-                  <strong>{card.prompt}</strong>
-                </button>
-              ))}
+            <div className="desktop-forge-stage">
+              {previewHtml ? (
+                <iframe
+                  className="desktop-create-preview"
+                  title="Dream Forge preview"
+                  srcDoc={previewHtml}
+                  sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+                />
+              ) : (
+                <div className="desktop-forge-card">
+                  <ForgeDefenseStage
+                    active={isBuilding}
+                    prompt={brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]}
+                    message={buildMessage}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="desktop-create-content">
+              <span className="desktop-live-pill"><span /> New game model is live <ChevronRight size={14} /></span>
+              <h1>What game should we make now?</h1>
+
+              <div className="desktop-create-card-row">
+                {promptCards.map((card) => (
+                  <button key={card.label} onClick={() => setBrief(card.prompt)}>
+                    <img src={card.image} alt="" />
+                    <span>{card.label}</span>
+                    <strong>{card.prompt}</strong>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="desktop-create-composer">
@@ -2787,70 +2845,206 @@ function DesktopCreateWorkspace({
                 placeholder={animatedPrompt || DESKTOP_CREATE_PROMPTS[0]}
               />
               <div className="desktop-create-composer-row">
-                <button className="primary" disabled={isBuilding} onClick={startDreamForge}>
-                  {isBuilding ? 'Forging...' : 'Create game'}
+                <button className="primary" onClick={startDreamForge}>
+                  Create game
                 </button>
-                {isBuilding && (
-                  <button className="stop" onClick={stopDreamForge}>
-                    <X size={17} /> Stop
-                  </button>
-                )}
               </div>
-              {(buildMessage || buildError) && (
-                <p className={`desktop-create-status ${buildError ? 'is-error' : ''}`}>
-                  {buildError || buildMessage}
+              {buildError && (
+                <p className="desktop-create-status is-error">
+                  {buildError}
                 </p>
               )}
             </div>
-          </aside>
-
-          <div className="desktop-forge-stage">
-            {previewHtml ? (
-              <iframe
-                className="desktop-create-preview"
-                title="Dream Forge preview"
-                srcDoc={previewHtml}
-                sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-              />
-            ) : (
-              <div className="desktop-forge-card">
-                <span className="forge-status-pill">
-                  {isBuilding ? <RefreshCw className="spin" size={15} /> : <Gamepad2 size={15} />}
-                  {isBuilding ? (buildMessage || 'Generating your first version') : 'Ready to forge'}
-                </span>
-                <ForgeAnimation active={isBuilding} />
-                <div className="desktop-forge-copy">
-                  <Gamepad2 size={28} />
-                  <strong>{isBuilding ? 'Generating your first version' : 'Dream Forge is standing by'}</strong>
-                  <small>
-                    {isBuilding
-                      ? 'You can stop this anytime. The preview will replace this forge screen as soon as the backend returns the game.'
-                      : 'Your game preview will appear here after you click Create game.'}
-                  </small>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </section>
   );
 }
 
-function ForgeAnimation({ active }: { active: boolean }) {
+function ForgeDefenseStage({ active, prompt, message }: { active: boolean; prompt: string; message?: string }) {
+  const motes = Array.from({ length: 12 }, (_, index) => index);
+  const shards = Array.from({ length: 5 }, (_, index) => index);
+  const spokes = Array.from({ length: 6 }, (_, index) => index);
+  const compactPrompt = prompt.length > 58 ? `${prompt.slice(0, 58)}...` : prompt;
   return (
-    <div className={`forge-animation ${active ? 'active' : ''}`}>
-      <div className="forge-glow" />
-      <svg className="forge-shape forge-hex" viewBox="0 0 120 120" aria-hidden="true">
-        <path d="M60 10 L105 35 L105 85 L60 110 L15 85 L15 35 Z" />
-      </svg>
-      <svg className="forge-shape forge-diamond" viewBox="0 0 90 90" aria-hidden="true">
-        <path d="M45 5 L85 45 L45 85 L5 45 Z" />
-      </svg>
-      <svg className="forge-shape forge-triangle" viewBox="0 0 60 60" aria-hidden="true">
-        <path d="M30 8 L55 52 L5 52 Z" />
-      </svg>
-      <span className="forge-dot" />
+    <div className={`forge-defense-stage ${active ? 'active' : ''}`}>
+      <div className="forge-defense-gradient" />
+      <div className="forge-defense-shell" />
+      <div className="forge-defense-vignette" />
+      <div className="forge-defense-left-atmosphere" />
+      <div className="forge-defense-top-atmosphere" />
+      <div className="forge-defense-center-glow" />
+      <div className="forge-defense-horizon-line" />
+      <div className="forge-defense-horizon-glow" />
+      <div className="forge-defense-ring large" />
+      <div className="forge-defense-ring mid" />
+      {spokes.map((index) => (
+        <span key={`spoke-${index}`} className="forge-defense-spoke" style={{ transform: `rotate(${index * 30 - 75}deg)` }} />
+      ))}
+      <span className="forge-depth-pillar one" />
+      <span className="forge-depth-pillar two" />
+      <span className="forge-depth-pillar three" />
+      <div className="forge-defense-halo outer" />
+      <div className="forge-defense-halo mid" />
+      <div className="forge-defense-bloom" />
+      <div className="forge-defense-beam" />
+      <div className="forge-defense-beam-core" />
+      <div className="forge-defense-cross-light" />
+      <div className="forge-defense-core-plate" />
+      <div className="forge-defense-core-inner" />
+      <div className="forge-defense-core-node" />
+      <div className="forge-defense-arc" />
+      <div className="forge-defense-arc soft" />
+      {shards.map((index) => (
+        <span key={`shard-${index}`} className={`forge-defense-shard shard-${index + 1}`} />
+      ))}
+      {motes.map((index) => (
+        <span key={`mote-${index}`} className={`forge-defense-mote mote-${index + 1}`} />
+      ))}
+      <div className="forge-defense-copy">
+        <span>GAME WORLD IN PROGRESS</span>
+        <strong>{active ? 'Forging your world' : 'Dream Forge'}</strong>
+        <small>Geometry, motion, audio, and feel are being fused into one playable world.</small>
+      </div>
+      <div className="forge-defense-progress">
+        <div>
+          <span>ASSEMBLY PROGRESS</span>
+          <strong>{message || (active ? 'Waiting for backend' : 'Ready')}</strong>
+        </div>
+        <small>{active ? 'World layout' : 'Standby'}</small>
+        <i />
+      </div>
+      <div className="forge-defense-prompt">
+        <span>SPELL</span>
+        <strong>✦</strong>
+        <small>{compactPrompt}</small>
+      </div>
+    </div>
+  );
+}
+
+type RefineMessage = { role: 'user' | 'ai'; text: string };
+
+function DesktopRefinePanel({
+  draftId,
+  gameTitle,
+  currentSummary,
+  onApplied,
+}: {
+  draftId: string;
+  gameTitle?: string;
+  currentSummary?: string;
+  onApplied: (result: any) => void;
+}) {
+  const [messages, setMessages] = useState<RefineMessage[]>([
+    { role: 'ai', text: 'What would you like to change about your game?' },
+  ]);
+  const [input, setInput] = useState('');
+  const [thinking, setThinking] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [finalInstruction, setFinalInstruction] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
+  const [statusMsg, setStatusMsg] = useState('');
+
+  const sendRefine = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || thinking || applying) return;
+    const nextMessages = [...messages, { role: 'user' as const, text: trimmed }];
+    setMessages(nextMessages);
+    setInput('');
+    setSuggestions([]);
+    setThinking(true);
+    try {
+      const conversationHistory = nextMessages.map((message) => ({
+        role: (message.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
+        content: message.text,
+      }));
+      const res: any = await ai.interpretEdit({
+        instructions: trimmed,
+        gameTitle,
+        currentSummary,
+        conversationHistory,
+      });
+      const intent = res?.intent || {};
+      setMessages((items) => [...items, { role: 'ai', text: intent.reply || "Got it. I'll fold that into the edit." }]);
+      if (intent.finalInstruction) setFinalInstruction(intent.finalInstruction);
+      setSuggestions(Array.isArray(intent.suggestions) ? intent.suggestions : []);
+    } catch (error: any) {
+      setMessages((items) => [...items, { role: 'ai', text: error?.message || "I couldn't reach the edit assistant. Try again." }]);
+    } finally {
+      setThinking(false);
+    }
+  };
+
+  const applyRefine = async () => {
+    if (!finalInstruction || applying) return;
+    setApplying(true);
+    setProgress(0);
+    setStatusMsg('Starting edit...');
+    try {
+      const { promise } = ai.edit(draftId, finalInstruction, undefined, [], {
+        onJobProgress: ({ progress: nextProgress, statusMessage }) => {
+          if (typeof nextProgress === 'number') setProgress(nextProgress);
+          if (statusMessage) setStatusMsg(statusMessage);
+        },
+      });
+      const result = await promise;
+      onApplied(result);
+      setMessages((items) => [...items, { role: 'ai', text: 'Edit applied. The preview is updated.' }]);
+      setFinalInstruction(null);
+      setSuggestions([]);
+    } catch (error: any) {
+      setMessages((items) => [...items, { role: 'ai', text: `Edit failed: ${error?.message || 'something went wrong'}` }]);
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="desktop-refine-panel">
+      <header>
+        <span>✦ Dream Forge</span>
+        <strong>{gameTitle || 'Untitled Dream'}</strong>
+      </header>
+      <div className="desktop-refine-messages">
+        {messages.map((message, index) => (
+          <p key={`${message.role}-${index}`} className={message.role === 'ai' ? 'ai' : 'user'}>
+            {message.text}
+          </p>
+        ))}
+        {thinking && <p className="ai">Thinking...</p>}
+      </div>
+      {suggestions.length > 0 && !applying && (
+        <div className="desktop-refine-chips">
+          {suggestions.map((suggestion) => (
+            <button key={suggestion} onClick={() => sendRefine(suggestion)}>{suggestion}</button>
+          ))}
+        </div>
+      )}
+      {finalInstruction && !applying && (
+        <button className="desktop-refine-apply" onClick={applyRefine}>
+          Apply Edit
+        </button>
+      )}
+      {applying ? (
+        <div className="desktop-refine-progress">
+          <i><span style={{ width: `${Math.max(4, Math.min(100, progress))}%` }} /></i>
+          <small>{statusMsg || 'Applying your edit...'}{progress ? ` ${Math.round(progress)}%` : ''}</small>
+        </div>
+      ) : (
+        <div className="desktop-refine-input">
+          <textarea
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Tell Dream Forge what to change..."
+          />
+          <button disabled={!input.trim() || thinking} onClick={() => sendRefine(input)}>
+            <ArrowUp size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -291,6 +291,15 @@ export const ai = {
     return request('/ai/narrative/chat', { method: 'POST', body: JSON.stringify({ messages }) }, 45000);
   },
 
+  interpretEdit: async (data: {
+    instructions: string;
+    gameTitle?: string;
+    currentSummary?: string;
+    conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  }) => {
+    return request('/ai/interpret-edit', { method: 'POST', body: JSON.stringify(data) }, 45000);
+  },
+
   dreamLabs: (prompt: string, attachments: any[] = [], options?: DreamJobPollOptions) => {
     const controller = new AbortController();
     let remoteJobId: string | null = null;
