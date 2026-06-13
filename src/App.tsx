@@ -1976,10 +1976,18 @@ function ConnectScreen({
 }) {
   const [lane, setLane] = useState<'chats' | 'requests' | 'activity'>('chats');
   const [selectedChat, setSelectedChat] = useState<Creator | null>(creators[0] || null);
+  const [chatQuery, setChatQuery] = useState('');
 
   useEffect(() => {
     if (!selectedChat && creators.length > 0) setSelectedChat(creators[0]);
   }, [creators, selectedChat]);
+
+  const chatCreators = useMemo(() => {
+    const q = chatQuery.trim().toLowerCase();
+    const list = creators.slice(0, 24);
+    if (!q) return list;
+    return list.filter((creator) => `${creator.displayName || ''} ${creator.username}`.toLowerCase().includes(q));
+  }, [creators, chatQuery]);
 
   return (
     <section className="page-scroll connect-screen">
@@ -1991,52 +1999,72 @@ function ConnectScreen({
         <button className="icon-button"><UserPlus size={20} /></button>
       </header>
 
-      <div className="story-strip">
-        <button className="story-bubble add"><Plus size={20} /><span>Story</span></button>
-        {creators.map((creator) => (
-          <button className="story-bubble" key={creator.id} onClick={() => onOpenCreator(creator)}>
-            <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
-            <span>{creator.username}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="segmented">
-        {(['chats', 'requests', 'activity'] as const).map((item) => (
-          <button key={item} className={lane === item ? 'active' : ''} onClick={() => setLane(item)}>{item}</button>
-        ))}
-      </div>
-
       {lane === 'chats' && (
-        <div className="connect-inbox">
-          <div className="inbox-list">
-            {creators.slice(0, 14).map((creator) => (
-              <button
-                className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
-                key={creator.id}
-                onClick={() => setSelectedChat(creator)}
-              >
-                <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
-                <span>
-                  <strong>{creator.displayName || creator.username}</strong>
-                  <small>@{creator.username}</small>
-                </span>
-                <MessageCircle size={16} />
-              </button>
-            ))}
-          </div>
-          <div className="inbox-conversation">
+        <div className="instagram-inbox">
+          <aside className="ig-inbox-sidebar">
+            <header>
+              <div>
+                <strong>Messages</strong>
+                <small>GameTok inbox</small>
+              </div>
+              <button aria-label="New message"><Plus size={19} /></button>
+            </header>
+            <label className="ig-inbox-search">
+              <Search size={17} />
+              <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Search" />
+            </label>
+            <nav>
+              <button className="active">Primary</button>
+              <button onClick={() => setLane('requests')}>Requests</button>
+            </nav>
+            <div className="inbox-list">
+              {chatCreators.map((creator) => (
+                <button
+                  className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
+                  key={creator.id}
+                  onClick={() => setSelectedChat(creator)}
+                >
+                  <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+                  <span>
+                    <strong>{creator.displayName || creator.username}</strong>
+                    <small>@{creator.username} · Tap to message</small>
+                  </span>
+                  <i />
+                </button>
+              ))}
+              {chatCreators.length === 0 && <EmptyListState title="No chats found" text="Try another username or display name." />}
+            </div>
+          </aside>
+          <main className="ig-thread-main">
             {selectedChat ? (
               <DirectMessageSheet creator={selectedChat} embedded />
             ) : (
               <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />
             )}
-          </div>
-          {creators.length === 0 && <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />}
+          </main>
+          <aside className="ig-thread-details">
+            {selectedChat && (
+              <>
+                <img src={avatarUrl(selectedChat.username, selectedChat.avatar, 128)} alt="" />
+                <strong>{selectedChat.displayName || selectedChat.username}</strong>
+                <small>@{selectedChat.username}</small>
+                <button onClick={() => onOpenCreator(selectedChat)}>View profile</button>
+                <button onClick={() => onToggleFollow(selectedChat)}>
+                  {followedCreators.has(creatorIdFrom(selectedChat)) ? 'Following' : 'Follow'}
+                </button>
+              </>
+            )}
+          </aside>
         </div>
       )}
 
       {lane === 'requests' && (
+        <>
+        <div className="segmented connect-secondary-tabs">
+          {(['chats', 'requests', 'activity'] as const).map((item) => (
+            <button key={item} className={lane === item ? 'active' : ''} onClick={() => setLane(item)}>{item}</button>
+          ))}
+        </div>
         <div className="request-grid">
           {creators.slice(0, 12).map((creator) => {
             const following = followedCreators.has(creatorIdFrom(creator));
@@ -2054,9 +2082,16 @@ function ConnectScreen({
           })}
           {creators.length === 0 && <EmptyListState title="No requests yet" text="Friend and co-create requests will show here." />}
         </div>
+        </>
       )}
 
       {lane === 'activity' && (
+        <>
+        <div className="segmented connect-secondary-tabs">
+          {(['chats', 'requests', 'activity'] as const).map((item) => (
+            <button key={item} className={lane === item ? 'active' : ''} onClick={() => setLane(item)}>{item}</button>
+          ))}
+        </div>
         <div className="activity-list">
           {games.slice(0, 8).map((game) => (
             <button className="activity-row" key={game.id} onClick={() => onOpenGame(game)}>
@@ -2070,6 +2105,7 @@ function ConnectScreen({
           ))}
           {games.length === 0 && <EmptyListState title="No activity yet" text="Live backend activity will appear here." />}
         </div>
+        </>
       )}
     </section>
   );
