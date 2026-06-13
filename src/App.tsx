@@ -2773,7 +2773,6 @@ function DesktopCreateWorkspace({
         {isBuilding || previewHtml ? (
           <div className="desktop-forge-layout">
             <aside className="desktop-forge-panel">
-              <span className="desktop-live-pill"><span /> Dream Forge live <ChevronRight size={14} /></span>
               {previewHtml && activeDraftId ? (
                 <DesktopRefinePanel
                   draftId={activeDraftId}
@@ -2785,20 +2784,12 @@ function DesktopCreateWorkspace({
                   }}
                 />
               ) : (
-                <>
-                  <h1>Forging your world.</h1>
-                  <p>Dream Forge is building the playable version now.</p>
-                  {(buildMessage || buildError) && (
-                    <p className={`desktop-create-status ${buildError ? 'is-error' : ''}`}>
-                      {buildError || buildMessage}
-                    </p>
-                  )}
-                  {isBuilding && (
-                    <button className="desktop-forge-stop" onClick={stopDreamForge}>
-                      <X size={17} /> Stop generation
-                    </button>
-                  )}
-                </>
+                <DesktopBuildPanel
+                  prompt={brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]}
+                  status={buildError || buildMessage || 'Getting started...'}
+                  error={Boolean(buildError)}
+                  onStop={isBuilding ? stopDreamForge : undefined}
+                />
               )}
             </aside>
 
@@ -2919,6 +2910,53 @@ function ForgeDefenseStage({ active, prompt, message }: { active: boolean; promp
         <span>SPELL</span>
         <strong>✦</strong>
         <small>{compactPrompt}</small>
+      </div>
+    </div>
+  );
+}
+
+function DesktopBuildPanel({
+  prompt,
+  status,
+  error,
+  onStop,
+}: {
+  prompt: string;
+  status: string;
+  error?: boolean;
+  onStop?: () => void;
+}) {
+  return (
+    <div className="desktop-build-panel">
+      <header>
+        <button aria-label="Back to create"><ChevronLeft size={18} /></button>
+        <span>
+          <strong>New Game</strong>
+          <small>Editing now</small>
+        </span>
+        <ChevronDown size={16} />
+      </header>
+
+      <div className="desktop-build-thread">
+        <p className="desktop-build-prompt">{prompt}</p>
+        <span className={`desktop-build-status ${error ? 'is-error' : ''}`}>{status}</span>
+      </div>
+
+      <div className="desktop-build-bottom">
+        <div className="desktop-build-followup">
+          <textarea disabled placeholder="Add a follow-up..." />
+          <div>
+            <button disabled aria-label="Attach image"><ImageIcon size={16} /></button>
+            <button disabled aria-label="Attach file"><Plus size={16} /></button>
+            <span><Sparkles size={15} /> Smart</span>
+            <button disabled aria-label="Voice"><Mic size={16} /></button>
+          </div>
+        </div>
+        {onStop && (
+          <button className="desktop-forge-stop" onClick={onStop}>
+            <X size={17} /> Stop generation
+          </button>
+        )}
       </div>
     </div>
   );
