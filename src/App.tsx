@@ -889,7 +889,6 @@ function App() {
               followedCreators={followedCreators}
               onOpenGame={openGame}
               onOpenCreator={openCreatorProfile}
-              onMessage={openCreatorMessage}
               onToggleFollow={toggleCreatorFollow}
             />
           )}
@@ -1966,7 +1965,6 @@ function ConnectScreen({
   followedCreators,
   onOpenGame,
   onOpenCreator,
-  onMessage,
   onToggleFollow,
 }: {
   creators: Creator[];
@@ -1974,10 +1972,15 @@ function ConnectScreen({
   followedCreators: Set<string>;
   onOpenGame: (game: Game) => void;
   onOpenCreator: (creator: Creator) => void;
-  onMessage: (creator: Creator) => void;
   onToggleFollow: (creator: Creator) => void;
 }) {
   const [lane, setLane] = useState<'chats' | 'requests' | 'activity'>('chats');
+  const [selectedChat, setSelectedChat] = useState<Creator | null>(creators[0] || null);
+
+  useEffect(() => {
+    if (!selectedChat && creators.length > 0) setSelectedChat(creators[0]);
+  }, [creators, selectedChat]);
+
   return (
     <section className="page-scroll connect-screen">
       <header className="screen-header">
@@ -2005,17 +2008,30 @@ function ConnectScreen({
       </div>
 
       {lane === 'chats' && (
-        <div className="message-list">
-          {creators.slice(0, 10).map((creator) => (
-            <div className="social-row" key={creator.id} onClick={() => onOpenCreator(creator)} role="button" tabIndex={0}>
-              <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
-              <span>
-                <strong>{creator.displayName || creator.username}</strong>
-                <small>@{creator.username}</small>
-              </span>
-              <button onClick={(event) => { event.stopPropagation(); onMessage(creator); }}><MessageCircle size={16} /> DM</button>
-            </div>
-          ))}
+        <div className="connect-inbox">
+          <div className="inbox-list">
+            {creators.slice(0, 14).map((creator) => (
+              <button
+                className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
+                key={creator.id}
+                onClick={() => setSelectedChat(creator)}
+              >
+                <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+                <span>
+                  <strong>{creator.displayName || creator.username}</strong>
+                  <small>@{creator.username}</small>
+                </span>
+                <MessageCircle size={16} />
+              </button>
+            ))}
+          </div>
+          <div className="inbox-conversation">
+            {selectedChat ? (
+              <DirectMessageSheet creator={selectedChat} embedded />
+            ) : (
+              <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />
+            )}
+          </div>
           {creators.length === 0 && <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />}
         </div>
       )}
@@ -2926,6 +2942,15 @@ function DesktopBuildPanel({
   error?: boolean;
   onStop?: () => void;
 }) {
+  const [followup, setFollowup] = useState('');
+  const [notes, setNotes] = useState<string[]>([]);
+  const sendFollowup = () => {
+    const value = followup.trim();
+    if (!value) return;
+    setNotes((items) => [...items, value]);
+    setFollowup('');
+  };
+
   return (
     <div className="desktop-build-panel">
       <header>
@@ -2938,18 +2963,32 @@ function DesktopBuildPanel({
       </header>
 
       <div className="desktop-build-thread">
-        <p className="desktop-build-prompt">{prompt}</p>
-        <span className={`desktop-build-status ${error ? 'is-error' : ''}`}>{status}</span>
+        <p className="desktop-build-bubble ai">I’m starting the first build. You can add follow-ups here while the forge works.</p>
+        <p className="desktop-build-bubble user">{prompt}</p>
+        <p className={`desktop-build-bubble ai ${error ? 'is-error' : ''}`}>{status}</p>
+        {notes.map((note) => (
+          <p className="desktop-build-bubble user" key={note}>{note}</p>
+        ))}
+        {notes.length > 0 && (
+          <p className="desktop-build-bubble ai">Got it. I’ll keep that ready for the first refine pass once the preview is available.</p>
+        )}
       </div>
 
       <div className="desktop-build-bottom">
         <div className="desktop-build-followup">
-          <textarea disabled placeholder="Add a follow-up..." />
+          <textarea
+            value={followup}
+            onChange={(event) => setFollowup(event.target.value)}
+            placeholder="Add a follow-up..."
+          />
           <div>
-            <button disabled aria-label="Attach image"><ImageIcon size={16} /></button>
-            <button disabled aria-label="Attach file"><Plus size={16} /></button>
+            <button aria-label="Attach image"><ImageIcon size={16} /></button>
+            <button aria-label="Attach file"><Plus size={16} /></button>
             <span><Sparkles size={15} /> Smart</span>
-            <button disabled aria-label="Voice"><Mic size={16} /></button>
+            <button aria-label="Voice"><Mic size={16} /></button>
+            <button className="send" disabled={!followup.trim()} onClick={sendFollowup} aria-label="Send follow-up">
+              <ArrowUp size={17} />
+            </button>
           </div>
         </div>
         {onStop && (
@@ -3302,7 +3341,7 @@ function CreatorProfileSheet({
   );
 }
 
-function DirectMessageSheet({ creator }: { creator: Creator }) {
+function DirectMessageSheet({ creator, embedded = false }: { creator: Creator; embedded?: boolean }) {
   const [text, setText] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -3346,7 +3385,7 @@ function DirectMessageSheet({ creator }: { creator: Creator }) {
   };
 
   return (
-    <div className="direct-message-sheet">
+    <div className={`direct-message-sheet ${embedded ? 'embedded' : ''}`}>
       <header>
         <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
         <span>

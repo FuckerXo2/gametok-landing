@@ -3021,34 +3021,43 @@ textarea {
 .desktop-build-thread {
   min-height: 0;
   position: relative;
+  overflow: auto;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 62px;
+  gap: 12px;
   padding: 22px 24px;
 }
 
-.desktop-build-prompt {
-  align-self: flex-end;
-  max-width: min(76%, 360px);
+.desktop-build-bubble {
+  max-width: 82%;
   margin: 0;
-  padding: 12px 18px;
-  border-radius: 999px;
+  padding: 12px 15px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.42;
+}
+
+.desktop-build-bubble.user {
+  align-self: flex-end;
   color: #fff;
   background: rgba(255, 255, 255, 0.12);
-  font-size: 16px;
-  line-height: 1.35;
+  border-bottom-right-radius: 6px;
 }
 
-.desktop-build-status {
+.desktop-build-bubble.ai {
   align-self: flex-start;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 15px;
-  font-weight: 800;
+  color: #5eead4;
+  background: rgba(13, 30, 38, 0.7);
+  border: 1px solid rgba(34, 211, 238, 0.38);
+  border-left: 3px solid #22d3ee;
+  border-bottom-left-radius: 6px;
 }
 
-.desktop-build-status.is-error {
+.desktop-build-bubble.is-error {
   color: #ff8a8a;
+  border-color: rgba(255, 138, 138, 0.42);
+  border-left-color: #ff8a8a;
 }
 
 .desktop-build-bottom {
@@ -3073,7 +3082,7 @@ textarea {
   resize: none;
   border: 0;
   outline: 0;
-  color: rgba(255, 255, 255, 0.42);
+  color: #fff;
   background: transparent;
   font: inherit;
 }
@@ -3092,6 +3101,17 @@ textarea {
   border-radius: 12px;
   color: rgba(255, 255, 255, 0.48);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.desktop-build-followup button.send {
+  margin-left: 0;
+  color: #111;
+  background: #fff;
+}
+
+.desktop-build-followup button.send:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .desktop-build-followup span {
@@ -4152,6 +4172,75 @@ textarea {
   object-fit: cover;
 }
 
+.connect-inbox {
+  min-height: min(680px, calc(100vh - 340px));
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(420px, 1fr);
+  gap: 18px;
+}
+
+.inbox-list {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+.inbox-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  color: #fff;
+  background: transparent;
+  text-align: left;
+}
+
+.inbox-row.active,
+.inbox-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.inbox-row img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.inbox-row span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.inbox-row strong {
+  overflow: hidden;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-row small {
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.5);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inbox-conversation {
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #101015;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
 .social-row button,
 .creator-profile-actions button {
   min-height: 38px;
@@ -4234,6 +4323,10 @@ textarea {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 0;
   background: #101015;
+}
+
+.direct-message-sheet.embedded {
+  height: 100%;
 }
 
 .direct-message-sheet header {
