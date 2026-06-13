@@ -1989,6 +1989,55 @@ function ConnectScreen({
     return list.filter((creator) => `${creator.displayName || ''} ${creator.username}`.toLowerCase().includes(q));
   }, [creators, chatQuery]);
 
+  if (lane === 'chats') {
+    return (
+      <section className="messages-screen">
+        <aside className="ig-inbox-sidebar">
+          <header>
+            <div>
+              <strong>Messages</strong>
+              <small>{chatCreators.length} conversations</small>
+            </div>
+            <button aria-label="New message"><Plus size={19} /></button>
+          </header>
+          <label className="ig-inbox-search">
+            <Search size={17} />
+            <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Search" />
+          </label>
+          <nav>
+            <button className="active">Primary</button>
+            <button onClick={() => setLane('requests')}>Requests</button>
+          </nav>
+          <div className="inbox-list">
+            {chatCreators.map((creator) => (
+              <button
+                className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
+                key={creator.id}
+                onClick={() => setSelectedChat(creator)}
+              >
+                <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+                <span>
+                  <strong>{creator.displayName || creator.username}</strong>
+                  <small>@{creator.username}</small>
+                </span>
+                <i />
+              </button>
+            ))}
+            {chatCreators.length === 0 && <EmptyListState title="No chats found" text="Try another username or display name." />}
+          </div>
+        </aside>
+
+        <main className="ig-thread-main">
+          {selectedChat ? (
+            <DirectMessageSheet creator={selectedChat} embedded onOpenProfile={() => onOpenCreator(selectedChat)} />
+          ) : (
+            <EmptyListState title="No conversation selected" text="Choose a conversation to start messaging." />
+          )}
+        </main>
+      </section>
+    );
+  }
+
   return (
     <section className="page-scroll connect-screen">
       <header className="screen-header">
@@ -1998,65 +2047,6 @@ function ConnectScreen({
         </div>
         <button className="icon-button"><UserPlus size={20} /></button>
       </header>
-
-      {lane === 'chats' && (
-        <div className="instagram-inbox">
-          <aside className="ig-inbox-sidebar">
-            <header>
-              <div>
-                <strong>Messages</strong>
-                <small>GameTok inbox</small>
-              </div>
-              <button aria-label="New message"><Plus size={19} /></button>
-            </header>
-            <label className="ig-inbox-search">
-              <Search size={17} />
-              <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Search" />
-            </label>
-            <nav>
-              <button className="active">Primary</button>
-              <button onClick={() => setLane('requests')}>Requests</button>
-            </nav>
-            <div className="inbox-list">
-              {chatCreators.map((creator) => (
-                <button
-                  className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
-                  key={creator.id}
-                  onClick={() => setSelectedChat(creator)}
-                >
-                  <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
-                  <span>
-                    <strong>{creator.displayName || creator.username}</strong>
-                    <small>@{creator.username} · Tap to message</small>
-                  </span>
-                  <i />
-                </button>
-              ))}
-              {chatCreators.length === 0 && <EmptyListState title="No chats found" text="Try another username or display name." />}
-            </div>
-          </aside>
-          <main className="ig-thread-main">
-            {selectedChat ? (
-              <DirectMessageSheet creator={selectedChat} embedded />
-            ) : (
-              <EmptyListState title="No chats yet" text="Messages will appear here when the backend returns conversations." />
-            )}
-          </main>
-          <aside className="ig-thread-details">
-            {selectedChat && (
-              <>
-                <img src={avatarUrl(selectedChat.username, selectedChat.avatar, 128)} alt="" />
-                <strong>{selectedChat.displayName || selectedChat.username}</strong>
-                <small>@{selectedChat.username}</small>
-                <button onClick={() => onOpenCreator(selectedChat)}>View profile</button>
-                <button onClick={() => onToggleFollow(selectedChat)}>
-                  {followedCreators.has(creatorIdFrom(selectedChat)) ? 'Following' : 'Follow'}
-                </button>
-              </>
-            )}
-          </aside>
-        </div>
-      )}
 
       {lane === 'requests' && (
         <>
@@ -3377,7 +3367,15 @@ function CreatorProfileSheet({
   );
 }
 
-function DirectMessageSheet({ creator, embedded = false }: { creator: Creator; embedded?: boolean }) {
+function DirectMessageSheet({
+  creator,
+  embedded = false,
+  onOpenProfile,
+}: {
+  creator: Creator;
+  embedded?: boolean;
+  onOpenProfile?: () => void;
+}) {
   const [text, setText] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -3423,16 +3421,26 @@ function DirectMessageSheet({ creator, embedded = false }: { creator: Creator; e
   return (
     <div className={`direct-message-sheet ${embedded ? 'embedded' : ''}`}>
       <header>
-        <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+        <button className="dm-header-user" onClick={onOpenProfile}>
+          <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+        </button>
         <span>
           <strong>{creator.displayName || creator.username}</strong>
           <small>@{creator.username}</small>
         </span>
+        <button className="dm-header-action" onClick={onOpenProfile} aria-label="Conversation details">
+          <User size={19} />
+        </button>
       </header>
       <div className="direct-message-thread">
         {loading && <p className="dm-empty">Loading conversation...</p>}
         {!loading && conversation.length === 0 && (
-          <p className="dm-empty">No messages yet. Start the conversation.</p>
+          <div className="dm-start-state">
+            <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
+            <strong>{creator.displayName || creator.username}</strong>
+            <small>@{creator.username}</small>
+            <span>No messages yet. Send the first one.</span>
+          </div>
         )}
         {conversation.map((message, index) => {
           const value = message.text || message.body || message.content || '';
