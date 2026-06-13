@@ -2824,6 +2824,75 @@ textarea {
   font-family: "SF Pro Display", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.desktop-create-workspace.desktop-forge-mode {
+  grid-template-columns: 68px minmax(0, 1fr);
+  background: #121212;
+}
+
+.desktop-forge-rail {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1px auto auto minmax(0, 1fr);
+  justify-items: center;
+  gap: 16px;
+  padding: 18px 0;
+  background: #111;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desktop-forge-rail button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.desktop-forge-rail .forge-rail-logo {
+  background: transparent;
+}
+
+.desktop-forge-rail img {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+}
+
+.desktop-forge-rail i {
+  width: 28px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.desktop-forge-rail span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(168, 85, 247, 0.34);
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 900;
+}
+
+.forge-rail-bottom {
+  align-self: end;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.forge-rail-bottom button {
+  background: transparent;
+}
+
+.forge-rail-bottom strong {
+  color: #ffe15a;
+  font-size: 13px;
+}
+
 .desktop-create-canvas {
   position: relative;
   min-height: 100vh;
@@ -2832,6 +2901,18 @@ textarea {
   border-radius: 0;
   background: #05050a;
   border: 0;
+}
+
+.desktop-forge-mode .desktop-create-canvas {
+  background: #171717;
+}
+
+.desktop-forge-mode .desktop-create-backdrop {
+  display: none;
+}
+
+.desktop-forge-mode .desktop-create-shade {
+  display: none;
 }
 
 .desktop-create-backdrop,
@@ -2875,9 +2956,9 @@ textarea {
   z-index: 2;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(360px, 0.82fr) minmax(520px, 1.18fr);
-  gap: clamp(18px, 2vw, 32px);
-  padding: clamp(28px, 4vw, 58px);
+  grid-template-columns: minmax(420px, 520px) minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
 }
 
 .desktop-forge-panel {
@@ -2889,7 +2970,7 @@ textarea {
 }
 
 .desktop-build-panel {
-  min-height: min(760px, calc(100vh - 116px));
+  min-height: 100vh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
@@ -3099,7 +3180,7 @@ textarea {
 }
 
 .desktop-refine-panel {
-  min-height: min(760px, calc(100vh - 116px));
+  min-height: 100vh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto auto;
   gap: 14px;
@@ -3253,19 +3334,20 @@ textarea {
   min-width: 0;
   display: grid;
   align-items: center;
+  padding: 40px;
 }
 
 .desktop-forge-card {
-  min-height: min(760px, calc(100vh - 116px));
+  min-height: calc(100vh - 80px);
   position: relative;
   overflow: hidden;
-  border-radius: 24px;
+  border-radius: 14px;
   background:
     radial-gradient(circle at 48% 42%, rgba(168, 85, 247, 0.18), transparent 26%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
     rgba(13, 13, 16, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 34px 100px rgba(0, 0, 0, 0.35);
 }
 
 .forge-defense-stage {
@@ -4033,7 +4115,7 @@ textarea {
 .explore-game-grid span,
 .social-row span,
 .creator-profile-sheet header span,
-.message-composer-sheet header span {
+.direct-message-sheet header span {
   min-width: 0;
   display: grid;
   gap: 3px;
@@ -4071,8 +4153,7 @@ textarea {
 }
 
 .social-row button,
-.creator-profile-actions button,
-.message-composer-sheet button {
+.creator-profile-actions button {
   min-height: 38px;
   display: inline-flex;
   align-items: center;
@@ -4085,36 +4166,32 @@ textarea {
   font-weight: 850;
 }
 
-.creator-profile-sheet,
-.message-composer-sheet {
+.creator-profile-sheet {
   display: grid;
   gap: 18px;
 }
 
-.creator-profile-sheet header,
-.message-composer-sheet header {
+.creator-profile-sheet header {
   display: grid;
   grid-template-columns: 74px minmax(0, 1fr);
   align-items: center;
   gap: 14px;
 }
 
-.creator-profile-sheet header img,
-.message-composer-sheet header img {
+.creator-profile-sheet header img {
   width: 74px;
   height: 74px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.creator-profile-sheet header strong,
-.message-composer-sheet header strong {
+.creator-profile-sheet header strong {
   color: #fff;
   font-size: 24px;
 }
 
 .creator-profile-sheet header small,
-.message-composer-sheet header small,
+.direct-message-sheet header small,
 .explore-game-grid small,
 .social-row small {
   color: rgba(255, 255, 255, 0.56);
@@ -4125,29 +4202,144 @@ textarea {
   gap: 10px;
 }
 
-.message-composer-sheet textarea {
+.message-sheet-shell {
+  width: min(520px, calc(100vw - 32px));
+  height: min(680px, calc(100vh - 120px));
+  right: 24px;
+  left: auto;
+  bottom: 24px;
+  display: grid;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.message-sheet-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.direct-message-sheet {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 0;
+  background: #101015;
+}
+
+.direct-message-sheet header {
+  min-height: 104px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 22px 76px 18px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.direct-message-sheet header img {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.direct-message-sheet header strong {
+  color: #fff;
+  font-size: 22px;
+}
+
+.direct-message-thread {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+}
+
+.direct-message-thread p {
+  max-width: 78%;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 18px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.direct-message-thread .theirs {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.09);
+  border-bottom-left-radius: 6px;
+}
+
+.direct-message-thread .mine {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #e24fb0, #a855f7);
+  border-bottom-right-radius: 6px;
+}
+
+.direct-message-thread .dm-empty {
+  align-self: center;
+  max-width: 100%;
+  margin: auto 0;
+  color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+  text-align: center;
+}
+
+.direct-message-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.direct-message-input textarea {
   width: 100%;
-  min-height: 120px;
+  min-height: 48px;
+  max-height: 120px;
   resize: vertical;
-  padding: 14px;
-  border-radius: 16px;
+  padding: 13px 15px;
+  border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   outline: none;
   color: #fff;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
   font: inherit;
 }
 
-.message-composer-sheet button:disabled {
-  opacity: 0.5;
+.direct-message-input button {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #111;
+  background: #fff;
+}
+
+.direct-message-input button:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.message-composer-sheet p {
+.direct-message-sheet > p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.68);
+  padding: 0 20px 14px;
+  color: #ff8a8a;
   font-size: 13px;
-  font-weight: 760;
 }
 
 .feed-action.like-action.active span,

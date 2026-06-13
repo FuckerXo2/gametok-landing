@@ -975,7 +975,7 @@ function App() {
       )}
 
       {modal && (
-        <Sheet title={modalTitle(modal)} onClose={() => setModal(null)} variant={modal === 'auth' ? 'auth' : undefined}>
+        <Sheet title={modalTitle(modal)} onClose={() => setModal(null)} variant={modal === 'auth' ? 'auth' : modal === 'message' ? 'message' : undefined}>
           {modal === 'comments' && activeGame && <CommentsSheet game={activeGame} creators={creators} />}
           {modal === 'leaderboard' && activeGame && <LeaderboardSheet game={activeGame} creators={creators} />}
           {modal === 'share' && activeGame && <ShareSheet game={activeGame} />}
@@ -992,12 +992,7 @@ function App() {
               onMessage={() => openCreatorMessage(selectedCreator)}
             />
           )}
-          {modal === 'message' && selectedCreator && (
-            <MessageComposerSheet
-              creator={selectedCreator}
-              onSent={() => setModal('creator-profile')}
-            />
-          )}
+          {modal === 'message' && selectedCreator && <DirectMessageSheet creator={selectedCreator} />}
         </Sheet>
       )}
     </div>
@@ -2762,10 +2757,15 @@ function DesktopCreateWorkspace({
     setIsBuilding(false);
     setBuildMessage('Generation stopped.');
   };
+  const forgeActive = isBuilding || Boolean(previewHtml);
 
   return (
-    <section className="desktop-app-main desktop-create-workspace">
-      <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} />
+    <section className={`desktop-app-main desktop-create-workspace ${forgeActive ? 'desktop-forge-mode' : ''}`}>
+      {forgeActive ? (
+        <DesktopForgeRail onBack={() => onTab('create')} onHome={() => onTab('home')} />
+      ) : (
+        <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} />
+      )}
 
       <div className="desktop-create-canvas">
         <div className="desktop-create-backdrop" />
@@ -2959,6 +2959,25 @@ function DesktopBuildPanel({
         )}
       </div>
     </div>
+  );
+}
+
+function DesktopForgeRail({ onBack, onHome }: { onBack: () => void; onHome: () => void }) {
+  return (
+    <aside className="desktop-forge-rail">
+      <button className="forge-rail-logo" onClick={onHome} aria-label="GameTok home">
+        <img src="/app-assets/icon.png" alt="" />
+      </button>
+      <button onClick={onBack} aria-label="Back to create"><Plus size={22} /></button>
+      <i />
+      <button><span>S</span></button>
+      <button><span>J</span></button>
+      <div className="forge-rail-bottom">
+        <button aria-label="Notifications"><Bell size={17} /></button>
+        <button aria-label="Profile"><User size={18} /></button>
+        <strong>0</strong>
+      </div>
+    </aside>
   );
 }
 
@@ -3283,20 +3302,42 @@ function CreatorProfileSheet({
   );
 }
 
-function MessageComposerSheet({ creator, onSent }: { creator: Creator; onSent: () => void }) {
+function DirectMessageSheet({ creator }: { creator: Creator }) {
   const [text, setText] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [conversation, setConversation] = useState<Array<{ id?: string; text?: string; body?: string; content?: string; senderId?: string; fromMe?: boolean; createdAt?: string }>>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    messages.getConversation(creatorIdFrom(creator))
+      .then((data: any) => {
+        if (!mounted) return;
+        const rows = Array.isArray(data?.messages) ? data.messages : Array.isArray(data) ? data : [];
+        setConversation(rows);
+      })
+      .catch(() => {
+        if (mounted) setConversation([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [creator.id, creator.username]);
+
   const sendMessage = async () => {
     const body = text.trim();
     if (!body || sending) return;
     setSending(true);
     setStatus(null);
     try {
-      await messages.send({ recipientId: creatorIdFrom(creator), text: body });
+      const sent: any = await messages.send({ recipientId: creatorIdFrom(creator), text: body });
       setText('');
-      setStatus('Message sent.');
-      window.setTimeout(onSent, 600);
+      setConversation((items) => [...items, sent?.message || { text: body, fromMe: true, createdAt: new Date().toISOString() }]);
     } catch (error: any) {
       setStatus(error?.message || 'Message failed.');
     } finally {
@@ -3305,7 +3346,7 @@ function MessageComposerSheet({ creator, onSent }: { creator: Creator; onSent: (
   };
 
   return (
-    <div className="message-composer-sheet">
+    <div className="direct-message-sheet">
       <header>
         <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
         <span>
@@ -3313,15 +3354,32 @@ function MessageComposerSheet({ creator, onSent }: { creator: Creator; onSent: (
           <small>@{creator.username}</small>
         </span>
       </header>
-      <textarea
-        autoFocus
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        placeholder={`Message ${creator.displayName || creator.username}`}
-      />
-      <button disabled={!text.trim() || sending} onClick={sendMessage}>
-        <Send size={16} /> {sending ? 'Sending...' : 'Send message'}
-      </button>
+      <div className="direct-message-thread">
+        {loading && <p className="dm-empty">Loading conversation...</p>}
+        {!loading && conversation.length === 0 && (
+          <p className="dm-empty">No messages yet. Start the conversation.</p>
+        )}
+        {conversation.map((message, index) => {
+          const value = message.text || message.body || message.content || '';
+          const mine = Boolean(message.fromMe || message.senderId === 'me');
+          return (
+            <p key={message.id || `${value}-${index}`} className={mine ? 'mine' : 'theirs'}>
+              {value}
+            </p>
+          );
+        })}
+      </div>
+      <div className="direct-message-input">
+        <textarea
+          autoFocus
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder={`Message ${creator.displayName || creator.username}`}
+        />
+        <button disabled={!text.trim() || sending} onClick={sendMessage}>
+          <Send size={18} />
+        </button>
+      </div>
       {status && <p>{status}</p>}
     </div>
   );
@@ -3363,13 +3421,13 @@ function Sheet({
   title: string;
   children: React.ReactNode;
   onClose: () => void;
-  variant?: 'auth';
+  variant?: 'auth' | 'message';
 }) {
   return (
     <div className={`sheet-backdrop ${variant === 'auth' ? 'auth-backdrop' : ''}`}>
       <button className="sheet-clickout" onClick={onClose} aria-label="Close" />
-      <section className={`bottom-sheet ${variant === 'auth' ? 'auth-sheet-shell' : ''}`}>
-        {variant !== 'auth' && (
+      <section className={`bottom-sheet ${variant === 'auth' ? 'auth-sheet-shell' : ''} ${variant === 'message' ? 'message-sheet-shell' : ''}`}>
+        {variant !== 'auth' && variant !== 'message' && (
           <>
             <div className="sheet-grabber" />
             <header>
@@ -3377,6 +3435,11 @@ function Sheet({
               <button className="icon-button" onClick={onClose}><X size={20} /></button>
             </header>
           </>
+        )}
+        {variant === 'message' && (
+          <button className="message-sheet-close" onClick={onClose} aria-label="Close">
+            <X size={21} />
+          </button>
         )}
         {children}
       </section>
