@@ -626,6 +626,7 @@ function App() {
   const [gameIndex, setGameIndex] = useState(0);
   const [hudHidden, setHudHidden] = useState(false);
   const [gameDeckMode, setGameDeckMode] = useState(true);
+  const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
@@ -800,12 +801,19 @@ function App() {
     setModal('auth');
   };
 
+  const animateFeed = (direction: 'next' | 'previous') => {
+    setFeedMotion(direction);
+    window.setTimeout(() => setFeedMotion(null), 360);
+  };
+
   const nextGame = () => {
     if (games.length === 0) return;
+    animateFeed('next');
     setGameIndex((value) => (value + 1) % games.length);
   };
   const previousGame = () => {
     if (games.length === 0) return;
+    animateFeed('previous');
     setGameIndex((value) => (value - 1 + games.length) % games.length);
   };
   useEffect(() => {
@@ -824,6 +832,7 @@ function App() {
       const target = event.target as HTMLElement | null;
       const isTyping = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
       if (isTyping || modal) return;
+      if (activeTab !== 'home' || marketingPage) return;
       if (event.key === 'ArrowDown' || event.key.toLowerCase() === 'j') {
         event.preventDefault();
         nextGame();
@@ -836,7 +845,7 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [games.length, modal]);
+  }, [activeTab, games.length, marketingPage, modal]);
 
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''}`}>
@@ -852,6 +861,7 @@ function App() {
                 offline={offline}
                 hudHidden={hudHidden}
                 gameDeckMode={gameDeckMode}
+                feedMotion={feedMotion}
                 liked={likedGames.has(activeGame.id)}
                 saved={savedGames.has(activeGame.id)}
                 following={followedCreators.has(activeCreatorId)}
@@ -885,8 +895,6 @@ function App() {
           {activeTab === 'connect' && (
             <ConnectScreen
               creators={creators}
-              games={games}
-              onOpenGame={openGame}
               onOpenCreator={openCreatorProfile}
             />
           )}
@@ -1034,6 +1042,7 @@ function HomeFeed({
   offline,
   hudHidden,
   gameDeckMode,
+  feedMotion,
   liked,
   saved,
   following,
@@ -1052,6 +1061,7 @@ function HomeFeed({
   offline: boolean;
   hudHidden: boolean;
   gameDeckMode: boolean;
+  feedMotion: 'next' | 'previous' | null;
   liked: boolean;
   saved: boolean;
   following: boolean;
@@ -1064,24 +1074,29 @@ function HomeFeed({
   onOpenExplore: () => void;
 }) {
   const touchStart = useRef<number | null>(null);
+  const wheelLock = useRef(0);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
-    setGameStarted(false);
+    setGameStarted(true);
     setShowPreviewArt(true);
-    const timer = window.setTimeout(() => setShowPreviewArt(true), 1800);
+    const timer = window.setTimeout(() => setShowPreviewArt(false), 3500);
     return () => window.clearTimeout(timer);
   }, [game.id]);
 
   const handleWheel = (event: React.WheelEvent) => {
     if (Math.abs(event.deltaY) < 40) return;
+    event.preventDefault();
+    const now = Date.now();
+    if (now - wheelLock.current < 520) return;
+    wheelLock.current = now;
     event.deltaY > 0 ? onNext() : onPrevious();
   };
 
   return (
     <section
-      className="home-feed"
+      className={`home-feed ${feedMotion ? `feed-motion-${feedMotion}` : ''}`}
       onWheel={handleWheel}
       onTouchStart={(event) => {
         touchStart.current = event.touches[0].clientY;
@@ -1959,16 +1974,12 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
 
 function ConnectScreen({
   creators,
-  games,
-  onOpenGame,
   onOpenCreator,
 }: {
   creators: Creator[];
-  games: Game[];
-  onOpenGame: (game: Game) => void;
   onOpenCreator: (creator: Creator) => void;
 }) {
-  const [lane, setLane] = useState<'chats' | 'requests' | 'activity'>('chats');
+  const [lane, setLane] = useState<'chats' | 'requests'>('chats');
   const [selectedChat, setSelectedChat] = useState<Creator | null>(creators[0] || null);
   const [chatQuery, setChatQuery] = useState('');
 
@@ -1983,100 +1994,66 @@ function ConnectScreen({
     return list.filter((creator) => `${creator.displayName || ''} ${creator.username}`.toLowerCase().includes(q));
   }, [creators, chatQuery]);
 
-  if (lane === 'chats') {
-    return (
-      <section className="messages-screen">
-        <aside className="ig-inbox-sidebar">
-          <header>
-            <div>
-              <strong>Messages</strong>
-              <small>{chatCreators.length} conversations</small>
-            </div>
-            <button aria-label="New message"><Plus size={19} /></button>
-          </header>
-          <label className="ig-inbox-search">
-            <Search size={17} />
-            <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Search" />
-          </label>
-          <nav>
-            <button className="active">Primary</button>
-            <button onClick={() => setLane('requests')}>Requests</button>
-          </nav>
-          <div className="inbox-list">
-            {chatCreators.map((creator) => (
-              <button
-                className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
-                key={creator.id}
-                onClick={() => setSelectedChat(creator)}
-              >
-                <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
-                <span>
-                  <strong>{creator.displayName || creator.username}</strong>
-                  <small>@{creator.username}</small>
-                </span>
-                <i />
-              </button>
-            ))}
-            {chatCreators.length === 0 && <EmptyListState title="No chats found" text="Try another username or display name." />}
-          </div>
-        </aside>
-
-        <main className="ig-thread-main">
-          {selectedChat ? (
-            <DirectMessageSheet creator={selectedChat} embedded onOpenProfile={() => onOpenCreator(selectedChat)} />
-          ) : (
-            <EmptyListState title="No conversation selected" text="Choose a conversation to start messaging." />
-          )}
-        </main>
-      </section>
-    );
-  }
-
   return (
-    <section className="page-scroll connect-screen">
-      <header className="screen-header">
-        <div>
-          <p>Social</p>
-          <h2>Connect</h2>
+    <section className="messages-screen">
+      <aside className="ig-inbox-sidebar">
+        <header>
+          <div>
+            <strong>Messages</strong>
+            <small>{lane === 'chats' ? `${chatCreators.length} conversations` : 'Message requests'}</small>
+          </div>
+          <button aria-label="New message"><Plus size={19} /></button>
+        </header>
+        <label className="ig-inbox-search">
+          <Search size={17} />
+          <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Search" />
+        </label>
+        <nav>
+          <button className={lane === 'chats' ? 'active' : ''} onClick={() => setLane('chats')}>Primary</button>
+          <button className={lane === 'requests' ? 'active' : ''} onClick={() => setLane('requests')}>Requests</button>
+        </nav>
+        <div className="inbox-list">
+          {lane === 'chats' ? (
+            <>
+              {chatCreators.map((creator) => (
+                <button
+                  className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
+                  key={creator.id}
+                  onClick={() => setSelectedChat(creator)}
+                >
+                  <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
+                  <span>
+                    <strong>{creator.displayName || creator.username}</strong>
+                    <small>@{creator.username}</small>
+                  </span>
+                  <i />
+                </button>
+              ))}
+              {chatCreators.length === 0 && <EmptyListState title="No chats found" text="Try another username or display name." />}
+            </>
+          ) : (
+            <div className="inbox-empty-panel">
+              <UserPlus size={26} />
+              <strong>No requests</strong>
+              <span>Real message and follow requests will appear here when the backend returns them.</span>
+            </div>
+          )}
         </div>
-        <button className="icon-button"><UserPlus size={20} /></button>
-      </header>
+      </aside>
 
-      {lane === 'requests' && (
-        <>
-        <div className="segmented connect-secondary-tabs">
-          {(['chats', 'requests', 'activity'] as const).map((item) => (
-            <button key={item} className={lane === item ? 'active' : ''} onClick={() => setLane(item)}>{item}</button>
-          ))}
-        </div>
-        <div className="request-grid">
-          <EmptyListState title="No requests yet" text="Real message and follow requests will show here when the backend returns them." />
-        </div>
-        </>
-      )}
-
-      {lane === 'activity' && (
-        <>
-        <div className="segmented connect-secondary-tabs">
-          {(['chats', 'requests', 'activity'] as const).map((item) => (
-            <button key={item} className={lane === item ? 'active' : ''} onClick={() => setLane(item)}>{item}</button>
-          ))}
-        </div>
-        <div className="activity-list">
-          {games.slice(0, 8).map((game) => (
-            <button className="activity-row" key={game.id} onClick={() => onOpenGame(game)}>
-              <span className="activity-icon"><Play size={17} /></span>
-              <span>
-                <strong>@{game.creatorDisplayName || 'creator'}</strong>
-                <small>Published {game.name}</small>
-              </span>
-              <img src={getThumbnailUrl(game)} alt="" />
-            </button>
-          ))}
-          {games.length === 0 && <EmptyListState title="No activity yet" text="Live backend activity will appear here." />}
-        </div>
-        </>
-      )}
+      <main className="ig-thread-main">
+        {lane === 'chats' && selectedChat ? (
+          <DirectMessageSheet creator={selectedChat} embedded onOpenProfile={() => onOpenCreator(selectedChat)} />
+        ) : lane === 'chats' ? (
+          <EmptyListState title="No conversation selected" text="Choose a conversation to start messaging." />
+        ) : (
+          <div className="thread-empty-state">
+            <UserPlus size={38} />
+            <strong>No message requests</strong>
+            <span>When someone new reaches out, their request will open here in this inbox layout.</span>
+          </div>
+        )}
+      </main>
     </section>
   );
 }
