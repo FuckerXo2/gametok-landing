@@ -886,10 +886,8 @@ function App() {
             <ConnectScreen
               creators={creators}
               games={games}
-              followedCreators={followedCreators}
               onOpenGame={openGame}
               onOpenCreator={openCreatorProfile}
-              onToggleFollow={toggleCreatorFollow}
             />
           )}
           {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
@@ -1962,17 +1960,13 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
 function ConnectScreen({
   creators,
   games,
-  followedCreators,
   onOpenGame,
   onOpenCreator,
-  onToggleFollow,
 }: {
   creators: Creator[];
   games: Game[];
-  followedCreators: Set<string>;
   onOpenGame: (game: Game) => void;
   onOpenCreator: (creator: Creator) => void;
-  onToggleFollow: (creator: Creator) => void;
 }) {
   const [lane, setLane] = useState<'chats' | 'requests' | 'activity'>('chats');
   const [selectedChat, setSelectedChat] = useState<Creator | null>(creators[0] || null);
@@ -2056,21 +2050,7 @@ function ConnectScreen({
           ))}
         </div>
         <div className="request-grid">
-          {creators.slice(0, 12).map((creator) => {
-            const following = followedCreators.has(creatorIdFrom(creator));
-            return (
-              <div className="creator-card" key={creator.id} onClick={() => onOpenCreator(creator)} role="button" tabIndex={0}>
-                <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
-                <strong>{creator.displayName || creator.username}</strong>
-                <span>@{creator.username}</span>
-                <small>{following ? 'Following' : 'Suggested creator'}</small>
-                <button onClick={(event) => { event.stopPropagation(); onToggleFollow(creator); }}>
-                  {following ? 'Following' : 'Follow'}
-                </button>
-              </div>
-            );
-          })}
-          {creators.length === 0 && <EmptyListState title="No requests yet" text="Friend and co-create requests will show here." />}
+          <EmptyListState title="No requests yet" text="Real message and follow requests will show here when the backend returns them." />
         </div>
         </>
       )}
