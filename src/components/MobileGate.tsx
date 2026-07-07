@@ -53,7 +53,16 @@ export default function MobileGate({ onContinueInBrowser }: Props) {
 
   const handleContinueInApp = () => {
     if (platform === 'other') return;
-    window.location.href = storeUrl;
+    // Try opening the installed app via custom URL scheme first.
+    // If the app isn't installed, the scheme navigation silently fails
+    // and the timeout redirects to the store.
+    const now = Date.now();
+    window.location.href = 'gametok://';
+    setTimeout(() => {
+      // If the app opened, the page will be hidden/blurred.
+      if (document.hidden || Date.now() - now > 2500) return;
+      window.location.href = storeUrl;
+    }, 1500);
   };
 
   const handleContinueInBrowser = () => {
