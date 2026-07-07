@@ -67,10 +67,12 @@ export default function MobileGate({ onContinueInBrowser }: Props) {
       <div className="mobile-gate-bg" aria-hidden="true" />
       <div className="mobile-gate-overlay" aria-hidden="true" />
       <div className="mobile-gate-content">
-        <h1 className="mobile-gate-wordmark">GAMETOK</h1>
-        <p className="mobile-gate-tagline">{tagline}</p>
+        <div className="mobile-gate-top">
+          <h1 className="mobile-gate-wordmark">GAMETOK</h1>
+          <p className="mobile-gate-tagline">{tagline}</p>
+        </div>
 
-        <div className="mobile-gate-app-card">
+        <div className="mobile-gate-center">
           <img
             className="mobile-gate-app-icon"
             src="/about/icon.png"
@@ -79,22 +81,24 @@ export default function MobileGate({ onContinueInBrowser }: Props) {
           <div className="mobile-gate-app-label">{appLabel}</div>
         </div>
 
-        <button
-          type="button"
-          className="mobile-gate-primary"
-          onClick={handleContinueInApp}
-          disabled={platform === 'other'}
-        >
-          Continue in App
-        </button>
+        <div className="mobile-gate-bottom">
+          <button
+            type="button"
+            className="mobile-gate-primary"
+            onClick={handleContinueInApp}
+            disabled={platform === 'other'}
+          >
+            Continue in App
+          </button>
 
-        <button
-          type="button"
-          className="mobile-gate-secondary"
-          onClick={handleContinueInBrowser}
-        >
-          Continue in browser
-        </button>
+          <button
+            type="button"
+            className="mobile-gate-secondary"
+            onClick={handleContinueInBrowser}
+          >
+            Continue in browser
+          </button>
+        </div>
       </div>
     </div>
   );
