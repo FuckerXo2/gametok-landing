@@ -1,0 +1,140 @@
+.mobile-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.mobile-gate-bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('/mobile-gate-bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.mobile-gate-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.35) 40%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+  z-index: 1;
+}
+
+.mobile-gate-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: max(48px, env(safe-area-inset-top) + 24px) 24px
+    max(32px, env(safe-area-inset-bottom) + 16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mobile-gate-wordmark {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 900;
+  font-size: clamp(40px, 12vw, 64px);
+  letter-spacing: 0.02em;
+  margin: 0;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-gate-tagline {
+  margin: 16px 0 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 320px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.mobile-gate-app-card {
+  margin-top: auto;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.mobile-gate-app-icon {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  object-fit: cover;
+  box-shadow: 0 12px 32px rgba(107, 70, 255, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.mobile-gate-app-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.mobile-gate-primary,
+.mobile-gate-secondary {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.mobile-gate-primary {
+  padding: 18px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #6b46ff 0%, #b544ff 100%);
+  color: #fff;
+  font-size: 17px;
+  box-shadow: 0 8px 24px rgba(107, 70, 255, 0.45);
+}
+
+.mobile-gate-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mobile-gate-primary:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.mobile-gate-secondary {
+  margin-top: 14px;
+  padding: 12px 24px;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mobile-gate-secondary:active {
+  opacity: 0.75;
+}
+
+@media (min-width: 900px) {
+  .mobile-gate {
+    display: none;
+  }
+}

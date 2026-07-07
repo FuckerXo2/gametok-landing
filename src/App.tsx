@@ -44,6 +44,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, getToken, setToken } from './services/api';
+import MobileGate from './components/MobileGate';
 import './App.css';
 
 const FREESOUND_API_KEY = 'mgD2q6sEgb7r8seRdGqRVBgszcAgMqPAzGpHPAkk';
@@ -849,6 +850,7 @@ function App() {
 
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''}`}>
+      <MobileGate onContinueInBrowser={() => openAuth('signup')} />
       {!marketingPage && <div className="phone-stage">
         <main className="app-screen">
           {activeTab === 'home' && (
