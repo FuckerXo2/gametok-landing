@@ -620,7 +620,23 @@ function creatorFromGame(game: Game | null): Creator | null {
   };
 }
 
+function useIsMobile() {
+  const query = '(max-width: 900px)';
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia(query).matches : false,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setIsMobile(mql.matches);
+    onChange();
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+  return isMobile;
+}
+
 function App() {
+  const isMobile = useIsMobile();
   const { games, creators, loading, offline } = useGameTokData();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [marketingPage, setMarketingPage] = useState<MarketingPage | null>(null);
@@ -850,8 +866,18 @@ function App() {
 
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''}`}>
-      <MobileGate onContinueInBrowser={() => openAuth('signup')} />
-      {!marketingPage && <div className="phone-stage">
+      <MobileGate onContinueInBrowser={() => { setAuthMode('signup'); if (!isMobile) openAuth('signup'); }} />
+
+      {isMobile && !authUser && (
+        <div className="mobile-auth-wall">
+          <div className="mobile-auth-wall-bg" aria-hidden="true" />
+          <div className="mobile-auth-wall-inner">
+            <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setAuthMode('signup')} />
+          </div>
+        </div>
+      )}
+
+      {!marketingPage && (!isMobile || authUser) && <div className="phone-stage">
         <main className="app-screen">
           {activeTab === 'home' && (
             activeGame ? (
@@ -921,7 +947,7 @@ function App() {
         />
       </div>}
 
-      {marketingPage && (
+      {!isMobile && marketingPage && (
         <StaticMarketingPage
           page={marketingPage}
           games={games}
@@ -938,7 +964,7 @@ function App() {
         />
       )}
 
-      {activeTab === 'home' && !marketingPage && !authUser && (
+      {!isMobile && activeTab === 'home' && !marketingPage && !authUser && (
         <DesktopHomeHero
           onCreate={() => goTab('create')}
           onExplore={() => goTab('explore')}
@@ -947,7 +973,7 @@ function App() {
         />
       )}
 
-      {activeTab === 'home' && !marketingPage && authUser && activeGame && (
+      {!isMobile && activeTab === 'home' && !marketingPage && authUser && activeGame && (
         <DesktopPlayHome
           user={authUser}
           game={activeGame}
@@ -967,7 +993,7 @@ function App() {
         />
       )}
 
-      {activeTab === 'create' && !marketingPage && (
+      {!isMobile && activeTab === 'create' && !marketingPage && (
         <DesktopCreateWorkspace
           games={games}
           activeTab={activeTab}
@@ -977,7 +1003,7 @@ function App() {
         />
       )}
 
-      {activeTab !== 'home' && activeTab !== 'create' && !marketingPage && (
+      {!isMobile && activeTab !== 'home' && activeTab !== 'create' && !marketingPage && (
         <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} />
       )}
 
@@ -3598,13 +3624,17 @@ function GoogleSignInButton({ onCredential }: { onCredential: (credential: strin
             },
           });
           ref.current.innerHTML = '';
+          // GIS needs a fixed px width; match the host so it never overflows
+          // the mobile auth panel (clamped to Google's supported range).
+          const hostWidth = Math.round(ref.current.getBoundingClientRect().width);
+          const buttonWidth = Math.min(400, Math.max(240, hostWidth || 360));
           window.google.accounts.id.renderButton(ref.current, {
             theme: 'filled_black',
             size: 'large',
             shape: 'pill',
             text: 'continue_with',
             logo_alignment: 'center',
-            width: 420,
+            width: buttonWidth,
           });
         } catch {
           if (!cancelled) setFailed(true);

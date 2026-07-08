@@ -6251,3 +6251,111 @@ kbd {
     font-size: 21px;
   }
 }
+
+/* ============================================================
+   MOBILE APP POLISH — safe areas + auth wall (max-width: 900px)
+   ============================================================ */
+@media (max-width: 900px) {
+  /* Keep chrome clear of the notch / status bar */
+  .feed-topbar {
+    top: calc(14px + env(safe-area-inset-top, 0px));
+  }
+
+  .page-scroll {
+    padding-top: calc(16px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .create-mobile-header {
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  }
+
+  .bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ---- Full-screen auth wall (logged-out mobile) ---- */
+  .mobile-auth-wall {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9990;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px
+      calc(env(safe-area-inset-bottom, 0px) + 20px);
+    overflow-y: auto;
+    background: #05050a;
+  }
+
+  .mobile-auth-wall-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('/mobile-gate-bg.png');
+    background-size: cover;
+    background-position: center;
+    filter: blur(18px) brightness(0.42) saturate(1.1);
+    transform: scale(1.1);
+    z-index: 0;
+  }
+
+  .mobile-auth-wall-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(5, 5, 10, 0.5) 0%, rgba(5, 5, 10, 0.85) 100%);
+  }
+
+  .mobile-auth-wall-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+  }
+
+  .mobile-auth-wall .auth-panel {
+    width: 100%;
+    justify-items: stretch;
+    background: rgba(15, 15, 22, 0.82);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 26px;
+    padding: 30px 22px 24px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Keep every field/button inside the panel — never overflow the screen */
+  .mobile-auth-wall .auth-panel > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .mobile-auth-wall .auth-brand-mark {
+    width: 82px;
+    max-width: 82px;
+    justify-self: center;
+  }
+
+  .mobile-auth-wall .auth-idea-card strong {
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-auth-wall .google-btn-host {
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 999px;
+  }
+
+  /* The wall is a gate — no dismiss button */
+  .mobile-auth-wall .auth-close {
+    display: none;
+  }
+}
