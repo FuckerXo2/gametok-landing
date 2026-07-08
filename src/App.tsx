@@ -646,6 +646,18 @@ function App() {
   const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
+  // Track whether the mobile app gate is still on screen. While it is, we must
+  // NOT mount the auth wall underneath — the semi-transparent gate paints over
+  // the wall and both surfaces show through each other.
+  const [mobileGateOpen, setMobileGateOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const dismissed = localStorage.getItem('gt_mobile_gate_dismissed_v1') === '1';
+    const forced = new URLSearchParams(window.location.search).get('mobileGate') === '1';
+    const ua = navigator.userAgent || '';
+    const uaMobile = /iPhone|iPad|iPod|Android/i.test(ua);
+    if (dismissed && !forced) return false;
+    return forced || (uaMobile && window.innerWidth < 900);
+  });
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
@@ -870,9 +882,13 @@ function App() {
 
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''}`}>
-      <MobileGate onContinueInBrowser={() => { setAuthMode('login'); if (!isMobile) openAuth('login'); }} />
+      <MobileGate onContinueInBrowser={() => {
+        setMobileGateOpen(false);
+        setAuthMode('login');
+        if (!isMobile) openAuth('login');
+      }} />
 
-      {isMobile && !authUser && (
+      {isMobile && !authUser && !mobileGateOpen && (
         <div className="mobile-auth-wall">
           <div className="mobile-auth-wall-bg" aria-hidden="true" />
           <div className="mobile-auth-wall-inner">
@@ -881,7 +897,7 @@ function App() {
         </div>
       )}
 
-      {!marketingPage && (!isMobile || authUser) && <div className="phone-stage">
+      {!marketingPage && (!isMobile || (authUser && !mobileGateOpen)) && <div className="phone-stage">
         <main className="app-screen">
           {activeTab === 'home' && (
             activeGame ? (
