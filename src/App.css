@@ -6313,19 +6313,20 @@ kbd {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 420px;
+    max-width: 340px;
     margin: auto;
   }
 
   .mobile-auth-wall .auth-panel {
     width: 100%;
+    gap: 9px;
     justify-items: stretch;
     background: rgba(15, 15, 22, 0.82);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 26px;
-    padding: 30px 22px 24px;
+    border-radius: 22px;
+    padding: 20px 18px 18px;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
   }
 
@@ -6338,9 +6339,31 @@ kbd {
   }
 
   .mobile-auth-wall .auth-brand-mark {
-    width: 82px;
-    max-width: 82px;
+    width: 58px;
+    max-width: 58px;
+    height: 58px;
+    border-radius: 18px;
     justify-self: center;
+  }
+
+  .mobile-auth-wall .auth-brand-mark img {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+
+  .mobile-auth-wall h3 {
+    font-size: 19px;
+    margin-top: 2px;
+  }
+
+  /* A login box doesn't need the marketing idea card — keep it compact */
+  .mobile-auth-wall .auth-idea-card {
+    display: none;
+  }
+
+  .mobile-auth-wall .auth-social-proof {
+    margin: 0;
   }
 
   .mobile-auth-wall .auth-idea-card strong {

@@ -645,7 +645,7 @@ function App() {
   const [gameDeckMode, setGameDeckMode] = useState(true);
   const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
-  const [authMode, setAuthMode] = useState<AuthMode>('signup');
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
@@ -661,9 +661,13 @@ function App() {
       .then((data: any) => {
         if (mounted && data?.user) setAuthUser(data.user);
       })
-      .catch(() => {
-        // Invalid/expired token — clear it so the user can sign in again.
-        setToken(null);
+      .catch((err: any) => {
+        // Only sign the user out when the token is actually rejected (401/403).
+        // A transient network error / timeout must NOT wipe the session, or a
+        // logged-in user gets bounced back to the login wall on reload.
+        if (err?.status === 401 || err?.status === 403) {
+          setToken(null);
+        }
       });
     return () => {
       mounted = false;
@@ -866,13 +870,13 @@ function App() {
 
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''}`}>
-      <MobileGate onContinueInBrowser={() => { setAuthMode('signup'); if (!isMobile) openAuth('signup'); }} />
+      <MobileGate onContinueInBrowser={() => { setAuthMode('login'); if (!isMobile) openAuth('login'); }} />
 
       {isMobile && !authUser && (
         <div className="mobile-auth-wall">
           <div className="mobile-auth-wall-bg" aria-hidden="true" />
           <div className="mobile-auth-wall-inner">
-            <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setAuthMode('signup')} />
+            <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setAuthMode('login')} />
           </div>
         </div>
       )}
