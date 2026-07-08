@@ -3670,12 +3670,10 @@ function AuthSheet({
   const [pendingUser, setPendingUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [emailExpanded, setEmailExpanded] = useState(false);
   const socialAvatars = ['max_arcade', 'nova_builder', 'pixelmaya'];
 
   useEffect(() => {
     setMode(initialMode);
-    setEmailExpanded(false);
     setError('');
   }, [initialMode]);
 
@@ -3812,43 +3810,37 @@ function AuthSheet({
         <strong>{mode === 'signup' ? '"A boss-rush arena that remixes every round"' : 'Your playable feed is waiting'}</strong>
       </div>
 
-      <GoogleSignInButton onCredential={handleGoogleCredential} />
-
-      <div className="auth-divider"><span>or</span></div>
-
-      {!emailExpanded ? (
-        <button className="auth-email-toggle" onClick={() => setEmailExpanded(true)}>
-          Continue with email
+      <div className="auth-email-fields">
+        <label className="auth-input-row">
+          <User size={17} />
+          <input
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            placeholder="Username"
+            autoComplete="username"
+          />
+        </label>
+        <label className="auth-input-row">
+          <Zap size={17} />
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Password"
+            type="password"
+            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            onKeyDown={(event) => event.key === 'Enter' && handleEmailAuth()}
+          />
+        </label>
+        <button className="auth-primary" disabled={loading} onClick={handleEmailAuth}>
+          {loading ? 'Please wait...' : mode === 'signup' ? 'Create account' : 'Log in'}
         </button>
-      ) : (
-        <div className="auth-email-fields">
-          <label className="auth-input-row">
-            <User size={17} />
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="Username"
-              autoComplete="username"
-            />
-          </label>
-          <label className="auth-input-row">
-            <Zap size={17} />
-            <input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Password"
-              type="password"
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-              onKeyDown={(event) => event.key === 'Enter' && handleEmailAuth()}
-            />
-          </label>
-          <button className="auth-primary" disabled={loading} onClick={handleEmailAuth}>
-            {loading ? 'Please wait...' : mode === 'signup' ? 'Create account' : 'Log in'}
-          </button>
-        </div>
-      )}
+      </div>
 
       {error && <small className="auth-error">{error}</small>}
+
+      <div className="auth-divider"><span>or continue with</span></div>
+
+      <GoogleSignInButton onCredential={handleGoogleCredential} />
 
       <div className="auth-legal">
         By continuing, you agree to our <button>Terms</button> and <button>Privacy Policy</button>
@@ -3858,7 +3850,6 @@ function AuthSheet({
         className="auth-toggle"
         onClick={() => {
           setMode(mode === 'signup' ? 'login' : 'signup');
-          setEmailExpanded(false);
           setError('');
         }}
       >
