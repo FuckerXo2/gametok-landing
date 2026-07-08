@@ -6297,8 +6297,6 @@ kbd {
     background-image: url('/mobile-gate-bg.png');
     background-size: cover;
     background-position: center;
-    filter: blur(18px) brightness(0.42) saturate(1.1);
-    transform: scale(1.1);
     z-index: 0;
   }
 
@@ -6306,7 +6304,7 @@ kbd {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(5, 5, 10, 0.5) 0%, rgba(5, 5, 10, 0.85) 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.82) 100%);
   }
 
   .mobile-auth-wall-inner {
