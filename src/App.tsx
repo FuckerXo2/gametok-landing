@@ -123,13 +123,16 @@ const DESKTOP_CREATE_PROMPTS = [
   'Make a cooking chaos game where orders mutate, kitchens move, and combos explode',
 ];
 
-// Google Sign-In (web). This is the SAME Google Cloud project the mobile app uses
-// (its "web client id"). For GIS to work the web origin must be listed under
-// "Authorized JavaScript origins" for this OAuth client in Google Cloud Console.
+// Google Sign-In (web). Uses the Firebase project's Web OAuth client
+// (Firebase project "gametok-3a4c2", the same one the Android app uses —
+// see google-services.json client_type 3). For GIS to work, this exact web
+// origin must be listed under "Authorized JavaScript origins" for this OAuth
+// client: Firebase Console -> Authentication -> Sign-in method -> Google ->
+// Web SDK configuration -> (link to open it in Google Cloud Console).
 // Override per-environment with VITE_GOOGLE_CLIENT_ID.
 const GOOGLE_WEB_CLIENT_ID =
   (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID ||
-  '690098564284-9j4fj28fiqimjg8c20mn2vtjg6b70qr7.apps.googleusercontent.com';
+  '516560435127-l6db4akjqei5q57j764kgu3aoaedu45l.apps.googleusercontent.com';
 
 type AuthUser = {
   id: string;
