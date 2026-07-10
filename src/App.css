@@ -5185,6 +5185,9 @@ kbd {
   border-radius: 26px;
   background: transparent;
   border: 0;
+  /* Other .bottom-sheet variants dock bottom-right on desktop (margin-left:
+     auto below); the auth modal must stay centered in the viewport instead. */
+  margin: 0;
 }
 
 .sheet-grabber {
