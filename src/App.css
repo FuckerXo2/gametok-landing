@@ -2616,6 +2616,13 @@ textarea {
   object-fit: cover;
 }
 
+.desktop-feed-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
+
 .desktop-feed-card-shade {
   position: absolute;
   inset: 0;

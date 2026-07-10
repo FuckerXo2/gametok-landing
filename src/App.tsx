@@ -2386,6 +2386,12 @@ function DesktopPlayHome({
   onToggleFollow: () => void;
 }) {
   const creator = game.creatorDisplayName || game.creatorUsername || 'GameTok player';
+  const [gameStarted, setGameStarted] = useState(false);
+
+  useEffect(() => {
+    setGameStarted(false);
+  }, [game.id]);
+
   return (
     <section className="desktop-app-main desktop-play-home">
       <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} />
@@ -2400,10 +2406,22 @@ function DesktopPlayHome({
         <article className="desktop-feed-card">
           <div className="desktop-feed-card-shade" />
           <div className="desktop-feed-poster">
-            <img src={getThumbnailUrl(game)} alt="" />
-            <button className="desktop-feed-play" aria-label={`Play ${game.name}`}>
-              <Play size={48} fill="currentColor" />
-            </button>
+            {gameStarted ? (
+              <iframe
+                key={game.id}
+                className="desktop-feed-iframe"
+                title={game.name}
+                src={getGameUrl(game)}
+                allow="autoplay; fullscreen; clipboard-write"
+              />
+            ) : (
+              <>
+                <img src={getThumbnailUrl(game)} alt="" />
+                <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={() => setGameStarted(true)}>
+                  <Play size={48} fill="currentColor" />
+                </button>
+              </>
+            )}
             <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
           </div>
         </article>
