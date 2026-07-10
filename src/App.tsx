@@ -2398,6 +2398,15 @@ function DesktopPlayHome({
     setGameStarted(false);
   }, [game.id]);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); onNext(); }
+      if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); onPrevious(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onNext, onPrevious]);
+
   return (
     <section className="desktop-app-main desktop-play-home">
       <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} />
@@ -2419,15 +2428,15 @@ function DesktopPlayHome({
               allow="autoplay; fullscreen; clipboard-write"
             />
           )}
-          <div className="desktop-feed-poster">
-            <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
-            {!gameStarted && (
+          {!gameStarted && (
+            <div className="desktop-feed-poster">
+              <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
               <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={() => setGameStarted(true)}>
                 <Play size={48} fill="currentColor" />
               </button>
-            )}
-            <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
-          </div>
+              <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
+            </div>
+          )}
         </article>
 
         <div className="desktop-feed-creator" onClick={onOpenCreator} role="button" tabIndex={0}>
