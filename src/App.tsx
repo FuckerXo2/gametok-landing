@@ -1011,6 +1011,7 @@ function App() {
           liked={likedGames.has(activeGame.id)}
           saved={savedGames.has(activeGame.id)}
           following={followedCreators.has(activeCreatorId)}
+          feedMotion={feedMotion}
           onTab={goTab}
           onNext={nextGame}
           onPrevious={previousGame}
@@ -2366,6 +2367,7 @@ function DesktopPlayHome({
   liked,
   saved,
   following,
+  feedMotion,
   onTab,
   onNext,
   onPrevious,
@@ -2382,6 +2384,7 @@ function DesktopPlayHome({
   liked: boolean;
   saved: boolean;
   following: boolean;
+  feedMotion: 'next' | 'previous' | null;
   onTab: (tab: Tab) => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -2430,7 +2433,7 @@ function DesktopPlayHome({
           <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
         </div>
 
-        <article className="desktop-feed-card">
+        <article className={`desktop-feed-card ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
           <iframe
             key={game.id}
             className="desktop-feed-iframe"

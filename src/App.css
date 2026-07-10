@@ -2596,6 +2596,24 @@ textarea {
   box-shadow: none;
 }
 
+.desktop-feed-motion-next {
+  animation: desktopFeedSlideUp 420ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+
+.desktop-feed-motion-previous {
+  animation: desktopFeedSlideDown 420ms cubic-bezier(0.22, 0.7, 0.2, 1) both;
+}
+
+@keyframes desktopFeedSlideUp {
+  from { transform: translate(-50%, 100vh); }
+  to   { transform: translate(-50%, -50%); }
+}
+
+@keyframes desktopFeedSlideDown {
+  from { transform: translate(-50%, -150vh); }
+  to   { transform: translate(-50%, -50%); }
+}
+
 .desktop-feed-poster {
   position: absolute;
   left: 50%;
