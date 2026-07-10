@@ -2434,12 +2434,19 @@ function DesktopPlayHome({
         </div>
 
         <article className={`desktop-feed-card ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
-          <iframe
-            key={game.id}
-            className="desktop-feed-iframe"
-            title={game.name}
-            src={getGameUrl(game)}
-            allow="autoplay; fullscreen; clipboard-write"
+          {gameStarted && (
+            <iframe
+              key={game.id}
+              className="desktop-feed-iframe"
+              title={game.name}
+              src={getGameUrl(game)}
+              allow="autoplay; fullscreen; clipboard-write"
+            />
+          )}
+          <div
+            className="desktop-feed-backdrop"
+            style={{ backgroundImage: `url(${getThumbnailUrl(game)})` }}
+            aria-hidden="true"
           />
           {!gameStarted && (
             <div className="desktop-feed-poster">
