@@ -2396,10 +2396,15 @@ function DesktopPlayHome({
 }) {
   const creator = game.creatorDisplayName || game.creatorUsername || 'GameTok player';
   const [gameStarted, setGameStarted] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     setGameStarted(false);
   }, [game.id]);
+
+  const pauseGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-pause' }, '*');
+  const resumeGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-resume' }, '*');
+  const startGame = () => { resumeGame(); setGameStarted(true); };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2434,24 +2439,19 @@ function DesktopPlayHome({
         </div>
 
         <article className={`desktop-feed-card ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
-          {gameStarted && (
-            <iframe
-              key={game.id}
-              className="desktop-feed-iframe"
-              title={game.name}
-              src={getGameUrl(game)}
-              allow="autoplay; fullscreen; clipboard-write"
-            />
-          )}
-          <div
-            className="desktop-feed-backdrop"
-            style={{ backgroundImage: `url(${getThumbnailUrl(game)})` }}
-            aria-hidden="true"
+          <iframe
+            key={game.id}
+            ref={iframeRef}
+            className="desktop-feed-iframe"
+            title={game.name}
+            src={getGameUrl(game)}
+            allow="autoplay; fullscreen; clipboard-write"
+            onLoad={pauseGame}
           />
           {!gameStarted && (
             <div className="desktop-feed-poster">
               <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
-              <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={() => setGameStarted(true)}>
+              <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
                 <Play size={48} fill="currentColor" />
               </button>
               <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
