@@ -2403,8 +2403,20 @@ function DesktopPlayHome({
       if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); onNext(); }
       if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); onPrevious(); }
     };
+    let wheelLock = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) < 20) return;
+      const now = Date.now();
+      if (now - wheelLock < 500) return;
+      wheelLock = now;
+      e.deltaY > 0 ? onNext() : onPrevious();
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('wheel', onWheel, { passive: true });
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('wheel', onWheel);
+    };
   }, [onNext, onPrevious]);
 
   return (
@@ -2442,7 +2454,6 @@ function DesktopPlayHome({
           <span>
             <strong>{creator}</strong>
             <h2 className="desktop-feed-title">{game.name}</h2>
-            {game.description && <small className="desktop-feed-description">{game.description}</small>}
           </span>
           <button onClick={(event) => { event.stopPropagation(); onToggleFollow(); }}>{following ? 'Following' : 'Follow'}</button>
         </div>
