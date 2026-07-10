@@ -3711,7 +3711,7 @@ function AuthSheet({
 
   const handleEmailAuth = async () => {
     if (!username.trim() || !password) {
-      setError('Username and password are required.');
+      setError(mode === 'login' ? 'Username/email and password are required.' : 'Username and password are required.');
       return;
     }
     setError('');
@@ -3836,7 +3836,7 @@ function AuthSheet({
           <input
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            placeholder="Username"
+            placeholder={mode === 'login' ? 'Username or email' : 'Username'}
             autoComplete="username"
           />
         </label>
