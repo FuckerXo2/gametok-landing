@@ -378,6 +378,12 @@ const getThumbnailUrl = (game: Game) => {
   return generatedThumbnailUrl(game);
 };
 
+const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, game: Game) => {
+  const fallback = generatedThumbnailUrl(game);
+  if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+};
+
+
 const getGameUrl = (game: Game) => {
   if (game.embedUrl) {
     const raw = game.embedUrl.startsWith('/') ? `${API_ORIGIN}${game.embedUrl}` : game.embedUrl;
@@ -1192,7 +1198,7 @@ function HomeFeed({
           <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(game)})` }} />
           {(!gameStarted || showPreviewArt) && (
             <div className="game-preview-art">
-              <img src={getThumbnailUrl(game)} alt="" />
+              <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
               <strong>{game.name}</strong>
               <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
             </div>
@@ -1308,7 +1314,7 @@ function ExploreScreen({
         <div className="explore-game-grid">
           {expandedSection.games.map((game) => (
             <button key={game.id} onClick={() => onOpenGame(game)}>
-              <img src={getThumbnailUrl(game)} alt="" />
+              <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
               <span>
                 <strong>{game.name}</strong>
                 <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
@@ -1840,7 +1846,7 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
           <div className="draft-grid">
             {drafts.map((draft) => (
               <button key={draft.id} onClick={() => onOpenGame(draft.game)}>
-                <img src={getThumbnailUrl(draft.game)} alt="" />
+                <img src={getThumbnailUrl(draft.game)} alt="" onError={e => handleThumbError(e, draft.game)} />
                 <span>
                   <strong>{draft.title}</strong>
                   <small>{draft.status}</small>
@@ -2416,7 +2422,7 @@ function DesktopPlayHome({
               />
             ) : (
               <>
-                <img src={getThumbnailUrl(game)} alt="" />
+                <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
                 <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={() => setGameStarted(true)}>
                   <Play size={48} fill="currentColor" />
                 </button>
@@ -2565,7 +2571,7 @@ function StaticMarketingPage({
           <div className="marketing-game-grid">
             {games.slice(0, 18).map((game) => (
               <button key={game.id} onClick={() => onOpenGame(game)}>
-                <img src={getThumbnailUrl(game)} alt="" />
+                <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
                 <span>
                   <strong>{game.name}</strong>
                   <small>@{game.creatorDisplayName || game.creatorUsername || 'creator'} · {formatCount(game.plays)} plays</small>
@@ -3311,7 +3317,7 @@ function SearchSheet({
       <div className="search-game-list">
         {results.slice(0, 18).map((game) => (
           <button key={game.id} onClick={() => onOpenGame(game)}>
-            <img src={getThumbnailUrl(game)} alt="" />
+            <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
             <span>
               <strong>{game.name}</strong>
               <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
@@ -3379,7 +3385,7 @@ function CreatorProfileSheet({
       <div className="search-game-list">
         {creatorGames.slice(0, 18).map((game) => (
           <button key={game.id} onClick={() => onOpenGame(game)}>
-            <img src={getThumbnailUrl(game)} alt="" />
+            <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
             <span>
               <strong>{game.name}</strong>
               <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
@@ -3513,7 +3519,7 @@ function NotificationsSheet({ games, creators, onOpenGame }: { games: Game[]; cr
             <strong>@{item.creator.username}</strong>
             <small>{item.text} · {item.game.name}</small>
           </span>
-          <img src={getThumbnailUrl(item.game)} alt="" />
+          <img src={getThumbnailUrl(item.game)} alt="" onError={e => handleThumbError(e, item.game)} />
         </button>
       ))}
       {items.length === 0 && <EmptyListState title="No notifications yet" text="Backend notifications will appear here." />}
@@ -3637,7 +3643,7 @@ function ShareSheet({ game }: { game: Game }) {
 
   return (
     <div className="share-panel">
-      <img src={getThumbnailUrl(game)} alt="" />
+      <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
       <h3>{game.name}</h3>
       <p>{url}</p>
       <button onClick={copy}><Share2 size={17} /> {copied ? 'Copied' : 'Share / Copy Link'}</button>
