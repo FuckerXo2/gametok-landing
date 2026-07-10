@@ -2441,7 +2441,8 @@ function DesktopPlayHome({
           <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
           <span>
             <strong>{creator}</strong>
-            <small>Browse their games</small>
+            <h2 className="desktop-feed-title">{game.name}</h2>
+            {game.description && <small className="desktop-feed-description">{game.description}</small>}
           </span>
           <button onClick={(event) => { event.stopPropagation(); onToggleFollow(); }}>{following ? 'Following' : 'Follow'}</button>
         </div>

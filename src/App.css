@@ -2844,6 +2844,26 @@ textarea {
   font-weight: 780;
 }
 
+.desktop-feed-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.desktop-feed-creator small.desktop-feed-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
 .desktop-feed-creator button {
   min-height: 44px;
   padding: 0 24px;
