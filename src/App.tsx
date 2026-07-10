@@ -2410,23 +2410,21 @@ function DesktopPlayHome({
         </div>
 
         <article className="desktop-feed-card">
-          <div className="desktop-feed-card-shade" />
+          {gameStarted && (
+            <iframe
+              key={game.id}
+              className="desktop-feed-iframe"
+              title={game.name}
+              src={getGameUrl(game)}
+              allow="autoplay; fullscreen; clipboard-write"
+            />
+          )}
           <div className="desktop-feed-poster">
-            {gameStarted ? (
-              <iframe
-                key={game.id}
-                className="desktop-feed-iframe"
-                title={game.name}
-                src={getGameUrl(game)}
-                allow="autoplay; fullscreen; clipboard-write"
-              />
-            ) : (
-              <>
-                <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
-                <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={() => setGameStarted(true)}>
-                  <Play size={48} fill="currentColor" />
-                </button>
-              </>
+            <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
+            {!gameStarted && (
+              <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={() => setGameStarted(true)}>
+                <Play size={48} fill="currentColor" />
+              </button>
             )}
             <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
           </div>
