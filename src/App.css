@@ -2601,7 +2601,7 @@ textarea {
   left: 50%;
   top: 50%;
   z-index: 4;
-  width: min(300px, 46%);
+  width: min(360px, 58%);
   aspect-ratio: 3 / 4;
   overflow: hidden;
   transform: translate(-50%, -50%);
