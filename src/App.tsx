@@ -2419,15 +2419,13 @@ function DesktopPlayHome({
         </div>
 
         <article className="desktop-feed-card">
-          {gameStarted && (
-            <iframe
-              key={game.id}
-              className="desktop-feed-iframe"
-              title={game.name}
-              src={getGameUrl(game)}
-              allow="autoplay; fullscreen; clipboard-write"
-            />
-          )}
+          <iframe
+            key={game.id}
+            className="desktop-feed-iframe"
+            title={game.name}
+            src={getGameUrl(game)}
+            allow="autoplay; fullscreen; clipboard-write"
+          />
           {!gameStarted && (
             <div className="desktop-feed-poster">
               <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
