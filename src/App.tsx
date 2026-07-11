@@ -332,6 +332,18 @@ const STORAGE_KEYS = {
   likedGames: 'gametok-web-liked-games',
   savedGames: 'gametok-web-saved-games',
   followedCreators: 'gametok-web-followed-creators',
+  recentGames: 'gametok-web-recent-games',
+};
+
+const readRecentGameIds = (): string[] => {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEYS.recentGames) || '[]'); }
+  catch { return []; }
+};
+
+const pushRecentGame = (id: string) => {
+  const list = readRecentGameIds().filter((x) => x !== id);
+  list.unshift(id);
+  localStorage.setItem(STORAGE_KEYS.recentGames, JSON.stringify(list.slice(0, 30)));
 };
 
 const readStoredSet = (key: string) => {
@@ -821,6 +833,7 @@ function App() {
     setActiveTab('home');
     setMarketingPage(null);
     setModal(null);
+    pushRecentGame(game.id);
   };
 
   const goTab = (tab: Tab) => {
@@ -937,7 +950,7 @@ function App() {
               <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
             )
           )}
-          {activeTab === 'explore' && (
+          {isMobile && activeTab === 'explore' && (
             <ExploreScreen
               games={games}
               creators={creators}
@@ -1033,7 +1046,17 @@ function App() {
         />
       )}
 
-      {!isMobile && activeTab !== 'home' && activeTab !== 'create' && !marketingPage && (
+      {!isMobile && activeTab === 'explore' && !marketingPage && authUser && (
+        <DesktopExploreScreen
+          user={authUser}
+          games={games}
+          onTab={goTab}
+          onOpenGame={openGame}
+          onCreate={() => goTab('create')}
+        />
+      )}
+
+      {!isMobile && activeTab !== 'home' && activeTab !== 'create' && activeTab !== 'explore' && !marketingPage && (
         <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} />
       )}
 
@@ -2716,6 +2739,102 @@ function marketingSubtitle(page: MarketingPage, isPost: boolean) {
   if (page === 'earn') return 'A creator-growth page for sharing playable games and bringing players back.';
   if (page === 'faq') return 'Answers for builders, players, and anyone trying to understand GameTok web.';
   return 'Static v1 legal content for navigation completeness. Final review still required.';
+}
+
+function DesktopExploreScreen({
+  user,
+  games,
+  onTab,
+  onOpenGame,
+  onCreate,
+}: {
+  user: AuthUser;
+  games: Game[];
+  onTab: (tab: Tab) => void;
+  onOpenGame: (game: Game) => void;
+  onCreate: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [recentIds] = useState<string[]>(() => readRecentGameIds());
+
+  const searchQ = query.trim().toLowerCase();
+  const matchesQuery = (g: Game) =>
+    !searchQ ||
+    (g.name || '').toLowerCase().includes(searchQ) ||
+    (g.creatorDisplayName || '').toLowerCase().includes(searchQ) ||
+    (g.creatorUsername || '').toLowerCase().includes(searchQ);
+
+  const continueGames = useMemo(() => {
+    if (!recentIds.length) return [] as Game[];
+    const byId = new Map(games.map((g) => [g.id, g]));
+    return recentIds.map((id) => byId.get(id)).filter(Boolean).filter(matchesQuery as (g: Game | undefined) => g is Game) as Game[];
+  }, [games, recentIds, searchQ]);
+
+  const trending = useMemo(
+    () => [...games].filter(matchesQuery).sort((a, b) => (b.plays || 0) - (a.plays || 0)),
+    [games, searchQ],
+  );
+
+  const fresh = useMemo(() => games.filter(matchesQuery), [games, searchQ]);
+
+  return (
+    <section className="desktop-app-main desktop-explore">
+      <DesktopAppSidebar activeTab="explore" user={user} onTab={onTab} />
+      <main className="desktop-explore-main">
+        <header className="desktop-explore-header">
+          <div>
+            <p>GAMETOK</p>
+            <h1>Explore</h1>
+          </div>
+          <button className="desktop-explore-create" onClick={onCreate}>
+            <Wand2 size={16} /> Create
+          </button>
+        </header>
+
+        <div className="desktop-explore-search">
+          <Search size={18} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search games, creators, worlds"
+          />
+        </div>
+
+        {continueGames.length > 0 && (
+          <DesktopExploreRow title="Continue" games={continueGames} onOpenGame={onOpenGame} />
+        )}
+        <DesktopExploreRow title="Trending" games={trending} onOpenGame={onOpenGame} />
+        <DesktopExploreRow title="New" games={fresh} onOpenGame={onOpenGame} />
+
+        {trending.length === 0 && fresh.length === 0 && (
+          <div className="desktop-explore-empty"><p>No games match that yet.</p></div>
+        )}
+      </main>
+    </section>
+  );
+}
+
+function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games: Game[]; onOpenGame: (game: Game) => void }) {
+  if (games.length === 0) return null;
+  return (
+    <section className="desktop-explore-row">
+      <h2>{title}</h2>
+      <div className="desktop-explore-row-scroll">
+        {games.map((game) => (
+          <button key={`${title}-${game.id}`} className="desktop-explore-card" onClick={() => onOpenGame(game)}>
+            <div
+              className="desktop-explore-card-thumb"
+              style={{ backgroundImage: `url(${getThumbnailUrl(game)})`, backgroundColor: game.color || '#111' }}
+            />
+            <div className="desktop-explore-card-meta">
+              <strong>{game.name}</strong>
+              <small><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</small>
+            </div>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function DesktopCreateWorkspace({
