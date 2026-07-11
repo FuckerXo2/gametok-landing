@@ -32,6 +32,13 @@
   background: #000;
 }
 
+.gametok-shell.explore-mode {
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  background: #000;
+}
+
 .phone-stage {
   justify-self: stretch;
   position: relative;
