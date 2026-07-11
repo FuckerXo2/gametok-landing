@@ -5866,6 +5866,14 @@ kbd {
     display: grid;
   }
 
+  .gametok-shell.explore-mode .phone-stage {
+    display: none;
+  }
+
+  .gametok-shell.explore-mode .desktop-explore {
+    display: grid;
+  }
+
   .app-screen {
     border-radius: 0;
   }

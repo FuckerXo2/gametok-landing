@@ -903,7 +903,7 @@ function App() {
   }, [activeTab, games.length, marketingPage, modal]);
 
   return (
-    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile ? 'explore-mode' : ''}`}>
+    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile && authUser ? 'explore-mode' : ''}`}>
       <MobileGate onContinueInBrowser={() => {
         setMobileGateOpen(false);
         setAuthMode('login');
