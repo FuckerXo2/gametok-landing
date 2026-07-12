@@ -485,8 +485,11 @@ const buildDefaultAvatarConfig = (seed?: string | null): DicebearConfig => {
 };
 
 const getDicebearConfig = (uri?: string | null): DicebearConfig | null => {
-  if (!uri || !uri.startsWith('dicebear://')) return null;
-  const raw = uri.replace('dicebear://', '');
+  if (!uri) return null;
+  let raw: string;
+  if (uri.startsWith('dicebear://')) raw = uri.slice('dicebear://'.length);
+  else if (uri.startsWith('avatar-creator://')) raw = uri.slice('avatar-creator://'.length);
+  else return null;
   const [encodedSeed, query = ''] = raw.split('?');
   const seed = decodeURIComponent(encodedSeed || 'gametok');
   const params = new URLSearchParams(query);
@@ -545,7 +548,7 @@ const buildAdventurerOptions = (config: DicebearConfig, pixelSize: number): Dice
 };
 
 const avatarUrl = (seed?: string | null, uri?: string | null, size = 128) => {
-  if (uri && !uri.startsWith('dicebear://')) return uri;
+  if (uri && !uri.startsWith('dicebear://') && !uri.startsWith('avatar-creator://')) return uri;
   const config = getDicebearConfig(uri) || buildDefaultAvatarConfig(seed || uri || 'gametok');
   const svg = createAvatar(ADVENTURER_STYLE, buildAdventurerOptions(config, Math.min(256, Math.max(48, size)))).toString();
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
