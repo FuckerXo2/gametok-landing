@@ -2814,25 +2814,33 @@ function DesktopExploreScreen({
   );
 }
 
+const EXPLORE_ROW_CHUNK_SIZE = 30;
+
 function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games: Game[]; onOpenGame: (game: Game) => void }) {
   if (games.length === 0) return null;
+  const chunks: Game[][] = [];
+  for (let i = 0; i < games.length; i += EXPLORE_ROW_CHUNK_SIZE) {
+    chunks.push(games.slice(i, i + EXPLORE_ROW_CHUNK_SIZE));
+  }
   return (
     <section className="desktop-explore-row">
       <h2>{title}</h2>
-      <div className="desktop-explore-row-scroll">
-        {games.map((game) => (
-          <button key={`${title}-${game.id}`} className="desktop-explore-card" onClick={() => onOpenGame(game)}>
-            <div
-              className="desktop-explore-card-thumb"
-              style={{ backgroundImage: `url(${getThumbnailUrl(game)})`, backgroundColor: game.color || '#111' }}
-            />
-            <div className="desktop-explore-card-meta">
-              <strong>{game.name}</strong>
-              <small><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</small>
-            </div>
-          </button>
-        ))}
-      </div>
+      {chunks.map((chunk, chunkIndex) => (
+        <div className="desktop-explore-row-scroll" key={`${title}-chunk-${chunkIndex}`}>
+          {chunk.map((game) => (
+            <button key={`${title}-${game.id}`} className="desktop-explore-card" onClick={() => onOpenGame(game)}>
+              <div
+                className="desktop-explore-card-thumb"
+                style={{ backgroundImage: `url(${getThumbnailUrl(game)})`, backgroundColor: game.color || '#111' }}
+              />
+              <div className="desktop-explore-card-meta">
+                <strong>{game.name}</strong>
+                <small><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</small>
+              </div>
+            </button>
+          ))}
+        </div>
+      ))}
     </section>
   );
 }
