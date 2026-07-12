@@ -1050,8 +1050,10 @@ function App() {
         <DesktopExploreScreen
           user={authUser}
           games={games}
+          creators={creators}
           onTab={goTab}
           onOpenGame={openGame}
+          onOpenCreator={openCreatorProfile}
           onCreate={() => goTab('create')}
         />
       )}
@@ -2744,18 +2746,44 @@ function marketingSubtitle(page: MarketingPage, isPost: boolean) {
 function DesktopExploreScreen({
   user,
   games,
+  creators,
   onTab,
   onOpenGame,
+  onOpenCreator,
   onCreate,
 }: {
   user: AuthUser;
   games: Game[];
+  creators: Creator[];
   onTab: (tab: Tab) => void;
   onOpenGame: (game: Game) => void;
+  onOpenCreator: (creator: Creator) => void;
   onCreate: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [recentIds] = useState<string[]>(() => readRecentGameIds());
+  const [following, setFollowing] = useState<Creator[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.id) return;
+    (async () => {
+      try {
+        const rows = await request(`/users/${user.id}/following`);
+        if (!mounted) return;
+        if (Array.isArray(rows)) setFollowing(rows as Creator[]);
+      } catch {
+        // Non-fatal — strip just falls back to suggestions only.
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user?.id]);
+
+  const followingIds = useMemo(() => new Set(following.map((c) => c.id)), [following]);
+  const suggestions = useMemo(
+    () => creators.filter((c) => !followingIds.has(c.id)).slice(0, 20),
+    [creators, followingIds],
+  );
 
   const searchQ = query.trim().toLowerCase();
   const matchesQuery = (g: Game) =>
@@ -2800,6 +2828,12 @@ function DesktopExploreScreen({
           />
         </div>
 
+        <DesktopExplorePeopleStrip
+          following={following}
+          suggestions={suggestions}
+          onOpenCreator={onOpenCreator}
+        />
+
         {continueGames.length > 0 && (
           <DesktopExploreRow title="Continue" games={continueGames} onOpenGame={onOpenGame} />
         )}
@@ -2841,6 +2875,40 @@ function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games:
           ))}
         </div>
       ))}
+    </section>
+  );
+}
+
+function DesktopExplorePeopleStrip({
+  following,
+  suggestions,
+  onOpenCreator,
+}: {
+  following: Creator[];
+  suggestions: Creator[];
+  onOpenCreator: (creator: Creator) => void;
+}) {
+  if (following.length === 0 && suggestions.length === 0) return null;
+  const renderTile = (creator: Creator, kind: 'friend' | 'suggested') => (
+    <button
+      key={`${kind}-${creator.id}`}
+      className="desktop-explore-person"
+      onClick={() => onOpenCreator(creator)}
+    >
+      <div className="desktop-explore-person-avatar">
+        <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
+      </div>
+      <strong>{creator.displayName || creator.username}</strong>
+      <small>{kind === 'friend' ? `@${creator.username}` : 'Suggested'}</small>
+    </button>
+  );
+  return (
+    <section className="desktop-explore-people">
+      <h2>{following.length > 0 ? 'Friends' : 'People to follow'}</h2>
+      <div className="desktop-explore-people-scroll">
+        {following.map((c) => renderTile(c, 'friend'))}
+        {suggestions.map((c) => renderTile(c, 'suggested'))}
+      </div>
     </section>
   );
 }
