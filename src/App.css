@@ -2497,16 +2497,9 @@ textarea {
 
 .desktop-explore-row-scroll {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(180px, 200px);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
   padding-bottom: 8px;
-}
-
-.desktop-explore-row-scroll::-webkit-scrollbar {
-  display: none;
 }
 
 .desktop-explore-card {
