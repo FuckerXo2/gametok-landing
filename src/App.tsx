@@ -2148,15 +2148,54 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
   const [tab, setTab] = useState<'created' | 'played' | 'liked'>('created');
   const handle = user?.username || 'guest';
   const displayName = user?.displayName || user?.username || 'Guest Player';
-  const createdGames = user
-    ? games.filter((game) => (
-      game.creatorId === user.id
-      || game.userId === user.id
-      || game.createdBy === user.id
-      || game.creatorUsername === user.username
-    ))
-    : [];
-  const activeGames = tab === 'created' ? createdGames : [];
+
+  const [createdGames, setCreatedGames] = useState<Game[]>([]);
+  const [playedGames, setPlayedGames] = useState<Game[]>([]);
+  const [likedGamesList, setLikedGamesList] = useState<Game[]>([]);
+
+  // Fallback: if the backend fetch fails, still show anything from the
+  // top-48 trending list that we can reasonably attribute to the user.
+  const localCreated = useMemo(() => user ? games.filter((game) => (
+    game.creatorId === user.id
+    || game.userId === user.id
+    || game.createdBy === user.id
+    || game.creatorUsername === user.username
+  )) : [], [games, user]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setCreatedGames([]);
+      setPlayedGames([]);
+      setLikedGamesList([]);
+      return;
+    }
+    let mounted = true;
+    (async () => {
+      const [createdRes, playedRes, likedRes] = await Promise.allSettled([
+        users.created(user.id, 60),
+        users.played(user.id, 60),
+        likesApi.userLikes(user.id),
+      ]);
+      if (!mounted) return;
+      if (createdRes.status === 'fulfilled' && Array.isArray(createdRes.value?.games)) {
+        setCreatedGames(createdRes.value.games);
+      } else {
+        setCreatedGames(localCreated);
+      }
+      if (playedRes.status === 'fulfilled' && Array.isArray(playedRes.value?.games)) {
+        setPlayedGames(playedRes.value.games);
+      }
+      if (likedRes.status === 'fulfilled' && Array.isArray(likedRes.value?.games)) {
+        setLikedGamesList(likedRes.value.games);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [user?.id, localCreated]);
+
+  const activeGames = tab === 'created' ? createdGames
+    : tab === 'played' ? playedGames
+    : likedGamesList;
+  const likesCount = user?.likesCount ?? likedGamesList.length;
   return (
     <section className="page-scroll profile-screen">
       <header className="profile-top">
@@ -2182,7 +2221,7 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
         <span><strong>{formatCount(user?.followingCount || 0)}</strong><small>Following</small></span>
         <span><strong>{formatCount(user?.followersCount || 0)}</strong><small>Followers</small></span>
         <span><strong>{createdGames.length}</strong><small>Created</small></span>
-        <span><strong>{formatCount(user?.likesCount || 0)}</strong><small>Likes</small></span>
+        <span><strong>{formatCount(likesCount)}</strong><small>Likes</small></span>
       </div>
 
       <div className="profile-actions">
