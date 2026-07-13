@@ -63,22 +63,13 @@ export default function MobileGate({ onContinueInBrowser, reopenSignal = 0 }: Pr
 
   const handleContinueInApp = () => {
     if (platform === 'other') return;
-    // Try opening the installed app via custom URL scheme first, using a
-    // hidden iframe rather than a top-level navigation. iOS Safari fails an
-    // unregistered scheme silently inside an iframe; a top-level
-    // window.location.href navigation instead surfaces a native
-    // "Safari cannot open the page because the address is invalid" alert.
-    const now = Date.now();
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = 'gametok://';
-    document.body.appendChild(iframe);
-    setTimeout(() => {
-      iframe.remove();
-      // If the app opened, the page will be hidden/blurred.
-      if (document.hidden || Date.now() - now > 2500) return;
-      window.location.href = storeUrl;
-    }, 1500);
+    // Go straight to the store. Probing the gametok:// custom scheme first
+    // (top-level or iframe) always surfaces Safari's native "address is
+    // invalid" alert on modern iOS when the app isn't installed — there is
+    // no JS-visible way to suppress it. Deep-linking installed users is the
+    // Smart App Banner's job (apple-itunes-app meta in index.source.html);
+    // the store page itself shows "Open" when the app is already installed.
+    window.location.href = storeUrl;
   };
 
   const handleContinueInBrowser = () => {
