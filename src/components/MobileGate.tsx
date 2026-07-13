@@ -25,9 +25,10 @@ function isMobileViewport(): boolean {
 
 type Props = {
   onContinueInBrowser: () => void;
+  reopenSignal?: number;
 };
 
-export default function MobileGate({ onContinueInBrowser }: Props) {
+export default function MobileGate({ onContinueInBrowser, reopenSignal = 0 }: Props) {
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState<Platform>('other');
 
@@ -38,6 +39,15 @@ export default function MobileGate({ onContinueInBrowser }: Props) {
       setVisible(true);
     }
   }, []);
+
+  // Re-open on demand (e.g. the auth wall's back button), regardless of the
+  // earlier localStorage dismissal.
+  useEffect(() => {
+    if (reopenSignal > 0) {
+      setPlatform(detectPlatform());
+      setVisible(true);
+    }
+  }, [reopenSignal]);
 
   if (!visible) return null;
 
@@ -53,12 +63,18 @@ export default function MobileGate({ onContinueInBrowser }: Props) {
 
   const handleContinueInApp = () => {
     if (platform === 'other') return;
-    // Try opening the installed app via custom URL scheme first.
-    // If the app isn't installed, the scheme navigation silently fails
-    // and the timeout redirects to the store.
+    // Try opening the installed app via custom URL scheme first, using a
+    // hidden iframe rather than a top-level navigation. iOS Safari fails an
+    // unregistered scheme silently inside an iframe; a top-level
+    // window.location.href navigation instead surfaces a native
+    // "Safari cannot open the page because the address is invalid" alert.
     const now = Date.now();
-    window.location.href = 'gametok://';
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = 'gametok://';
+    document.body.appendChild(iframe);
     setTimeout(() => {
+      iframe.remove();
       // If the app opened, the page will be hidden/blurred.
       if (document.hidden || Date.now() - now > 2500) return;
       window.location.href = storeUrl;

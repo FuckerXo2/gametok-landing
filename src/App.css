@@ -6687,8 +6687,26 @@ kbd {
     border-radius: 999px;
   }
 
-  /* The wall is a gate — no dismiss button */
+  /* This inner close belongs to AuthSheet itself (used in the desktop modal) —
+     the wall has its own dedicated back button instead, see below. */
   .mobile-auth-wall .auth-close {
     display: none;
+  }
+
+  .mobile-auth-wall-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    cursor: pointer;
   }
 }
