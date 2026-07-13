@@ -63,12 +63,20 @@ export default function MobileGate({ onContinueInBrowser, reopenSignal = 0 }: Pr
 
   const handleContinueInApp = () => {
     if (platform === 'other') return;
-    // Go straight to the store. Probing the gametok:// custom scheme first
-    // (top-level or iframe) always surfaces Safari's native "address is
-    // invalid" alert on modern iOS when the app isn't installed — there is
-    // no JS-visible way to suppress it. Deep-linking installed users is the
-    // Smart App Banner's job (apple-itunes-app meta in index.source.html);
-    // the store page itself shows "Open" when the app is already installed.
+    if (isAndroid) {
+      // Chrome intent URL: deep-links into the installed app, silently
+      // falls back to the Play Store if not installed. No error dialogs.
+      const fallback = encodeURIComponent(ANDROID_STORE_URL);
+      window.location.href =
+        `intent://open#Intent;scheme=gametok;package=com.vogeza;S.browser_fallback_url=${fallback};end`;
+      return;
+    }
+    // iOS: probing gametok:// (top-level or iframe) always surfaces
+    // Safari's native "address is invalid" dialog when the app isn't
+    // installed — no JS-visible way to suppress it. Deep-linking installed
+    // users is the Smart App Banner's job (apple-itunes-app meta in
+    // index.source.html); the store page itself shows "Open" when the app
+    // is already installed.
     window.location.href = storeUrl;
   };
 
