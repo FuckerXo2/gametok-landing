@@ -452,17 +452,23 @@ textarea {
   color: #a855f7;
 }
 
-.standard-nav .create-tab {
+/* Center Play button — plain white circle, Astrocade style */
+.standard-nav .play-tab {
   color: #000;
 }
 
-.standard-nav .create-tab svg {
-  width: 44px;
-  height: 34px;
-  padding: 7px 12px;
-  border-radius: 12px;
-  background:
-    linear-gradient(90deg, rgba(34, 211, 238, 0.9), rgba(168, 85, 247, 0.9) 28%, #fff 30% 70%, rgba(168, 85, 247, 0.9) 72%, rgba(34, 211, 238, 0.9));
+.play-tab-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.play-tab-circle svg {
+  margin-left: 3px;
 }
 
 .deck-nav {
@@ -481,15 +487,28 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 26px;
 }
 
-.deck-controls .replay {
-  width: 48px;
-  height: 48px;
+.deck-controls button {
+  color: #fff;
+}
+
+.deck-controls .playpause {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: #fff;
   color: #000;
+}
+
+.deck-collapse {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  justify-self: end;
+  align-items: center;
 }
 
 .page-scroll {

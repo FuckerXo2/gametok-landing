@@ -26,8 +26,11 @@ import {
   Menu,
   MessageCircle,
   Mic,
+  Palette,
   Pause,
   Play,
+  SkipBack,
+  SkipForward,
   Volume2,
   Plus,
   RefreshCw,
@@ -663,7 +666,10 @@ function App() {
   const [marketingPage, setMarketingPage] = useState<MarketingPage | null>(null);
   const [gameIndex, setGameIndex] = useState(0);
   const [hudHidden, setHudHidden] = useState(false);
-  const [gameDeckMode, setGameDeckMode] = useState(true);
+  // Home tab hosts the explore-style browse screen; the full-screen player
+  // (deck mode) is entered via the center Play button or by opening a game.
+  const [gameDeckMode, setGameDeckMode] = useState(false);
+  const [gamePaused, setGamePaused] = useState(false);
   const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -829,6 +835,7 @@ function App() {
     const index = games.findIndex((item) => item.id === game.id);
     setGameIndex(index >= 0 ? index : 0);
     setGameDeckMode(true);
+    setGamePaused(false);
     setHudHidden(false);
     setActiveTab('home');
     setMarketingPage(null);
@@ -841,8 +848,9 @@ function App() {
     if (tab === 'create' && requireAuth('signup')) return;
     setMarketingPage(null);
     setActiveTab(tab);
-    setGameDeckMode(tab === 'home');
-    if (tab !== 'home') setHudHidden(false);
+    // Tabs never auto-enter the player — that's the center Play button's job.
+    setGameDeckMode(false);
+    setHudHidden(false);
   };
 
   const goMarketingPage = (page: MarketingPage) => {
@@ -866,12 +874,31 @@ function App() {
   const nextGame = () => {
     if (games.length === 0) return;
     animateFeed('next');
+    setGamePaused(false);
     setGameIndex((value) => (value + 1) % games.length);
   };
   const previousGame = () => {
     if (games.length === 0) return;
     animateFeed('previous');
+    setGamePaused(false);
     setGameIndex((value) => (value - 1 + games.length) % games.length);
+  };
+
+  // Enter the full-screen player (center Play button on the mobile nav).
+  const openPlayer = () => {
+    setMarketingPage(null);
+    setActiveTab('home');
+    setGameDeckMode(true);
+    setHudHidden(false);
+    setGamePaused(false);
+  };
+
+  // Freeze/resume the active game via the gt-pause/gt-resume handler the
+  // backend injects into every served game.
+  const toggleGamePause = () => {
+    const iframe = document.querySelector<HTMLIFrameElement>('.feed-scroll iframe');
+    iframe?.contentWindow?.postMessage({ type: gamePaused ? 'gt-resume' : 'gt-pause' }, '*');
+    setGamePaused((value) => !value);
   };
   useEffect(() => {
     const storedGameId = localStorage.getItem(STORAGE_KEYS.activeGame);
@@ -916,7 +943,19 @@ function App() {
 
       {!marketingPage && (!isMobile || !mobileGateOpen) && <div className="phone-stage">
         <main className="app-screen">
-          {activeTab === 'home' && (
+          {isMobile && activeTab === 'home' && !gameDeckMode && (
+            <DesktopExploreScreen
+              variant="mobile"
+              user={authUser}
+              games={games}
+              creators={creators}
+              onTab={goTab}
+              onOpenGame={openGame}
+              onOpenCreator={openCreatorProfile}
+              onCreate={() => goTab('create')}
+            />
+          )}
+          {activeTab === 'home' && (!isMobile || gameDeckMode) && (
             activeGame ? (
               <HomeFeed
                 games={games}
@@ -929,8 +968,6 @@ function App() {
                 liked={likedGames.has(activeGame.id)}
                 saved={savedGames.has(activeGame.id)}
                 following={followedCreators.has(activeCreatorId)}
-                onNext={nextGame}
-                onPrevious={previousGame}
                 onIndex={setGameIndex}
                 onOpenModal={setModal}
                 onToggleLike={toggleActiveLike}
@@ -938,7 +975,7 @@ function App() {
                 onToggleFollow={toggleActiveFollow}
                 onOpenExplore={() => {
                   setGameDeckMode(false);
-                  setActiveTab('explore');
+                  setActiveTab('home');
                 }}
               />
             ) : (
@@ -971,10 +1008,12 @@ function App() {
           activeTab={activeTab}
           gameDeckMode={gameDeckMode && activeTab === 'home'}
           hudHidden={hudHidden}
+          paused={gamePaused}
           onTab={(tab) => {
             goTab(tab);
           }}
-          onRestart={() => setGameIndex((value) => value)}
+          onPlay={openPlayer}
+          onTogglePlay={toggleGamePause}
           onNext={nextGame}
           onPrevious={previousGame}
           onToggleHud={() => setHudHidden((value) => !value)}
@@ -1124,8 +1163,6 @@ function HomeFeed({
   liked,
   saved,
   following,
-  onNext,
-  onPrevious,
   onIndex,
   onOpenModal,
   onToggleLike,
@@ -1143,8 +1180,6 @@ function HomeFeed({
   liked: boolean;
   saved: boolean;
   following: boolean;
-  onNext: () => void;
-  onPrevious: () => void;
   onIndex: (idx: number) => void;
   onOpenModal: (modal: Modal) => void;
   onToggleLike: () => void;
@@ -1290,12 +1325,6 @@ function HomeFeed({
           </div>
         </>
       )}
-
-      <div className="swipe-hint">
-        <button type="button" onClick={onPrevious} aria-label="Previous game"><ChevronUp size={18} /></button>
-        <span>{index + 1}/{games.length}</span>
-        <button type="button" onClick={onNext} aria-label="Next game"><ChevronDown size={18} /></button>
-      </div>
 
       {!gameDeckMode && <div className="deck-shadow" />}
     </section>
@@ -2111,8 +2140,10 @@ function BottomNav({
   activeTab,
   gameDeckMode,
   hudHidden,
+  paused,
   onTab,
-  onRestart,
+  onPlay,
+  onTogglePlay,
   onNext,
   onPrevious,
   onToggleHud,
@@ -2121,8 +2152,10 @@ function BottomNav({
   activeTab: Tab;
   gameDeckMode: boolean;
   hudHidden: boolean;
+  paused: boolean;
   onTab: (tab: Tab) => void;
-  onRestart: () => void;
+  onPlay: () => void;
+  onTogglePlay: () => void;
   onNext: () => void;
   onPrevious: () => void;
   onToggleHud: () => void;
@@ -2134,31 +2167,36 @@ function BottomNav({
         <button onClick={onHomeDeckExit}><Home size={23} /><span>Home</span></button>
         <i />
         <div className="deck-controls">
-          <button onClick={onPrevious}><ChevronLeft size={30} /></button>
-          <button className="replay" onClick={onRestart}><RefreshCw size={25} /></button>
-          <button onClick={onNext}><ChevronRight size={30} /></button>
+          <button onClick={onPrevious} aria-label="Previous game"><SkipBack size={22} fill="currentColor" /></button>
+          <button className="playpause" onClick={onTogglePlay} aria-label={paused ? 'Resume' : 'Pause'}>
+            {paused ? <Play size={24} fill="currentColor" /> : <Pause size={24} fill="currentColor" />}
+          </button>
+          <button onClick={onNext} aria-label="Next game"><SkipForward size={22} fill="currentColor" /></button>
         </div>
-        <button onClick={onToggleHud}>{hudHidden ? <ChevronUp size={23} /> : <ChevronDown size={23} />}</button>
+        <button className="deck-collapse" onClick={onToggleHud} aria-label="Toggle HUD">
+          {hudHidden ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
+        </button>
       </nav>
     );
   }
 
-  const items: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
-    { tab: 'home', label: 'Home', icon: <Home size={23} /> },
-    { tab: 'explore', label: 'Explore', icon: <Compass size={23} /> },
-    { tab: 'create', label: 'Create', icon: <Plus size={24} /> },
-    { tab: 'connect', label: 'Connect', icon: <Users size={23} /> },
-    { tab: 'profile', label: 'Profile', icon: <User size={23} /> },
-  ];
-
   return (
     <nav className="bottom-nav standard-nav">
-      {items.map((item) => (
-        <button key={item.tab} className={`${activeTab === item.tab ? 'active' : ''} ${item.tab === 'create' ? 'create-tab' : ''}`} onClick={() => onTab(item.tab)}>
-          {item.icon}
-          <span>{item.label}</span>
-        </button>
-      ))}
+      <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onTab('home')}>
+        <Home size={23} /><span>Home</span>
+      </button>
+      <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
+        <Users size={23} /><span>Connect</span>
+      </button>
+      <button className="play-tab" onClick={onPlay} aria-label="Play">
+        <span className="play-tab-circle"><Play size={24} fill="currentColor" /></span>
+      </button>
+      <button className={activeTab === 'create' ? 'active' : ''} onClick={() => onTab('create')}>
+        <Palette size={23} /><span>Create</span>
+      </button>
+      <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => onTab('profile')}>
+        <User size={23} /><span>Profile</span>
+      </button>
     </nav>
   );
 }
