@@ -1153,6 +1153,7 @@ function HomeFeed({
   onOpenExplore: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const programmaticScrollUntil = useRef(0);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
@@ -1178,6 +1179,7 @@ function HomeFeed({
             best = { ratio: entry.intersectionRatio, idx };
           }
         });
+        if (Date.now() < programmaticScrollUntil.current) return;
         if (best.idx >= 0 && best.ratio > 0.6 && best.idx !== index) {
           onIndex(best.idx);
         }
@@ -1188,17 +1190,21 @@ function HomeFeed({
     return () => obs.disconnect();
   }, [games.length, index, onIndex]);
 
-  // Programmatically scroll when index changes from outside (buttons/keyboard).
-  // Guarded: skip if the container is already visually aligned with the target
-  // (the case after native snap fires the IntersectionObserver → onIndex).
+  // Programmatically align the scroll container with the current index.
+  // Runs on index change (nav buttons/keyboard), on mount, and when games
+  // populate — that last one covers the case where the container remounts
+  // (HMR, tab switch) with scrollTop=0 while parent state still holds a
+  // non-zero index, which would otherwise mount the iframe in the wrong
+  // item and leave the visible one empty.
   useEffect(() => {
     const scroll = scrollRef.current;
-    if (!scroll) return;
+    if (!scroll || games.length === 0) return;
     const target = scroll.querySelector<HTMLElement>(`.feed-item[data-index="${index}"]`);
     if (!target) return;
     if (Math.abs(target.offsetTop - scroll.scrollTop) < 8) return;
-    scroll.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
-  }, [index]);
+    programmaticScrollUntil.current = Date.now() + 400;
+    scroll.scrollTo({ top: target.offsetTop, behavior: 'auto' });
+  }, [index, games.length]);
 
   return (
     <section className="home-feed">
