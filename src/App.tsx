@@ -361,21 +361,6 @@ const formatCount = (value?: number) => {
   return `${n}`;
 };
 
-const hashSeed = (value: string) => {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash >>> 0);
-};
-
-const generatedThumbnailUrl = (game: Game) => {
-  const title = String(game.name || game.title || 'GameTok game').trim();
-  const prompt = `${title}, mobile game thumbnail, stylized game scene, vibrant colors, no text, no logo, no UI`;
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=768&nologo=true&enhance=true&model=flux&seed=${hashSeed(game.id || title)}`;
-};
-
 const getThumbnailUrl = (game: Game) => {
   const value = game.thumbnail?.trim();
   if (value) {
@@ -387,11 +372,11 @@ const getThumbnailUrl = (game: Game) => {
     if (value.startsWith('uploads/') || value.startsWith('covers/')) return `${API_ORIGIN}/${value}`;
     return `${GAMES_HOST}/${value.replace(/^\/+/, '')}`;
   }
-  return generatedThumbnailUrl(game);
+  return '/app-assets/dream-forge-hero.png';
 };
 
-const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, game: Game) => {
-  const fallback = generatedThumbnailUrl(game);
+const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, _game: Game) => {
+  const fallback = '/app-assets/dream-forge-hero.png';
   if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
 };
 
@@ -1276,7 +1261,9 @@ function HomeFeed({
                     onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
                   />
                 )}
-                <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
+                {Math.abs(i - index) <= 1 && (
+                  <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
+                )}
                 {i === index && (!gameStarted || showPreviewArt) && (
                   <div className="game-preview-art">
                     <img src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
@@ -2121,7 +2108,8 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
 
       <div className="profile-grid">
         {activeGames.map((game) => (
-          <button key={`${tab}-${game.id}`} onClick={() => onOpenGame(game)} style={{ backgroundImage: `url(${getThumbnailUrl(game)})` }}>
+          <button key={`${tab}-${game.id}`} onClick={() => onOpenGame(game)}>
+            <img src={getThumbnailUrl(game)} alt="" loading="lazy" onError={(e) => handleThumbError(e, game)} />
             <span><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</span>
           </button>
         ))}
@@ -2794,10 +2782,9 @@ function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games:
         <div className="desktop-explore-row-scroll" key={`${title}-chunk-${chunkIndex}`}>
           {chunk.map((game) => (
             <button key={`${title}-${game.id}`} className="desktop-explore-card" onClick={() => onOpenGame(game)}>
-              <div
-                className="desktop-explore-card-thumb"
-                style={{ backgroundImage: `url(${getThumbnailUrl(game)})`, backgroundColor: game.color || '#111' }}
-              />
+              <div className="desktop-explore-card-thumb" style={{ backgroundColor: game.color || '#111' }}>
+                <img src={getThumbnailUrl(game)} alt="" loading="lazy" onError={(e) => handleThumbError(e, game)} />
+              </div>
               <div className="desktop-explore-card-meta">
                 <strong>{game.name}</strong>
                 <small><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</small>

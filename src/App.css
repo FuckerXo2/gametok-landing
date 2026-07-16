@@ -2098,6 +2098,15 @@ textarea {
   overflow: hidden;
 }
 
+.profile-grid button img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .profile-grid button::after {
   content: "";
   position: absolute;
@@ -2628,6 +2637,15 @@ textarea {
   background-size: cover;
   background-position: center;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.desktop-explore-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .desktop-explore-card-meta {

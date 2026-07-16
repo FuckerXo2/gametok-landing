@@ -448,7 +448,7 @@ export const ai = {
 };
 
 // ─── Thumbnail Resolution (ported from mobile utils/thumbnails.ts) ───
-export function resolveGameThumbnail(thumbnail?: string | null, gameId?: string | null, game?: any) {
+export function resolveGameThumbnail(thumbnail?: string | null, _gameId?: string | null, _game?: any) {
   const value = thumbnail?.trim();
   if (value) {
     if (value.startsWith('http') || value.startsWith('data:')) return value;
@@ -459,8 +459,7 @@ export function resolveGameThumbnail(thumbnail?: string | null, gameId?: string 
     if (value.startsWith('uploads/') || value.startsWith('covers/')) return `${API_ORIGIN}/${value}`;
     return `${GAMES_HOST}/${value.replace(/^\/+/, '')}`;
   }
-  // Fallback: generate thumbnail via Pollinations
-  return generatedThumbnailUrl({ ...game, id: gameId });
+  return '/app-assets/dream-forge-hero.png';
 }
 
 export function getThumbnailUrl(game: any) {
@@ -476,21 +475,4 @@ export function getGameUrl(game: any) {
     return `${url}${sep}gd_sdk_referrer_url=${encodeURIComponent(GAMES_HOST)}`;
   }
   return `${GAMES_HOST}/${game.id}/`;
-}
-
-// ─── Generated Thumbnail URL (Pollinations fallback) ─────────
-function hashSeed(value: string) {
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return Math.abs(hash >>> 0);
-}
-
-function generatedThumbnailUrl(game?: any) {
-  const title = String(game?.name || game?.title || 'GameTok game').trim();
-  const seed = hashSeed(String(game?.id || title || 'gametok'));
-  const prompt = `${title}, mobile game thumbnail, stylized game scene, vibrant colors, no text, no logo, no UI`;
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=768&nologo=true&enhance=true&model=flux&seed=${seed}`;
 }
