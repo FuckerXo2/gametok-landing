@@ -984,6 +984,11 @@ function App() {
             <ConnectScreen
               creators={creators}
               onOpenCreator={openCreatorProfile}
+              onOpenChat={openCreatorMessage}
+              onOpenGame={openGame}
+              variant={isMobile ? 'mobile' : 'desktop'}
+              user={authUser}
+              games={games}
             />
           )}
           {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
@@ -1925,9 +1930,19 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
 function ConnectScreen({
   creators,
   onOpenCreator,
+  onOpenChat,
+  onOpenGame,
+  variant = 'desktop',
+  user,
+  games = [],
 }: {
   creators: Creator[];
   onOpenCreator: (creator: Creator) => void;
+  onOpenChat?: (creator: Creator) => void;
+  onOpenGame?: (game: Game) => void;
+  variant?: 'desktop' | 'mobile';
+  user?: AuthUser | null;
+  games?: Game[];
 }) {
   const [lane, setLane] = useState<'chats' | 'requests'>('chats');
   const [selectedChat, setSelectedChat] = useState<Creator | null>(creators[0] || null);
@@ -1943,6 +1958,95 @@ function ConnectScreen({
     if (!q) return list;
     return list.filter((creator) => `${creator.displayName || ''} ${creator.username}`.toLowerCase().includes(q));
   }, [creators, chatQuery]);
+
+  if (variant === 'mobile') {
+    return (
+      <section className="mobile-connect-screen">
+        <header className="mobile-connect-header">
+          <div className="avatar-container">
+            <img
+              src={user ? avatarUrl(user.username, user.avatar, 96) : '/about/icon.png'}
+              alt="My Avatar"
+              className="user-avatar"
+            />
+          </div>
+          <h1>gametok</h1>
+          <button className="icon-button" aria-label="Notifications">
+            <Bell size={21} />
+          </button>
+        </header>
+
+        <div className="mobile-connect-search">
+          <Search size={18} />
+          <input
+            value={chatQuery}
+            onChange={(e) => setChatQuery(e.target.value)}
+            placeholder="Search people and chats"
+          />
+        </div>
+
+        <div className="mobile-connect-people-scroll">
+          {chatCreators.map((c) => (
+            <button key={c.id} className="mobile-connect-person" onClick={() => onOpenCreator(c)}>
+              <div className="mobile-connect-avatar">
+                <img src={avatarUrl(c.username, c.avatar, 128)} alt="" />
+              </div>
+              <span>{c.displayName || c.username}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mobile-connect-live-banner">
+          <span className="live-dot" />
+          <div className="live-banner-text">
+            <h3>No friends online yet</h3>
+            <p>We'll show a LIVE banner here when someone you follow is in-game.</p>
+          </div>
+        </div>
+
+        <div className="mobile-connect-section">
+          <div className="mobile-connect-section-header">
+            <h2>Friends are playing</h2>
+            <button className="see-all-link">See all</button>
+          </div>
+          <div className="mobile-connect-games-scroll">
+            {games.slice(0, 6).map((g) => (
+              <button key={g.id} className="mobile-connect-game-card" onClick={() => onOpenGame?.(g)}>
+                <div className="mobile-connect-game-thumb">
+                  <img src={getThumbnailUrl(g)} alt="" loading="lazy" />
+                </div>
+                <div className="mobile-connect-game-meta">
+                  <strong>{g.name}</strong>
+                  <small>Trending</small>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mobile-connect-section">
+          <div className="mobile-connect-section-header">
+            <h2>Active Conversations</h2>
+            <button className="see-all-link">See all</button>
+          </div>
+          <div className="mobile-connect-chats-list">
+            {chatCreators.slice(0, 8).map((c) => (
+              <button key={c.id} className="mobile-connect-chat-row" onClick={() => onOpenChat?.(c)}>
+                <img src={avatarUrl(c.username, c.avatar, 96)} alt="" />
+                <div className="mobile-connect-chat-info">
+                  <strong>{c.displayName || c.username}</strong>
+                  <small>Tap to message</small>
+                </div>
+              </button>
+            ))}
+            {chatCreators.length === 0 && (
+              <div className="connect-empty"><p>No people found.</p></div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="messages-screen">
