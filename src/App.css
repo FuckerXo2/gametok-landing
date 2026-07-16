@@ -6167,6 +6167,7 @@ kbd {
   .phone-stage {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     min-height: 0;
     border: 0;
     border-radius: 0;
@@ -6672,7 +6673,7 @@ kbd {
   }
 
   .desktop-explore.is-mobile .desktop-explore-row-scroll {
-    grid-auto-columns: minmax(106px, 106px);
+    grid-auto-columns: calc((100% - 20px) / 3);
     gap: 10px;
   }
 
