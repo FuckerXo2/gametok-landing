@@ -25,10 +25,9 @@ function isMobileViewport(): boolean {
 
 type Props = {
   onContinueInBrowser: () => void;
-  reopenSignal?: number;
 };
 
-export default function MobileGate({ onContinueInBrowser, reopenSignal = 0 }: Props) {
+export default function MobileGate({ onContinueInBrowser }: Props) {
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState<Platform>('other');
 
@@ -39,15 +38,6 @@ export default function MobileGate({ onContinueInBrowser, reopenSignal = 0 }: Pr
       setVisible(true);
     }
   }, []);
-
-  // Re-open on demand (e.g. the auth wall's back button), regardless of the
-  // earlier localStorage dismissal.
-  useEffect(() => {
-    if (reopenSignal > 0) {
-      setPlatform(detectPlatform());
-      setVisible(true);
-    }
-  }, [reopenSignal]);
 
   if (!visible) return null;
 

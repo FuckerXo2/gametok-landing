@@ -679,9 +679,6 @@ function App() {
     if (dismissed && !forced) return false;
     return forced || (uaMobile && window.innerWidth < 900);
   });
-  // Bumped to re-open MobileGate after it's been dismissed once — lets the
-  // auth wall's back button return to the app-promo/marketing screen.
-  const [mobileGateReopenSignal, setMobileGateReopenSignal] = useState(0);
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
@@ -840,6 +837,8 @@ function App() {
   };
 
   const goTab = (tab: Tab) => {
+    // Creating a game requires an account; browsing/exploring does not.
+    if (tab === 'create' && requireAuth('signup')) return;
     setMarketingPage(null);
     setActiveTab(tab);
     setGameDeckMode(tab === 'home');
@@ -908,7 +907,6 @@ function App() {
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile && authUser ? 'explore-mode' : ''}`}>
       <MobileGate
-        reopenSignal={mobileGateReopenSignal}
         onContinueInBrowser={() => {
           setMobileGateOpen(false);
           setAuthMode('login');
@@ -916,27 +914,7 @@ function App() {
         }}
       />
 
-      {isMobile && !authUser && !mobileGateOpen && (
-        <div className="mobile-auth-wall">
-          <div className="mobile-auth-wall-bg" aria-hidden="true" />
-          <div className="mobile-auth-wall-inner">
-            <button
-              type="button"
-              className="mobile-auth-wall-close"
-              aria-label="Back"
-              onClick={() => {
-                setMobileGateOpen(true);
-                setMobileGateReopenSignal((n) => n + 1);
-              }}
-            >
-              <X size={18} />
-            </button>
-            <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setAuthMode('login')} />
-          </div>
-        </div>
-      )}
-
-      {!marketingPage && (!isMobile || (authUser && !mobileGateOpen)) && <div className="phone-stage">
+      {!marketingPage && (!isMobile || !mobileGateOpen) && <div className="phone-stage">
         <main className="app-screen">
           {activeTab === 'home' && (
             activeGame ? (
@@ -967,7 +945,7 @@ function App() {
               <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
             )
           )}
-          {isMobile && activeTab === 'explore' && authUser && (
+          {isMobile && activeTab === 'explore' && (
             <DesktopExploreScreen
               variant="mobile"
               user={authUser}
@@ -2638,7 +2616,7 @@ function DesktopExploreScreen({
   onCreate,
   variant = 'desktop',
 }: {
-  user: AuthUser;
+  user: AuthUser | null;
   games: Game[];
   creators: Creator[];
   onTab: (tab: Tab) => void;
