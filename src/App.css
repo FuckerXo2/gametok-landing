@@ -127,38 +127,30 @@ textarea {
   background: #050505;
 }
 
-.feed-motion-next .game-frame,
-.feed-motion-next .game-caption,
-.feed-motion-next .feed-actions {
-  animation: feedSlideUp 340ms cubic-bezier(0.2, 0.82, 0.18, 1) both;
+/* TikTok-style native scroll-snap feed container. Each .feed-item is a
+   full-viewport snap point; native scroll handles inertia + snap. */
+.feed-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
 }
 
-.feed-motion-previous .game-frame,
-.feed-motion-previous .game-caption,
-.feed-motion-previous .feed-actions {
-  animation: feedSlideDown 340ms cubic-bezier(0.2, 0.82, 0.18, 1) both;
+.feed-scroll::-webkit-scrollbar {
+  display: none;
 }
 
-@keyframes feedSlideUp {
-  from {
-    opacity: 0.72;
-    transform: translateY(38px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes feedSlideDown {
-  from {
-    opacity: 0.72;
-    transform: translateY(-38px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.feed-item {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow: hidden;
 }
 
 .game-iframe {

@@ -926,12 +926,12 @@ function App() {
                 offline={offline}
                 hudHidden={hudHidden}
                 gameDeckMode={gameDeckMode}
-                feedMotion={feedMotion}
                 liked={likedGames.has(activeGame.id)}
                 saved={savedGames.has(activeGame.id)}
                 following={followedCreators.has(activeCreatorId)}
                 onNext={nextGame}
                 onPrevious={previousGame}
+                onIndex={setGameIndex}
                 onOpenModal={setModal}
                 onToggleLike={toggleActiveLike}
                 onToggleSave={toggleActiveSave}
@@ -1121,12 +1121,12 @@ function HomeFeed({
   offline,
   hudHidden,
   gameDeckMode,
-  feedMotion,
   liked,
   saved,
   following,
   onNext,
   onPrevious,
+  onIndex,
   onOpenModal,
   onToggleLike,
   onToggleSave,
@@ -1140,20 +1140,19 @@ function HomeFeed({
   offline: boolean;
   hudHidden: boolean;
   gameDeckMode: boolean;
-  feedMotion: 'next' | 'previous' | null;
   liked: boolean;
   saved: boolean;
   following: boolean;
   onNext: () => void;
   onPrevious: () => void;
+  onIndex: (idx: number) => void;
   onOpenModal: (modal: Modal) => void;
   onToggleLike: () => void;
   onToggleSave: () => void;
   onToggleFollow: () => void;
   onOpenExplore: () => void;
 }) {
-  const touchStart = useRef<number | null>(null);
-  const wheelLock = useRef(0);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
 
@@ -1164,29 +1163,45 @@ function HomeFeed({
     return () => window.clearTimeout(timer);
   }, [game.id]);
 
-  const handleWheel = (event: React.WheelEvent) => {
-    if (Math.abs(event.deltaY) < 40) return;
-    event.preventDefault();
-    const now = Date.now();
-    if (now - wheelLock.current < 520) return;
-    wheelLock.current = now;
-    event.deltaY > 0 ? onNext() : onPrevious();
-  };
+  // Sync active index from native scroll snapping — TikTok-style.
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll || games.length === 0) return;
+    const items = scroll.querySelectorAll<HTMLElement>('.feed-item');
+    if (items.length === 0) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        let best = { ratio: 0, idx: -1 };
+        entries.forEach((entry) => {
+          if (entry.intersectionRatio > best.ratio) {
+            const idx = Number((entry.target as HTMLElement).dataset.index);
+            best = { ratio: entry.intersectionRatio, idx };
+          }
+        });
+        if (best.idx >= 0 && best.ratio > 0.6 && best.idx !== index) {
+          onIndex(best.idx);
+        }
+      },
+      { root: scroll, threshold: [0.4, 0.6, 0.8] },
+    );
+    items.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [games.length, index, onIndex]);
+
+  // Programmatically scroll when index changes from outside (buttons/keyboard).
+  // Guarded: skip if the container is already visually aligned with the target
+  // (the case after native snap fires the IntersectionObserver → onIndex).
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+    const target = scroll.querySelector<HTMLElement>(`.feed-item[data-index="${index}"]`);
+    if (!target) return;
+    if (Math.abs(target.offsetTop - scroll.scrollTop) < 8) return;
+    scroll.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+  }, [index]);
 
   return (
-    <section
-      className={`home-feed ${feedMotion ? `feed-motion-${feedMotion}` : ''}`}
-      onWheel={handleWheel}
-      onTouchStart={(event) => {
-        touchStart.current = event.touches[0].clientY;
-      }}
-      onTouchEnd={(event) => {
-        if (touchStart.current === null) return;
-        const delta = touchStart.current - event.changedTouches[0].clientY;
-        if (Math.abs(delta) > 48) delta > 0 ? onNext() : onPrevious();
-        touchStart.current = null;
-      }}
-    >
+    <section className="home-feed">
       <div className="feed-topbar">
         <button className="icon-button" onClick={onOpenExplore} aria-label="Explore">
           <Search size={19} />
@@ -1206,26 +1221,32 @@ function HomeFeed({
           <p>Loading games...</p>
         </div>
       ) : (
-        <div className="game-frame">
-          {gameStarted && (
-            <iframe
-              key={game.id}
-              className="game-iframe"
-              title={game.name}
-              src={getGameUrl(game)}
-              allow="autoplay; fullscreen; clipboard-write"
-              onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
-            />
-          )}
-          <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(game)})` }} />
-          {(!gameStarted || showPreviewArt) && (
-            <div className="game-preview-art">
-              <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
-              <strong>{game.name}</strong>
-              <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
-            </div>
-          )}
-          {offline && <div className="offline-pill">Offline</div>}
+        <div className="feed-scroll" ref={scrollRef}>
+          {games.map((g, i) => (
+            <article className="feed-item" key={g.id} data-index={i}>
+              <div className="game-frame">
+                {i === index && gameStarted && (
+                  <iframe
+                    key={g.id}
+                    className="game-iframe"
+                    title={g.name}
+                    src={getGameUrl(g)}
+                    allow="autoplay; fullscreen; clipboard-write"
+                    onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
+                  />
+                )}
+                <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
+                {i === index && (!gameStarted || showPreviewArt) && (
+                  <div className="game-preview-art">
+                    <img src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
+                    <strong>{g.name}</strong>
+                    <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
+                  </div>
+                )}
+                {i === index && offline && <div className="offline-pill">Offline</div>}
+              </div>
+            </article>
+          ))}
         </div>
       )}
 
