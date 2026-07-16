@@ -6709,4 +6709,87 @@ kbd {
     color: #fff;
     cursor: pointer;
   }
+
+  /* Mobile Explore: reuse desktop layout inside the phone-stage.
+     Single column (no sidebar), tighter padding, smaller cards so
+     ~3 fit per row. */
+  .desktop-explore.is-mobile {
+    display: block;
+    width: 100%;
+    min-height: 100%;
+    height: 100%;
+    background: #000;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-main {
+    padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px
+      calc(env(safe-area-inset-bottom, 0px) + 96px);
+    max-height: none;
+    overflow: visible;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-header {
+    margin-bottom: 16px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-header h1 {
+    font-size: 28px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-header p {
+    font-size: 10px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-create {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-search {
+    padding: 12px 14px;
+    margin-bottom: 20px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-search input {
+    font-size: 14px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-people {
+    margin-bottom: 24px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-people h2,
+  .desktop-explore.is-mobile .desktop-explore-row h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-people-scroll {
+    grid-auto-columns: 76px;
+    gap: 10px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-person-avatar {
+    width: 60px;
+    height: 60px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-row {
+    margin-bottom: 28px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-row-scroll {
+    grid-auto-columns: minmax(106px, 106px);
+    gap: 10px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-card-meta strong {
+    font-size: 12px;
+  }
+
+  .desktop-explore.is-mobile .desktop-explore-card-meta small {
+    font-size: 10px;
+  }
 }

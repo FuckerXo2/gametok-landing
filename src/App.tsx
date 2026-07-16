@@ -187,7 +187,6 @@ function decodeJwt(token: string): any {
 }
 
 type Tab = 'home' | 'explore' | 'create' | 'connect' | 'profile';
-type ExploreTab = 'For You' | 'Games' | 'Horror' | 'Quiz' | 'Roleplay';
 type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview' | 'publish';
 type Modal = 'comments' | 'leaderboard' | 'share' | 'auth' | 'search' | 'notifications' | 'creator-profile' | 'message';
 type MarketingPage = 'games' | 'pricing' | 'blog' | 'changelog' | 'earn' | 'faq' | 'privacy' | 'terms';
@@ -292,8 +291,6 @@ const CHANGELOG_ITEMS = [
   { date: 'June 2026', title: 'Hybrid Create direction', text: 'Desktop Create is moving toward a cinematic prompt workspace while mobile keeps the app-style Dream Forge.' },
   { date: 'June 2026', title: 'Google Sign-In web shell', text: 'Google Identity Services are wired on the frontend and ready for end-to-end OAuth verification.' },
 ];
-
-const EXPLORE_TABS: ExploreTab[] = ['For You', 'Games', 'Horror', 'Quiz', 'Roleplay'];
 
 const HOME_VIDEOS = [
   '/home-videos/hero-1.mp4',
@@ -970,15 +967,16 @@ function App() {
               <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
             )
           )}
-          {isMobile && activeTab === 'explore' && (
-            <ExploreScreen
+          {isMobile && activeTab === 'explore' && authUser && (
+            <DesktopExploreScreen
+              variant="mobile"
+              user={authUser}
               games={games}
               creators={creators}
-              followedCreators={followedCreators}
+              onTab={goTab}
               onOpenGame={openGame}
-              onCreate={() => goTab('create')}
               onOpenCreator={openCreatorProfile}
-              onToggleFollow={toggleCreatorFollow}
+              onCreate={() => goTab('create')}
             />
           )}
           {activeTab === 'create' && <CreateScreen onOpenGame={openGame} fallbackGame={activeGame || null} />}
@@ -1308,179 +1306,7 @@ function ActionButton({ icon, label, active, tone, onClick }: { icon: React.Reac
   );
 }
 
-function ExploreScreen({
-  games,
-  creators,
-  followedCreators,
-  onOpenGame,
-  onCreate,
-  onOpenCreator,
-  onToggleFollow,
-}: {
-  games: Game[];
-  creators: Creator[];
-  followedCreators: Set<string>;
-  onOpenGame: (game: Game) => void;
-  onCreate: () => void;
-  onOpenCreator: (creator: Creator) => void;
-  onToggleFollow: (creator: Creator) => void;
-}) {
-  const [active, setActive] = useState<ExploreTab>('For You');
-  const [query, setQuery] = useState('');
-  const [showAllCreators, setShowAllCreators] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<{ title: string; games: Game[] } | null>(null);
 
-  const filtered = useMemo(() => {
-    const tabbed = active === 'For You' || active === 'Games'
-      ? games
-      : games.filter((game) => `${game.name} ${game.category} ${game.description}`.toLowerCase().includes(active.toLowerCase()));
-    if (!query.trim()) return tabbed;
-    const q = query.toLowerCase();
-    return tabbed.filter((game) => `${game.name} ${game.category} ${game.description}`.toLowerCase().includes(q));
-  }, [active, games, query]);
-
-  const heroGame = filtered[0] || games[0] || null;
-  const sections = [
-    { title: active === 'For You' ? 'Trending Now' : `${active} Picks`, games: filtered },
-    { title: 'Made For You', games: [...filtered].reverse() },
-    { title: 'Creators To Watch', games: games.slice(2) },
-  ];
-  const visibleCreators = showAllCreators ? creators : creators.slice(0, 8);
-
-  if (expandedSection) {
-    return (
-      <section className="page-scroll explore-screen explore-grid-view">
-        <header className="screen-header">
-          <button className="icon-button" onClick={() => setExpandedSection(null)}><ChevronLeft size={20} /></button>
-          <div>
-            <p>{expandedSection.games.length} games</p>
-            <h2>{expandedSection.title}</h2>
-          </div>
-        </header>
-        <div className="explore-game-grid">
-          {expandedSection.games.map((game) => (
-            <button key={game.id} onClick={() => onOpenGame(game)}>
-              <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
-              <span>
-                <strong>{game.name}</strong>
-                <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
-              </span>
-              <Play size={16} fill="currentColor" />
-            </button>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="page-scroll explore-screen">
-      <header className="screen-header">
-        <div>
-          <p>gametok</p>
-          <h2>Explore</h2>
-        </div>
-        <button className="icon-button"><Menu size={20} /></button>
-      </header>
-
-      <div className="search-box">
-        <Search size={18} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search games, creators, worlds" />
-      </div>
-
-      <div className="tab-strip">
-        {EXPLORE_TABS.map((tab) => (
-          <button key={tab} className={active === tab ? 'active' : ''} onClick={() => setActive(tab)}>
-            {active === tab && <span />}
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      <div className="explore-hero" style={{ backgroundImage: `url(${active === 'For You' || !heroGame ? '/app-assets/dream-forge-hero.png' : getThumbnailUrl(heroGame)})` }}>
-        <div className="hero-scrim" />
-        <div className="hero-pill"><Sparkles size={13} /> {active === 'For You' ? 'Dream Forge' : 'Instant Play'}</div>
-        <div className="explore-hero-copy">
-          <h1>{active === 'For You' || !heroGame ? <>Make a playable <span>world.</span></> : <>{heroGame.name}<span> play now.</span></>}</h1>
-          <p>{active === 'For You' || !heroGame ? 'You imagine it. We build it.' : heroGame.description}</p>
-          <button onClick={active === 'For You' || !heroGame ? onCreate : () => onOpenGame(heroGame)}>
-            {active === 'For You' || !heroGame ? <Wand2 size={16} /> : <Play size={16} fill="currentColor" />}
-            {active === 'For You' || !heroGame ? 'Create Now' : 'Play Now'}
-          </button>
-        </div>
-      </div>
-
-      {active !== 'For You' && (
-        <div className="chip-row">
-          {['Recommend', 'Action', 'Arcade', 'Racing', 'Puzzle', 'Casual', 'Sports'].map((chip, index) => (
-            <button className={index === 0 ? 'active' : ''} key={chip}>{chip}</button>
-          ))}
-        </div>
-      )}
-
-      {sections.map((section) => (
-        <GameLane key={section.title} title={section.title} games={section.games} onOpenGame={onOpenGame} onSeeAll={() => setExpandedSection(section)} />
-      ))}
-
-      <section className="creator-section">
-        <div className="section-heading">
-          <h3>Recommended creators</h3>
-          {creators.length > 8 && (
-            <button type="button" onClick={() => setShowAllCreators((value) => !value)}>
-              {showAllCreators ? 'Show less' : 'See all'}
-            </button>
-          )}
-        </div>
-        <div className="creator-row-list">
-          {visibleCreators.map((creator) => (
-            <div className="creator-card" key={creator.id} onClick={() => onOpenCreator(creator)} role="button" tabIndex={0}>
-              <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
-              <strong>{creator.displayName || creator.username}</strong>
-              <span>@{creator.username}</span>
-              <button
-                className={followedCreators.has(creatorIdFrom(creator)) ? 'following' : ''}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleFollow(creator);
-                }}
-              >
-                {followedCreators.has(creatorIdFrom(creator)) ? 'Following' : 'Follow'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-    </section>
-  );
-}
-
-function GameLane({ title, games, onOpenGame, onSeeAll }: { title: string; games: Game[]; onOpenGame: (game: Game) => void; onSeeAll: () => void }) {
-  const visibleGames = games.slice(0, 10);
-  return (
-    <section className="game-lane">
-      <div className="section-heading">
-        <h3>{title}</h3>
-        {games.length > 10 && (
-          <button type="button" onClick={onSeeAll}>
-            See all
-          </button>
-        )}
-      </div>
-      <div className="game-card-row">
-        {visibleGames.map((game) => (
-          <button className="poster-card" key={`${title}-${game.id}`} onClick={() => onOpenGame(game)}>
-            <span className="poster" style={{ backgroundImage: `url(${getThumbnailUrl(game)})`, backgroundColor: game.color || '#111' }}>
-              <span className="poster-play"><Play size={24} fill="currentColor" /></span>
-              <span className="poster-stat"><Play size={10} fill="currentColor" />{formatCount(game.plays)}</span>
-            </span>
-            <strong>{game.name}</strong>
-            <small>@{game.creatorDisplayName || game.creatorUsername || 'creator'}</small>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) => void; fallbackGame: Game | null }) {
   const FORGE_STEPS = useMemo(() => ([
@@ -2810,6 +2636,7 @@ function DesktopExploreScreen({
   onOpenGame,
   onOpenCreator,
   onCreate,
+  variant = 'desktop',
 }: {
   user: AuthUser;
   games: Game[];
@@ -2818,7 +2645,9 @@ function DesktopExploreScreen({
   onOpenGame: (game: Game) => void;
   onOpenCreator: (creator: Creator) => void;
   onCreate: () => void;
+  variant?: 'desktop' | 'mobile';
 }) {
+  const isMobile = variant === 'mobile';
   const [query, setQuery] = useState('');
   const [recentIds] = useState<string[]>(() => readRecentGameIds());
   const [following, setFollowing] = useState<Creator[]>([]);
@@ -2865,8 +2694,8 @@ function DesktopExploreScreen({
   const fresh = useMemo(() => games.filter(matchesQuery), [games, searchQ]);
 
   return (
-    <section className="desktop-app-main desktop-explore">
-      <DesktopAppSidebar activeTab="explore" user={user} onTab={onTab} />
+    <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'}`}>
+      {!isMobile && <DesktopAppSidebar activeTab="explore" user={user} onTab={onTab} />}
       <main className="desktop-explore-main">
         <header className="desktop-explore-header">
           <div>
