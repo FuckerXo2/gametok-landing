@@ -1301,7 +1301,6 @@ function HomeFeed({
                 {game.creatorVerified && <span className="verified-dot">✓</span>}
               </div>
               <h1>{game.name}</h1>
-              {game.description && <p>{game.description}</p>}
               <div className="caption-tags">
                 <span>{game.category || 'Arcade'}</span>
                 <span>{formatCount(game.plays)} plays</span>
