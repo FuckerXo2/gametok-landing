@@ -1237,10 +1237,6 @@ function HomeFeed({
         <button className="icon-button" onClick={onOpenExplore} aria-label="Explore">
           <Search size={19} />
         </button>
-        <div className="feed-title">
-          <span className="active-feed-dot" />
-          <strong>For You</strong>
-        </div>
         <button className="icon-button" aria-label="Notifications" onClick={() => onOpenModal('notifications')}>
           <Bell size={19} />
         </button>
