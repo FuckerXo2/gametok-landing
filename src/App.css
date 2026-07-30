@@ -6068,6 +6068,10 @@ kbd {
     display: grid;
   }
 
+  .gametok-shell.create-mode .desktop-create-shell {
+    display: grid;
+  }
+
   .gametok-shell.explore-mode .phone-stage {
     display: none;
   }
@@ -7421,4 +7425,94 @@ kbd {
   aspect-ratio: 844 / 390;
   width: 100%;
   height: auto;
+}
+
+/* ─── Desktop create: the Dream Forge surface, centered ─────────────────────── */
+
+/* Desktop and mobile web now run the same create screen. This is the desktop
+   frame around it: sidebar + a centered column, rather than the phone stage. */
+.desktop-create-shell {
+  display: none;
+  grid-template-columns: 300px minmax(0, 1fr);
+  width: 100%;
+  height: 100vh;
+  background: #000;
+}
+
+.create-screen.is-desktop {
+  position: relative;
+  inset: auto;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* The Dream Forge card is built for a phone column; on a wide screen it wants a
+   ceiling, or the brief textarea stretches into an unreadable line. */
+.create-screen.is-desktop .create-idle,
+.create-screen.is-desktop .refine-panel,
+.create-screen.is-desktop .generating-panel,
+.create-screen.is-desktop .preview-panel,
+.create-screen.is-desktop .drafts-panel {
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.create-screen.is-desktop .create-mobile-header {
+  max-width: 860px;
+  margin: 0 auto;
+  width: 100%;
+  height: 76px;
+}
+
+.create-screen.is-desktop .create-idle {
+  height: calc(100% - 76px);
+}
+
+.create-screen.is-desktop .create-scroll {
+  padding-bottom: 56px;
+}
+
+/* No bottom tab bar on desktop — the sidebar already carries navigation. */
+.create-screen.is-desktop .create-bottom-tabs {
+  display: none;
+}
+
+.create-screen.is-desktop .create-hero-mobile h1 {
+  font-size: 44px;
+}
+
+.create-screen.is-desktop .mobile-input-card textarea {
+  min-height: 132px;
+}
+
+/* Wider viewport, so the preview can be bigger than a phone card. */
+.create-screen.is-desktop .preview-game {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.create-screen.is-desktop .preview-game.is-landscape {
+  max-width: 860px;
+}
+
+.create-drafts-link {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.create-drafts-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }

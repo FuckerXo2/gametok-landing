@@ -126,13 +126,6 @@ async function fetchFreesoundTracks(type: 'bgm' | 'sfx', query = ''): Promise<Fr
 const API_URL = 'https://gametok-backend-production.up.railway.app/api';
 const API_ORIGIN = API_URL.replace(/\/api$/, '');
 const GAMES_HOST = 'https://games.gametok.co';
-const DESKTOP_CREATE_PROMPTS = [
-  'Make a neon drifting game with midnight streets, police chases, and upgradeable cars',
-  'Make a cozy farming RPG where every crop unlocks a new magical creature',
-  'Make a boss-rush platformer where the level changes every time you jump',
-  'Make a multiplayer arena where players build traps, steal coins, and survive the storm',
-  'Make a cooking chaos game where orders mutate, kitchens move, and combos explode',
-];
 
 // Google Sign-In (web). Uses the Firebase project's Web OAuth client
 // (Firebase project "gametok-3a4c2", the same one the Android app uses —
@@ -1226,14 +1219,19 @@ function App() {
         />
       )}
 
+      {/* Desktop runs the same Dream Forge surface as mobile web, laid out as a
+          centered column. It replaced DesktopCreateWorkspace, which was a second,
+          weaker create experience maintained in parallel. */}
       {!isMobile && activeTab === 'create' && !marketingPage && (
-        <DesktopCreateWorkspace
-          games={games}
-          activeTab={activeTab}
-          onTab={goTab}
-          user={authUser}
-          onAuthRequired={() => openAuth('signup')}
-        />
+        <section className="desktop-create-shell">
+          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} />
+          <CreateScreen
+            variant="desktop"
+            onOpenGame={openGame}
+            user={authUser}
+            onAuthRequired={() => openAuth('signup')}
+          />
+        </section>
       )}
 
       {/* Browsing is open to everyone; only creating asks for an account. */}
@@ -1506,6 +1504,13 @@ function DraftsPanel({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     let mounted = true;
+    // Drafts are per-account; without a token the endpoint answers "Auth failed",
+    // which is true but not something to put in front of a signed-out visitor.
+    if (!getToken()) {
+      setDrafts([]);
+      setError('Sign in to see your drafts.');
+      return;
+    }
     (async () => {
       try {
         const res: any = await ai.drafts();
@@ -1551,11 +1556,19 @@ function CreateScreen({
   onOpenGame,
   user,
   onAuthRequired,
+  variant = 'mobile',
 }: {
   onOpenGame: (game: Game) => void;
   user: AuthUser | null;
   onAuthRequired: () => void;
+  /**
+   * Desktop uses this same Dream Forge surface, just laid out as a centered
+   * column instead of a phone-shaped stage — it reads far better than the old
+   * DesktopCreateWorkspace, so there is one create experience rather than two.
+   */
+  variant?: 'mobile' | 'desktop';
 }) {
+  const isDesktop = variant === 'desktop';
   const forge = useDreamForge();
   const [phase, setPhase] = useState<CreatePhase>('idle');
   const [studioTab, setStudioTab] = useState<'create' | 'drafts'>('create');
@@ -1567,6 +1580,9 @@ function CreateScreen({
   const [orientation, setOrientation] = useState<Orientation | null>(null);
   const [showPublish, setShowPublish] = useState(false);
   const [showTools, setShowTools] = useState(false);
+  /** Refine can replace the preview without going back through the forge. */
+  const [refinedHtml, setRefinedHtml] = useState<string | null>(null);
+  const [refinedTitle, setRefinedTitle] = useState<string | null>(null);
   /** Attachment/upload complaints, kept apart from build failures. */
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [attachedAssets, setAttachedAssets] = useState<DreamAttachment[]>([]);
@@ -1781,16 +1797,24 @@ function CreateScreen({
   };
 
   return (
-    <section className="create-screen">
+    <section className={`create-screen ${isDesktop ? 'is-desktop' : ''}`}>
       <div className="create-bg" />
       <header className="create-mobile-header">
         {studioTab === 'create' ? (
           <>
             <button className="create-avatar-button" onClick={() => setShowTools((value) => !value)}>
-              <img src={avatarUrl('guest-player', null, 104)} alt="" />
+              <img src={avatarUrl(user?.username || 'guest-player', user?.avatar || null, 104)} alt="" />
             </button>
-            <strong>gametok</strong>
-            <span />
+            {/* The sidebar already carries the wordmark on desktop. */}
+            <strong>{isDesktop ? '' : 'gametok'}</strong>
+            {/* Desktop hides the bottom tab bar, so Drafts needs a door here. */}
+            {isDesktop ? (
+              <button className="create-drafts-link" onClick={() => setStudioTab('drafts')}>
+                <Gamepad2 size={16} /> Drafts
+              </button>
+            ) : (
+              <span />
+            )}
           </>
         ) : (
           <>
@@ -1944,7 +1968,6 @@ function CreateScreen({
               <Zap size={16} /> Build Game
             </button>
           </div>
-          {!orientation && <p className="create-hint">Pick a screen shape — it can't be changed later.</p>}
           {forgeDurationHint && <p className="forge-duration-hint">{forgeDurationHint}</p>}
           {forge.error && (
             <div className="create-error-box">
@@ -1983,7 +2006,7 @@ function CreateScreen({
       )}
 
       {studioTab === 'create' && phase === 'preview' && (
-        <div className="preview-panel">
+        <div className={`preview-panel ${isDesktop && forge.result?.draftId ? 'has-refine' : ''}`}>
           <div className="preview-toolbar">
             <button onClick={() => setShowTools((value) => !value)}><Wand2 size={16} /> Modify</button>
           </div>
@@ -1993,11 +2016,26 @@ function CreateScreen({
               // Sandboxed: this is model-written code running against the creator's
               // own session. allow-same-origin is needed for the game's storage.
               sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-              srcDoc={forge.result?.previewHtml || undefined}
+              srcDoc={refinedHtml || forge.result?.previewHtml || undefined}
             />
           </div>
+
+          {/* The conversational edit loop, carried over from the old desktop
+              workspace — it was the one thing that surface did better. */}
+          {isDesktop && forge.result?.draftId && (
+            <DesktopRefinePanel
+              draftId={forge.result.draftId}
+              gameTitle={refinedTitle || forge.result.title}
+              currentSummary={prompt || selectedIdea}
+              onApplied={(result) => {
+                if (result?.htmlPreview) setRefinedHtml(result.htmlPreview);
+                if (result?.title || result?.name) setRefinedTitle(result.title || result.name);
+              }}
+            />
+          )}
+
           <div className="publish-bar">
-            <button onClick={() => { forge.reset(); setPhase('idle'); }}>Keep Editing</button>
+            <button onClick={() => { setRefinedHtml(null); setRefinedTitle(null); forge.reset(); setPhase('idle'); }}>Keep Editing</button>
             <button
               className="primary"
               disabled={!forge.result?.draftId}
@@ -2012,11 +2050,13 @@ function CreateScreen({
       {showPublish && forge.result && (
         <PublishSheet
           draftId={forge.result.draftId}
-          defaultTitle={forge.result.title}
-          html={forge.result.previewHtml}
+          defaultTitle={refinedTitle || forge.result.title}
+          html={refinedHtml || forge.result.previewHtml}
           onClose={() => setShowPublish(false)}
           onPublished={(game) => {
             setShowPublish(false);
+            setRefinedHtml(null);
+            setRefinedTitle(null);
             forge.reset();
             setPhase('idle');
             if (game.id) onOpenGame({ id: game.id, name: game.name || 'New game' } as Game);
@@ -3167,393 +3207,12 @@ function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games:
   );
 }
 
-function DesktopCreateWorkspace({
-  games,
-  activeTab,
-  onTab,
-  user,
-  onAuthRequired,
-}: {
-  games: Game[];
-  activeTab: Tab;
-  onTab: (tab: Tab) => void;
-  user: AuthUser | null;
-  onAuthRequired: () => void;
-}) {
-  // Seeded from the home hero's composer. Read once on mount, and cleared as it's
-  // read, so a later re-render can't clobber what the creator has since typed.
-  const forge = useDreamForge();
-  const [brief, setBrief] = useState<string>(takePendingBrief);
-  const [animatedPrompt, setAnimatedPrompt] = useState('');
-  const [promptIndex, setPromptIndex] = useState(0);
-  const [isDeletingPrompt, setIsDeletingPrompt] = useState(false);
-  // Required, and permanent for the life of the game — see OrientationPicker.
-  const [orientation, setOrientation] = useState<Orientation | null>(null);
-  const [showPublish, setShowPublish] = useState(false);
-  // Refine can replace the preview without going back through the forge.
-  const [refinedHtml, setRefinedHtml] = useState<string | null>(null);
-  const [refinedTitle, setRefinedTitle] = useState<string | null>(null);
+// DesktopCreateWorkspace, ForgeDefenseStage, DesktopBuildPanel and DesktopForgeRail
+// lived here — a second, weaker create experience kept in parallel with the mobile
+// Dream Forge. Desktop now runs that same surface (CreateScreen variant="desktop"),
+// so this is gone. DesktopRefinePanel below survived: its conversational edit loop
+// was the one thing the old workspace did better, and it is mounted in the preview.
 
-  const isBuilding = forge.status === 'building';
-  const previewHtml = refinedHtml || forge.result?.previewHtml || null;
-  const activeDraftId = forge.result?.draftId || null;
-  const activeGameTitle = refinedTitle || forge.result?.title || 'Untitled Dream';
-  useEffect(() => {
-    const prompt = DESKTOP_CREATE_PROMPTS[promptIndex];
-    let delay = isDeletingPrompt ? 24 : 42;
-
-    if (!isDeletingPrompt && animatedPrompt === prompt) {
-      delay = 1400;
-    } else if (isDeletingPrompt && animatedPrompt === '') {
-      delay = 360;
-    }
-
-    const timeout = window.setTimeout(() => {
-      if (!isDeletingPrompt && animatedPrompt === prompt) {
-        setIsDeletingPrompt(true);
-        return;
-      }
-
-      if (isDeletingPrompt && animatedPrompt === '') {
-        setPromptIndex((index) => (index + 1) % DESKTOP_CREATE_PROMPTS.length);
-        setIsDeletingPrompt(false);
-        return;
-      }
-
-      setAnimatedPrompt((current) => (
-        isDeletingPrompt
-          ? current.slice(0, -1)
-          : prompt.slice(0, current.length + 1)
-      ));
-    }, delay);
-
-    return () => window.clearTimeout(timeout);
-  }, [animatedPrompt, isDeletingPrompt, promptIndex]);
-
-  const promptCards = [
-    {
-      label: 'Cozy',
-      image: games[0] ? getThumbnailUrl(games[0]) : '/app-assets/dream-forge-hero.png',
-      prompt: 'Make a cozy fruit ninja game where you slice fruit, dodge bombs, and chase combo streaks',
-    },
-    {
-      label: 'FPS',
-      image: games[1] ? getThumbnailUrl(games[1]) : '/app-assets/dream-forge-hero.png',
-      prompt: 'Make a multiplayer FPS arena where players fight waves, upgrade weapons, and hold the zone',
-    },
-    {
-      label: 'Mobile',
-      image: games[2] ? getThumbnailUrl(games[2]) : '/app-assets/dream-forge-hero.png',
-      prompt: 'Make a 2D endless runner where you jump through a jungle and dodge traps',
-    },
-    {
-      label: 'Platformer',
-      image: games[3] ? getThumbnailUrl(games[3]) : '/app-assets/dream-forge-hero.png',
-      prompt: 'Make a swamp platformer where ninjas defeat enemies and collect power-ups',
-    },
-    {
-      label: 'RPG',
-      image: games[4] ? getThumbnailUrl(games[4]) : '/app-assets/dream-forge-hero.png',
-      prompt: 'Make a fantasy RPG where every quest changes the village and unlocks new powers',
-    },
-  ];
-  const startDreamForge = () => {
-    if (!user && !getToken()) {
-      onAuthRequired();
-      return;
-    }
-    if (!orientation) return;
-    const finalPrompt = (brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]).trim();
-    if (!finalPrompt) return;
-    setRefinedHtml(null);
-    setRefinedTitle(null);
-    forge.start({ prompt: finalPrompt, orientation, attachments: [] });
-  };
-
-  const forgeActive = isBuilding || Boolean(previewHtml);
-
-  return (
-    <section className={`desktop-app-main desktop-create-workspace ${forgeActive ? 'desktop-forge-mode' : ''}`}>
-      {forgeActive ? (
-        <DesktopForgeRail onBack={() => onTab('create')} onHome={() => onTab('home')} />
-      ) : (
-        <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} />
-      )}
-
-      <div className="desktop-create-canvas">
-        <div className="desktop-create-backdrop" />
-        <div className="desktop-create-shade" />
-        {isBuilding || previewHtml ? (
-          <div className="desktop-forge-layout">
-            <aside className="desktop-forge-panel">
-              {previewHtml && activeDraftId ? (
-                <DesktopRefinePanel
-                  draftId={activeDraftId}
-                  gameTitle={activeGameTitle}
-                  currentSummary={brief}
-                  onApplied={(result) => {
-                    if (result?.htmlPreview) setRefinedHtml(result.htmlPreview);
-                    if (result?.title || result?.name) setRefinedTitle(result.title || result.name);
-                  }}
-                />
-              ) : (
-                <DesktopBuildPanel
-                  prompt={brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]}
-                  status={forge.error || forge.message || 'Getting started…'}
-                  error={Boolean(forge.error)}
-                  onStop={isBuilding ? forge.cancel : undefined}
-                  onRetry={forge.retryable ? forge.retry : undefined}
-                />
-              )}
-            </aside>
-
-            <div className="desktop-forge-stage">
-              {previewHtml ? (
-                <>
-                  <iframe
-                    className={`desktop-create-preview ${isLandscape(forge.result?.orientation) ? 'is-landscape' : ''}`}
-                    title="Dream Forge preview"
-                    srcDoc={previewHtml}
-                    sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-                  />
-                  <div className="desktop-preview-actions">
-                    <button
-                      className="primary"
-                      disabled={!activeDraftId}
-                      onClick={() => setShowPublish(true)}
-                    >
-                      <Play size={15} fill="currentColor" /> Publish
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="desktop-forge-card">
-                  <ForgeDefenseStage
-                    active={isBuilding}
-                    prompt={brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]}
-                    message={forge.message || forgePhaseLabel(forge.phase)}
-                    progress={forge.progress}
-                    step={forge.activeStep}
-                    queueAhead={forge.queue.ahead}
-                    resuming={forge.resuming}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="desktop-create-content">
-              <span className="desktop-live-pill"><span /> New game model is live <ChevronRight size={14} /></span>
-              <h1>What game should we make now?</h1>
-
-              <div className="desktop-create-card-row">
-                {promptCards.map((card) => (
-                  <button key={card.label} onClick={() => setBrief(card.prompt)}>
-                    <img src={card.image} alt="" />
-                    <span>{card.label}</span>
-                    <strong>{card.prompt}</strong>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="desktop-create-composer">
-              <textarea
-                value={brief}
-                onChange={(event) => setBrief(event.target.value)}
-                placeholder={animatedPrompt || DESKTOP_CREATE_PROMPTS[0]}
-              />
-              <OrientationPicker value={orientation} onChange={setOrientation} className="on-desktop-create" />
-              <div className="desktop-create-composer-row">
-                <button className="primary" onClick={startDreamForge} disabled={!orientation}>
-                  Create game
-                </button>
-              </div>
-              {forge.error && (
-                <p className="desktop-create-status is-error">{forge.error}</p>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {showPublish && forge.result && (
-        <PublishSheet
-          draftId={activeDraftId}
-          defaultTitle={activeGameTitle}
-          html={previewHtml}
-          onClose={() => setShowPublish(false)}
-          onPublished={() => {
-            setShowPublish(false);
-            setRefinedHtml(null);
-            setRefinedTitle(null);
-            forge.reset();
-            onTab('home');
-          }}
-        />
-      )}
-    </section>
-  );
-}
-
-function ForgeDefenseStage({
-  active,
-  prompt,
-  message,
-  progress = 0,
-  step = 0,
-  queueAhead,
-  resuming,
-}: {
-  active: boolean;
-  prompt: string;
-  message?: string;
-  /** Real backend progress. This rig used to be pure decoration with no data at all. */
-  progress?: number;
-  step?: number;
-  queueAhead?: number;
-  resuming?: boolean;
-}) {
-  const motes = Array.from({ length: 12 }, (_, index) => index);
-  const shards = Array.from({ length: 5 }, (_, index) => index);
-  const spokes = Array.from({ length: 6 }, (_, index) => index);
-  const compactPrompt = prompt.length > 58 ? `${prompt.slice(0, 58)}...` : prompt;
-  return (
-    <div className={`forge-defense-stage ${active ? 'active' : ''}`}>
-      <div className="forge-defense-gradient" />
-      <div className="forge-defense-shell" />
-      <div className="forge-defense-vignette" />
-      <div className="forge-defense-left-atmosphere" />
-      <div className="forge-defense-top-atmosphere" />
-      <div className="forge-defense-center-glow" />
-      <div className="forge-defense-horizon-line" />
-      <div className="forge-defense-horizon-glow" />
-      <div className="forge-defense-ring large" />
-      <div className="forge-defense-ring mid" />
-      {spokes.map((index) => (
-        <span key={`spoke-${index}`} className="forge-defense-spoke" style={{ transform: `rotate(${index * 30 - 75}deg)` }} />
-      ))}
-      <span className="forge-depth-pillar one" />
-      <span className="forge-depth-pillar two" />
-      <span className="forge-depth-pillar three" />
-      <div className="forge-defense-halo outer" />
-      <div className="forge-defense-halo mid" />
-      <div className="forge-defense-bloom" />
-      <div className="forge-defense-beam" />
-      <div className="forge-defense-beam-core" />
-      <div className="forge-defense-cross-light" />
-      <div className="forge-defense-core-plate" />
-      <div className="forge-defense-core-inner" />
-      <div className="forge-defense-core-node" />
-      <div className="forge-defense-arc" />
-      <div className="forge-defense-arc soft" />
-      {shards.map((index) => (
-        <span key={`shard-${index}`} className={`forge-defense-shard shard-${index + 1}`} />
-      ))}
-      {motes.map((index) => (
-        <span key={`mote-${index}`} className={`forge-defense-mote mote-${index + 1}`} />
-      ))}
-      <div className="forge-defense-copy">
-        <span>GAME WORLD IN PROGRESS</span>
-        <strong>{resuming ? 'Reconnecting to your build' : active ? 'Forging your world' : 'Dream Forge'}</strong>
-        <small>Geometry, motion, audio, and feel are being fused into one playable world.</small>
-      </div>
-      <div className="forge-defense-progress">
-        <div>
-          <span>ASSEMBLY PROGRESS</span>
-          <strong>{message || (active ? 'Waiting for backend' : 'Ready')}</strong>
-        </div>
-        <small>
-          {active
-            ? queueAhead
-              ? `${queueAhead} ahead in queue`
-              : `${FORGE_STEPS[step]?.label || 'Working'} · ${Math.round(progress)}%`
-            : 'Standby'}
-        </small>
-        {/* Was a bare <i/> with nothing driving it. */}
-        <i style={{ width: `${Math.max(2, Math.min(100, progress))}%` }} />
-      </div>
-      <div className="forge-defense-steps">
-        {FORGE_STEPS.map((forgeStep, index) => (
-          <span key={forgeStep.label} className={active && index <= step ? 'done' : ''}>
-            {forgeStep.label}
-          </span>
-        ))}
-      </div>
-      <div className="forge-defense-prompt">
-        <span>SPELL</span>
-        <strong>✦</strong>
-        <small>{compactPrompt}</small>
-      </div>
-    </div>
-  );
-}
-
-/**
- * The build-time chat panel. It deliberately has no follow-up composer: there is
- * no way to amend a job that is already running, and the box that used to sit
- * here only appended to local state — it said "you can add follow-ups here while
- * the forge works" and then dropped every word. Editing happens in
- * DesktopRefinePanel once there's a preview to edit.
- */
-function DesktopBuildPanel({
-  prompt,
-  status,
-  error,
-  onStop,
-  onRetry,
-}: {
-  prompt: string;
-  status: string;
-  error?: boolean;
-  onStop?: () => void;
-  onRetry?: () => void;
-}) {
-  return (
-    <div className="desktop-build-panel">
-      <header>
-        <span>
-          <strong>New Game</strong>
-          <small>{error ? 'Build failed' : onStop ? 'Building now' : 'Ready'}</small>
-        </span>
-      </header>
-
-      <div className="desktop-build-thread">
-        <p className="desktop-build-bubble ai">
-          Building your game now. This can take a while — you can leave this page and come back.
-        </p>
-        <p className="desktop-build-bubble user">{prompt}</p>
-        <p className={`desktop-build-bubble ai ${error ? 'is-error' : ''}`}>{status}</p>
-      </div>
-
-      <div className="desktop-build-bottom">
-        {onRetry && (
-          <button className="desktop-forge-retry" onClick={onRetry}>
-            <RefreshCw size={16} /> Retry build
-          </button>
-        )}
-        {onStop && (
-          <button className="desktop-forge-stop" onClick={onStop}>
-            <X size={17} /> Stop generation
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DesktopForgeRail({ onBack, onHome }: { onBack: () => void; onHome: () => void }) {
-  return (
-    <aside className="desktop-forge-rail">
-      <button className="forge-rail-logo" onClick={onHome} aria-label="GameTok home">
-        <img src="/app-assets/icon.png" alt="" />
-      </button>
-      <button onClick={onBack} aria-label="New game"><Plus size={22} /></button>
-      <i />
-    </aside>
-  );
-}
 
 type RefineMessage = { role: 'user' | 'ai'; text: string };
 
