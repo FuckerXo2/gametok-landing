@@ -3370,9 +3370,6 @@ function DesktopCreateWorkspace({
                   Create game
                 </button>
               </div>
-              {!orientation && (
-                <p className="desktop-create-status">Pick a screen shape — it can't be changed later.</p>
-              )}
               {forge.error && (
                 <p className="desktop-create-status is-error">{forge.error}</p>
               )}
