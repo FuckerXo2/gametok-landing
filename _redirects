@@ -4,3 +4,28 @@ https://www.gametok.co/* https://gametok.co/:splat 301!
 # Redirect http to https (if needed)
 http://gametok.co/* https://gametok.co/:splat 301!
 http://www.gametok.co/* https://gametok.co/:splat 301!
+
+# SPA routes — the React app owns these paths, so a cold load or a shared link
+# has to be served index.html instead of 404ing.
+#
+# Listed explicitly rather than as a catch-all (/* -> /index.html) on purpose:
+# the deploy also contains real static paths at the root (about/, more/,
+# download/, admin.html, game.html, .well-known/, assets/, app-assets/,
+# home-videos/) plus the game.html Pages Function, and a catch-all risks
+# shadowing them. Add a line here whenever a route is added to parseRoute.
+/explore /index.html 200
+/explore/* /index.html 200
+/create /index.html 200
+/connect /index.html 200
+/profile /index.html 200
+/play /index.html 200
+/game/* /index.html 200
+/blog /index.html 200
+/blog/* /index.html 200
+/changelog /index.html 200
+/games /index.html 200
+/pricing /index.html 200
+/earn /index.html 200
+/faq /index.html 200
+/privacy /index.html 200
+/terms /index.html 200

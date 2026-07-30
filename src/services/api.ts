@@ -1,6 +1,8 @@
 // GameTok Web API Service — direct port of mobile api.ts
 // Shares the same Railway backend as the mobile app
 
+import { normalizeOrientation, type Orientation } from '../constants/orientation';
+
 export const API_URL = 'https://gametok-backend-production.up.railway.app/api';
 const GAMES_HOST = 'https://games.gametok.co';
 const API_ORIGIN = API_URL.replace(/\/api$/, '');
@@ -264,6 +266,9 @@ export type DreamJobProgressUpdate = {
   statusMessage?: string | null;
   queuePosition?: number;
   queuedAhead?: number;
+  queuedTotal?: number;
+  runningTotal?: number;
+  workerConcurrency?: number;
 };
 
 type DreamJobPollOptions = {
@@ -281,6 +286,10 @@ function emitDreamJobProgress(statusRes: any, options?: DreamJobPollOptions) {
     statusMessage: statusRes.statusMessage ?? null,
     queuePosition: typeof statusRes.queuePosition === 'number' ? statusRes.queuePosition : undefined,
     queuedAhead: typeof statusRes.queuedAhead === 'number' ? statusRes.queuedAhead : undefined,
+    queuedTotal: typeof statusRes.queuedTotal === 'number' ? statusRes.queuedTotal : undefined,
+    runningTotal: typeof statusRes.runningTotal === 'number' ? statusRes.runningTotal : undefined,
+    workerConcurrency:
+      typeof statusRes.workerConcurrency === 'number' ? statusRes.workerConcurrency : undefined,
   });
 }
 
@@ -300,49 +309,11 @@ export const ai = {
     return request('/ai/interpret-edit', { method: 'POST', body: JSON.stringify(data) }, 45000);
   },
 
-  dreamLabs: (prompt: string, attachments: any[] = [], options?: DreamJobPollOptions) => {
-    const controller = new AbortController();
-    let remoteJobId: string | null = null;
-
-    const cancelRemoteJob = () => {
-      controller.abort();
-      if (remoteJobId) {
-        request(`/ai/dream/cancel/${remoteJobId}`, { method: 'POST' }).catch(() => {});
-      }
-    };
-
-    const promise = new Promise(async (resolve, reject) => {
-      try {
-        const res = await request('/ai/dream-labs', {
-          method: 'POST',
-          body: JSON.stringify({ prompt, attachments }),
-          signal: controller.signal,
-        }, 300000);
-
-        if (!res.jobId && res.htmlPreview) { resolve(res); return; }
-
-        const jobId = res.jobId;
-        remoteJobId = jobId || null;
-        if (jobId) options?.onJobStarted?.(jobId);
-
-        const interval = setInterval(async () => {
-          if (controller.signal.aborted) { clearInterval(interval); reject(new Error('aborted')); return; }
-          try {
-            const statusRes = await request(`/ai/dream/status/${jobId}`);
-            emitDreamJobProgress(statusRes, options);
-            if (statusRes.status === 'complete') { clearInterval(interval); resolve(statusRes); }
-            else if (statusRes.status === 'error') { clearInterval(interval); reject(new Error(statusRes.error || 'Unknown AI error')); }
-            else if (statusRes.status === 'canceled') { clearInterval(interval); reject(new Error(statusRes.error || 'Cancelled')); }
-          } catch (e) {}
-        }, 2000);
-        controller.signal.addEventListener('abort', () => clearInterval(interval));
-      } catch (err) { reject(err); }
-    });
-
-    return { promise, cancel: () => controller.abort(), cancelRemote: cancelRemoteJob };
-  },
-
-  dream: (prompt: string, attachments: any[] = [], options?: DreamJobPollOptions) => {
+  dream: (
+    prompt: string,
+    attachments: any[] = [],
+    options?: DreamJobPollOptions & { orientation?: Orientation },
+  ) => {
     const controller = new AbortController();
     let remoteJobId: string | null = null;
 
@@ -357,7 +328,13 @@ export const ai = {
       try {
         const res = await request('/ai/dream', {
           method: 'POST',
-          body: JSON.stringify({ prompt, attachments }),
+          // orientation is required: the backend runs normalizeOrientation on it, so
+          // omitting it silently builds every game portrait.
+          body: JSON.stringify({
+            prompt,
+            attachments,
+            orientation: normalizeOrientation(options?.orientation),
+          }),
           signal: controller.signal,
         }, 300000);
 
@@ -440,8 +417,24 @@ export const ai = {
   drafts: async () => request('/ai/drafts'),
   getDraft: async (draftId: string) => request(`/ai/drafts/${draftId}`),
   deleteDraft: async (draftId: string) => request(`/ai/drafts/${draftId}`, { method: 'DELETE' }),
-  publish: async (draftId: string, title?: string, privacy?: string) => {
-    return request(`/ai/publish/${draftId}`, { method: 'POST', body: JSON.stringify({ title, privacy }) });
+  /**
+   * Retry a job that died. The rebuild must keep the same shape as the job it
+   * replaces, or a landscape build silently comes back portrait.
+   */
+  retryDreamJob: async (jobId: string, orientation?: Orientation) => {
+    return request(`/ai/dream/retry/${jobId}`, {
+      method: 'POST',
+      body: JSON.stringify({ orientation: normalizeOrientation(orientation) }),
+    });
+  },
+
+  publish: async (draftId: string, title?: string, privacy?: string, html?: string) => {
+    // Publishing uploads the full game HTML — allow longer than the default.
+    return request(
+      `/ai/publish/${draftId}`,
+      { method: 'POST', body: JSON.stringify({ title, privacy, html }) },
+      60000,
+    );
   },
   templates: async () => request('/ai/templates'),
   getTemplate: async (templateId: string) => request(`/ai/templates/${templateId}`),

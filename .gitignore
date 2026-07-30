@@ -69,3 +69,6 @@ dist-ssr/
 
 # Build output (keep assets/ since it's the compiled app)
 # Don't ignore dist/ or assets/ - they're needed for deployment
+
+# Claude Code local dev config
+.claude/

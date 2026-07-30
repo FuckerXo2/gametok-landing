@@ -1980,23 +1980,6 @@ textarea {
   color: rgba(255, 255, 255, 0.56);
 }
 
-.badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 7px;
-  margin-top: 13px;
-}
-
-.badge-row span {
-  border-radius: 999px;
-  padding: 6px 9px;
-  background: rgba(168, 85, 247, 0.18);
-  color: #d8b4fe;
-  font-size: 11px;
-  font-weight: 900;
-}
-
 .profile-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2126,16 +2109,120 @@ textarea {
   flex-direction: column;
 }
 
+/* The signed-out home scrolls: a full-height video band, then playable rows,
+   then the marketing footer. */
 .desktop-home-hero {
   position: relative;
   align-self: stretch;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 0;
   background: #020202;
   border: 0;
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.62);
   font-family: "SF Pro Display", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.desktop-hero-band {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.desktop-home-play {
+  position: relative;
+  padding: 56px 40px 24px;
+  background: #050505;
+}
+
+/* Mobile home leads with playing rather than searching — see the `surface` prop
+   on DesktopExploreScreen. */
+.mobile-home-play-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc(100% - 32px);
+  margin: 0 16px 22px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.26), rgba(34, 211, 238, 0.14));
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mobile-home-play-cta > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mobile-home-play-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+}
+
+.mobile-home-play-cta strong {
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.mobile-home-play-cta small {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.desktop-home-play-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.desktop-home-play-head h2 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.desktop-home-play-head p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 14px;
+}
+
+.desktop-home-play-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.desktop-home-play-head button:hover {
+  transform: translateY(-2px);
 }
 
 .desktop-hero-video {
@@ -2379,6 +2466,84 @@ textarea {
   font-size: 13px;
 }
 
+/* App Store / Google Play links. Shared by the desktop hero and mobile explore. */
+.store-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.store-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(12px);
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.store-button:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.32);
+  transform: translateY(-2px);
+}
+
+.store-button svg {
+  flex: 0 0 auto;
+}
+
+.store-button span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.store-button small {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.58);
+  white-space: nowrap;
+}
+
+.store-button strong {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.store-buttons.on-hero {
+  justify-content: center;
+  margin: 18px auto 0;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.store-buttons.on-mobile-explore {
+  margin: 0 16px 24px;
+}
+
+.store-buttons.on-mobile-explore .store-button {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.store-buttons.on-mobile-explore .store-button strong {
+  font-size: 13px;
+}
+
 .desktop-proof-bar {
   width: fit-content;
   max-width: 100%;
@@ -2491,84 +2656,6 @@ textarea {
   font-size: 15px;
 }
 
-.desktop-explore-people {
-  margin-bottom: 40px;
-}
-
-.desktop-explore-people h2 {
-  margin: 0 0 16px;
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: -0.01em;
-}
-
-.desktop-explore-people-scroll {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 96px;
-  gap: 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 8px;
-}
-
-.desktop-explore-people-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.desktop-explore-person {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-  color: #fff;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.desktop-explore-person:hover {
-  transform: translateY(-3px);
-}
-
-.desktop-explore-person-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #222;
-  border: 2px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-.desktop-explore-person-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.desktop-explore-person strong {
-  font-size: 12px;
-  font-weight: 800;
-  max-width: 88px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.desktop-explore-person small {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  max-width: 88px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .desktop-explore-row {
   margin-bottom: 40px;
 }
@@ -2670,6 +2757,22 @@ textarea {
   color: #fff;
   background: #000;
   font-family: "SF Pro Display", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* Shown while a /game/:id or /play deep link waits on the feed, so the player
+   doesn't flash an empty screen. Same shell geometry as .desktop-play-home. */
+.desktop-deck-pending {
+  display: none;
+  grid-template-columns: 300px minmax(0, 1fr);
+  width: 100%;
+  min-height: calc(100vh - 48px);
+  color: #fff;
+  background: #000;
+  place-items: stretch;
+}
+
+.desktop-deck-pending .empty-app-state {
+  align-self: center;
 }
 
 .desktop-app-sidebar {
@@ -5952,7 +6055,8 @@ kbd {
     display: block;
   }
 
-  .gametok-shell.home-mode .desktop-play-home {
+  .gametok-shell.home-mode .desktop-play-home,
+  .gametok-shell.home-mode .desktop-deck-pending {
     display: grid;
   }
 
@@ -6644,24 +6748,9 @@ kbd {
     font-size: 14px;
   }
 
-  .desktop-explore.is-mobile .desktop-explore-people {
-    margin-bottom: 24px;
-  }
-
-  .desktop-explore.is-mobile .desktop-explore-people h2,
   .desktop-explore.is-mobile .desktop-explore-row h2 {
     font-size: 18px;
     margin-bottom: 10px;
-  }
-
-  .desktop-explore.is-mobile .desktop-explore-people-scroll {
-    grid-auto-columns: 76px;
-    gap: 10px;
-  }
-
-  .desktop-explore.is-mobile .desktop-explore-person-avatar {
-    width: 60px;
-    height: 60px;
   }
 
   .desktop-explore.is-mobile .desktop-explore-row {
@@ -6996,4 +7085,340 @@ kbd {
     text-align: center;
     font-size: 13px;
   }
+}
+
+/* ─── Create flow: orientation, publish, forge progress ────────────────────── */
+
+/* Screen shape. Compulsory and permanent — the game is built and verified for
+   exactly one viewport, so nothing here is pre-selected. */
+.orientation-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 14px 0 4px;
+}
+
+.orientation-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.orientation-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.orientation-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.orientation-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.orientation-card.is-active {
+  border-color: #c084fc;
+  background: rgba(192, 132, 252, 0.14);
+}
+
+/* The illustration: a phone outline in the shape being chosen. */
+.orientation-glyph {
+  display: block;
+  border: 2px solid rgba(255, 255, 255, 0.34);
+  border-radius: 5px;
+  transition: border-color 0.15s ease;
+}
+
+.orientation-glyph.is-portrait { width: 22px; height: 34px; }
+.orientation-glyph.is-landscape { width: 34px; height: 22px; }
+.orientation-card.is-active .orientation-glyph { border-color: #c084fc; }
+
+.orientation-card strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.orientation-card small {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.orientation-picker.on-desktop-create { max-width: 420px; }
+
+/* Publish sheet — the step the website never had. */
+.publish-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.publish-sheet {
+  width: min(440px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #0d0d10;
+  color: #fff;
+}
+
+.publish-sheet header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.publish-sheet header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.publish-sheet header button {
+  display: inline-flex;
+  padding: 7px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
+.publish-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.publish-field > span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.publish-field input {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 15px;
+}
+
+.publish-field input:focus {
+  outline: none;
+  border-color: #c084fc;
+}
+
+.publish-field > small {
+  align-self: flex-end;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.36);
+}
+
+.publish-privacy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.publish-privacy button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.publish-privacy button.active {
+  border-color: #c084fc;
+  background: rgba(192, 132, 252, 0.13);
+}
+
+.publish-privacy button > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.publish-privacy strong { font-size: 14px; font-weight: 800; }
+.publish-privacy small { font-size: 12px; color: rgba(255, 255, 255, 0.48); }
+
+.publish-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.14);
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.publish-terms {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.38);
+  text-align: center;
+}
+
+.publish-submit {
+  padding: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-size: 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.publish-submit:disabled { opacity: 0.55; cursor: default; }
+
+/* Build progress extras */
+.forge-queue {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.forge-cancel {
+  margin-top: 18px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.forge-cancel:hover { color: #fff; border-color: rgba(255, 255, 255, 0.35); }
+
+.create-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}
+
+.create-error-box .retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.forge-defense-steps {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  z-index: 5;
+}
+
+.forge-defense-steps span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.forge-defense-steps span.done { color: #c084fc; }
+
+.desktop-forge-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  color: #000;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.desktop-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 0 0;
+}
+
+.desktop-preview-actions .primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-size: 14px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.desktop-preview-actions .primary:disabled { opacity: 0.5; cursor: default; }
+
+.drafts-empty {
+  padding: 24px 16px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* A landscape game is built for 844x390 — show it in that shape rather than
+   letterboxing it into the portrait preview box. */
+.preview-game.is-landscape iframe,
+.desktop-create-preview.is-landscape {
+  aspect-ratio: 844 / 390;
+  width: 100%;
+  height: auto;
 }

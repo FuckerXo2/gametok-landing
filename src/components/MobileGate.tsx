@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import './MobileGate.css';
 
 const DISMISS_KEY = 'gt_mobile_gate_dismissed_v1';
-const IOS_STORE_URL = 'https://apps.apple.com/app/gametok/id6757498584';
-const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.vogeza';
+export const IOS_STORE_URL = 'https://apps.apple.com/app/gametok/id6757498584';
+export const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.vogeza';
 
 type Platform = 'ios' | 'android' | 'other';
 

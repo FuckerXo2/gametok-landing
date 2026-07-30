@@ -46,8 +46,16 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, getToken, setToken } from './services/api';
-import MobileGate from './components/MobileGate';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, getToken, setToken, resolveGameThumbnail } from './services/api';
+import MobileGate, { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
+import OrientationPicker from './components/OrientationPicker';
+import PublishSheet from './components/PublishSheet';
+import { useDreamForge, FORGE_STEPS, forgePhaseLabel } from './hooks/useDreamForge';
+import { isLandscape, type Orientation } from './constants/orientation';
+// Still used by the search sheet and the feed caption — the backend no longer
+// sends the old single `category` field, so those read `categories` instead.
+import { CATEGORIES, categoryLabel } from './constants/categories';
 import './App.css';
 
 const FREESOUND_API_KEY = 'mgD2q6sEgb7r8seRdGqRVBgszcAgMqPAzGpHPAkk';
@@ -190,7 +198,69 @@ function decodeJwt(token: string): any {
 }
 
 type Tab = 'home' | 'explore' | 'create' | 'connect' | 'profile';
-type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview' | 'publish';
+
+// ── Routing ───────────────────────────────────────────────────────────────────
+// The shell's navigation state (which tab, which marketing page, whether the
+// full-screen player is up) is DERIVED from the URL rather than held in state,
+// so every surface has a real address that survives a reload and can be shared.
+// Anything that used to call setActiveTab/setMarketingPage/setGameDeckMode now
+// navigates instead.
+
+const TAB_PATHS: Record<Tab, string> = {
+  home: '/',
+  explore: '/explore',
+  create: '/create',
+  connect: '/connect',
+  profile: '/profile',
+};
+
+const MARKETING_PATHS: Record<MarketingPage, string> = {
+  games: '/games',
+  pricing: '/pricing',
+  blog: '/blog',
+  changelog: '/changelog',
+  earn: '/earn',
+  faq: '/faq',
+  privacy: '/privacy',
+  terms: '/terms',
+};
+
+type ParsedRoute = {
+  tab: Tab;
+  marketingPage: MarketingPage | null;
+  /** Full-screen player (deck mode). */
+  deck: boolean;
+  /** Game id from /game/:id, when the URL names one. */
+  gameId: string | null;
+  /** Blog post slug from /blog/:slug. */
+  postSlug: string | null;
+};
+
+function parseRoute(pathname: string): ParsedRoute {
+  const base: ParsedRoute = { tab: 'home', marketingPage: null, deck: false, gameId: null, postSlug: null };
+  // Tolerate a trailing slash so /explore/ and /explore are the same place.
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const segments = path.split('/').filter(Boolean);
+  const [head, second] = segments;
+
+  if (!head) return base;
+
+  if (head === 'game') return { ...base, deck: true, gameId: second || null };
+  if (head === 'play') return { ...base, deck: true };
+  if (head === 'blog') return { ...base, marketingPage: 'blog', postSlug: second || null };
+
+  const marketingEntry = (Object.keys(MARKETING_PATHS) as MarketingPage[]).find(
+    (page) => MARKETING_PATHS[page] === `/${head}`,
+  );
+  if (marketingEntry) return { ...base, marketingPage: marketingEntry };
+
+  const tabEntry = (Object.keys(TAB_PATHS) as Tab[]).find((tab) => TAB_PATHS[tab] === `/${head}`);
+  if (tabEntry) return { ...base, tab: tabEntry };
+
+  // Unknown path — fall back to home rather than rendering a blank shell.
+  return base;
+}
+type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview';
 type Modal = 'comments' | 'leaderboard' | 'share' | 'auth' | 'search' | 'notifications' | 'creator-profile' | 'message';
 type MarketingPage = 'games' | 'pricing' | 'blog' | 'changelog' | 'earn' | 'faq' | 'privacy' | 'terms';
 type AuthMode = 'signup' | 'login';
@@ -211,7 +281,11 @@ type Game = {
   saves?: number;
   commentsCount?: number;
   color?: string;
-  category?: string | null;
+  /** Discovery categories (multi-label) from the game_categories join table. */
+  categories?: string[];
+  /** 'portrait' | 'landscape'. Landscape games are laid out 16:9, not squeezed into a 3:4 card. */
+  orientation?: Orientation | null;
+  createdAt?: string | null;
   creatorDisplayName?: string | null;
   creatorUsername?: string | null;
   creatorAvatar?: string | null;
@@ -333,6 +407,25 @@ const STORAGE_KEYS = {
   savedGames: 'gametok-web-saved-games',
   followedCreators: 'gametok-web-followed-creators',
   recentGames: 'gametok-web-recent-games',
+};
+
+// A brief typed into the home hero's composer, held across the hop to /create
+// (and across the auth wall a signed-out visitor meets on the way).
+const PENDING_BRIEF_KEY = 'gametok-web-pending-brief';
+
+const stashPendingBrief = (brief: string) => {
+  try { sessionStorage.setItem(PENDING_BRIEF_KEY, brief); } catch { /* private mode */ }
+};
+
+/** Reads and clears in one go, so the brief seeds the composer exactly once. */
+const takePendingBrief = (): string => {
+  try {
+    const brief = sessionStorage.getItem(PENDING_BRIEF_KEY) || '';
+    if (brief) sessionStorage.removeItem(PENDING_BRIEF_KEY);
+    return brief;
+  } catch {
+    return '';
+  }
 };
 
 const readRecentGameIds = (): string[] => {
@@ -647,13 +740,15 @@ function useIsMobile() {
 function App() {
   const isMobile = useIsMobile();
   const { games, creators, loading, offline } = useGameTokData();
-  const [activeTab, setActiveTab] = useState<Tab>('home');
-  const [marketingPage, setMarketingPage] = useState<MarketingPage | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Navigation state comes from the URL — see parseRoute. Home hosts the
+  // explore-style browse screen; the full-screen player (deck mode) lives at
+  // /play, or /game/:id when a specific game was opened.
+  const route = useMemo(() => parseRoute(location.pathname), [location.pathname]);
+  const { tab: activeTab, marketingPage, deck: gameDeckMode, gameId: routeGameId, postSlug } = route;
   const [gameIndex, setGameIndex] = useState(0);
   const [hudHidden, setHudHidden] = useState(false);
-  // Home tab hosts the explore-style browse screen; the full-screen player
-  // (deck mode) is entered via the center Play button or by opening a game.
-  const [gameDeckMode, setGameDeckMode] = useState(false);
   const [gamePaused, setGamePaused] = useState(false);
   const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
@@ -701,13 +796,12 @@ function App() {
   const handleAuthed = useCallback((user: AuthUser) => {
     setAuthUser(user);
     setModal(null);
-    setMarketingPage(null);
+    // Signing in mid-create must not throw away the work in progress.
     if (activeTab !== 'create') {
-      setActiveTab('profile');
-      setGameDeckMode(false);
       setHudHidden(false);
+      navigate(TAB_PATHS.profile);
     }
-  }, [activeTab]);
+  }, [activeTab, navigate]);
 
   const handleLogout = useCallback(() => {
     void auth.logout();
@@ -819,31 +913,37 @@ function App() {
   const openGame = (game: Game) => {
     const index = games.findIndex((item) => item.id === game.id);
     setGameIndex(index >= 0 ? index : 0);
-    setGameDeckMode(true);
     setGamePaused(false);
     setHudHidden(false);
-    setActiveTab('home');
-    setMarketingPage(null);
     setModal(null);
     pushRecentGame(game.id);
+    navigate(`/game/${game.id}`);
   };
 
   const goTab = (tab: Tab) => {
     // Creating a game requires an account; browsing/exploring does not.
     if (tab === 'create' && requireAuth('signup')) return;
-    setMarketingPage(null);
-    setActiveTab(tab);
     // Tabs never auto-enter the player — that's the center Play button's job.
-    setGameDeckMode(false);
     setHudHidden(false);
+    navigate(TAB_PATHS[tab]);
   };
 
   const goMarketingPage = (page: MarketingPage) => {
-    setMarketingPage(page);
-    setActiveTab('home');
-    setGameDeckMode(false);
     setHudHidden(false);
     setModal(null);
+    navigate(MARKETING_PATHS[page]);
+  };
+
+  // The home hero has a composer; whatever was typed there has to survive the hop
+  // into /create rather than being thrown away, which is what used to happen.
+  // Stashed rather than passed as route state because a signed-out visitor gets
+  // the auth wall first — the brief has to still be there on the far side of it.
+  const goCreateWithBrief = (brief?: string) => {
+    const trimmed = brief?.trim();
+    if (trimmed) stashPendingBrief(trimmed);
+    if (requireAuth('signup')) return;
+    setHudHidden(false);
+    navigate(TAB_PATHS.create);
   };
 
   const openAuth = (mode: AuthMode = 'signup') => {
@@ -871,11 +971,15 @@ function App() {
 
   // Enter the full-screen player (center Play button on the mobile nav).
   const openPlayer = () => {
-    setMarketingPage(null);
-    setActiveTab('home');
-    setGameDeckMode(true);
     setHudHidden(false);
     setGamePaused(false);
+    navigate('/play');
+  };
+
+  // Leave the player and go back to browsing.
+  const closePlayer = () => {
+    setHudHidden(false);
+    navigate(TAB_PATHS.home);
   };
 
   // Freeze/resume the active game via the gt-pause/gt-resume handler the
@@ -885,16 +989,35 @@ function App() {
     iframe?.contentWindow?.postMessage({ type: gamePaused ? 'gt-resume' : 'gt-pause' }, '*');
     setGamePaused((value) => !value);
   };
+  // A /game/:id deep link decides which game is showing. This runs once the feed
+  // has loaded, since the index can only be resolved against a populated list.
   useEffect(() => {
+    if (!routeGameId || games.length === 0) return;
+    const routeIndex = games.findIndex((game) => game.id === routeGameId);
+    if (routeIndex >= 0) setGameIndex(routeIndex);
+  }, [routeGameId, games]);
+
+  // Restore the last-played game only when the URL isn't already naming one, or
+  // the stored id would fight the deep link and win.
+  useEffect(() => {
+    if (routeGameId || games.length === 0) return;
     const storedGameId = localStorage.getItem(STORAGE_KEYS.activeGame);
-    if (!storedGameId || games.length === 0) return;
+    if (!storedGameId) return;
     const storedIndex = games.findIndex((game) => game.id === storedGameId);
     if (storedIndex >= 0) setGameIndex(storedIndex);
-  }, [games]);
+  }, [routeGameId, games]);
 
   useEffect(() => {
     if (activeGame?.id) localStorage.setItem(STORAGE_KEYS.activeGame, activeGame.id);
   }, [activeGame?.id]);
+
+  // Paging inside the player keeps the address bar honest. `replace` so swiping
+  // through twenty games doesn't leave twenty entries to back out through.
+  useEffect(() => {
+    if (!gameDeckMode || !routeGameId || !activeGame?.id) return;
+    if (activeGame.id === routeGameId) return;
+    navigate(`/game/${activeGame.id}`, { replace: true });
+  }, [gameDeckMode, routeGameId, activeGame?.id, navigate]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -917,7 +1040,7 @@ function App() {
   }, [activeTab, games.length, marketingPage, modal]);
 
   return (
-    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile && authUser ? 'explore-mode' : ''}`}>
+    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile ? 'explore-mode' : ''}`}>
       <MobileGate
         onContinueInBrowser={() => {
           setMobileGateOpen(false);
@@ -931,13 +1054,13 @@ function App() {
           {isMobile && activeTab === 'home' && !gameDeckMode && (
             <DesktopExploreScreen
               variant="mobile"
+              surface="home"
               user={authUser}
               games={games}
-              creators={creators}
               onTab={goTab}
               onOpenGame={openGame}
-              onOpenCreator={openCreatorProfile}
               onCreate={() => goTab('create')}
+              onPlay={openPlayer}
             />
           )}
           {activeTab === 'home' && (!isMobile || gameDeckMode) && (
@@ -958,10 +1081,7 @@ function App() {
                 onToggleLike={toggleActiveLike}
                 onToggleSave={toggleActiveSave}
                 onToggleFollow={toggleActiveFollow}
-                onOpenExplore={() => {
-                  setGameDeckMode(false);
-                  setActiveTab('home');
-                }}
+                onOpenExplore={closePlayer}
               />
             ) : (
               <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
@@ -972,14 +1092,21 @@ function App() {
               variant="mobile"
               user={authUser}
               games={games}
-              creators={creators}
               onTab={goTab}
               onOpenGame={openGame}
-              onOpenCreator={openCreatorProfile}
               onCreate={() => goTab('create')}
             />
           )}
-          {activeTab === 'create' && <CreateScreen onOpenGame={openGame} fallbackGame={activeGame || null} />}
+          {/* Mobile only: desktop has DesktopCreateWorkspace as a sibling below, and
+              mounting both would run two useDreamForge instances — two pollers
+              resuming the same job after a reload. */}
+          {isMobile && activeTab === 'create' && (
+            <CreateScreen
+              onOpenGame={openGame}
+              user={authUser}
+              onAuthRequired={() => openAuth('signup')}
+            />
+          )}
           {activeTab === 'connect' && (
             <ConnectScreen
               creators={creators}
@@ -1007,23 +1134,18 @@ function App() {
           onNext={nextGame}
           onPrevious={previousGame}
           onToggleHud={() => setHudHidden((value) => !value)}
-          onHomeDeckExit={() => {
-            setGameDeckMode(false);
-            setHudHidden(false);
-          }}
+          onHomeDeckExit={closePlayer}
         />
       </div>}
 
       {!isMobile && marketingPage && (
         <StaticMarketingPage
           page={marketingPage}
+          postSlug={postSlug}
           games={games}
           onPage={goMarketingPage}
-          onHome={() => {
-            setMarketingPage(null);
-            setActiveTab('home');
-            setGameDeckMode(false);
-          }}
+          onOpenPost={(slug) => navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog)}
+          onHome={closePlayer}
           onCreate={() => goTab('create')}
           onExplore={() => goTab('explore')}
           onAuth={openAuth}
@@ -1031,16 +1153,59 @@ function App() {
         />
       )}
 
-      {!isMobile && activeTab === 'home' && !marketingPage && !authUser && (
-        <DesktopHomeHero
-          onCreate={() => goTab('create')}
-          onExplore={() => goTab('explore')}
-          onAuth={openAuth}
-          onPage={goMarketingPage}
+      {/* The player serves /play and /game/:id for everyone, signed in or not.
+          Without this a logged-out visitor who opened a game landed on the
+          marketing hero instead, because the feed that carries the player is
+          hidden on desktop in home-mode. */}
+      {/* A cold /game/:id or /play load has no feed yet, so the player has nothing
+          to show for a beat. Say so instead of flashing an empty screen. */}
+      {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && !activeGame && (
+        <section className="desktop-deck-pending">
+          <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} />
+          <EmptyAppState
+            loading={loading}
+            title="Game not found"
+            text="That game may have been removed. Try the feed instead."
+          />
+        </section>
+      )}
+
+      {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && activeGame && (
+        <DesktopPlayHome
+          user={authUser}
+          game={activeGame}
+          games={games}
+          index={gameIndex}
+          liked={likedGames.has(activeGame.id)}
+          saved={savedGames.has(activeGame.id)}
+          following={followedCreators.has(activeCreatorId)}
+          feedMotion={feedMotion}
+          onTab={goTab}
+          onNext={nextGame}
+          onPrevious={previousGame}
+          onOpenModal={setModal}
+          onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
+          onToggleLike={toggleActiveLike}
+          onToggleSave={toggleActiveSave}
+          onToggleFollow={toggleActiveFollow}
         />
       )}
 
-      {!isMobile && activeTab === 'home' && !marketingPage && authUser && activeGame && (
+      {/* Signed-out landing: the hero, plus real games to play before any login. */}
+      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && !authUser && (
+        <DesktopHomeHero
+          games={games}
+          loading={loading}
+          onCreate={goCreateWithBrief}
+          onExplore={() => goTab('explore')}
+          onAuth={openAuth}
+          onPage={goMarketingPage}
+          onOpenGame={openGame}
+          onPlay={openPlayer}
+        />
+      )}
+
+      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && authUser && activeGame && (
         <DesktopPlayHome
           user={authUser}
           game={activeGame}
@@ -1071,14 +1236,13 @@ function App() {
         />
       )}
 
-      {!isMobile && activeTab === 'explore' && !marketingPage && authUser && (
+      {/* Browsing is open to everyone; only creating asks for an account. */}
+      {!isMobile && activeTab === 'explore' && !marketingPage && (
         <DesktopExploreScreen
           user={authUser}
           games={games}
-          creators={creators}
           onTab={goTab}
           onOpenGame={openGame}
-          onOpenCreator={openCreatorProfile}
           onCreate={() => goTab('create')}
         />
       )}
@@ -1302,7 +1466,9 @@ function HomeFeed({
               </div>
               <h1>{game.name}</h1>
               <div className="caption-tags">
-                <span>{game.category || 'Arcade'}</span>
+                {(game.categories || []).slice(0, 2).map((slug) => (
+                  <span key={slug}>{categoryLabel(slug)}</span>
+                ))}
                 <span>{formatCount(game.plays)} plays</span>
               </div>
             </div>
@@ -1329,22 +1495,80 @@ function ActionButton({ icon, label, active, tone, onClick }: { icon: React.Reac
 
 
 
-function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) => void; fallbackGame: Game | null }) {
-  const FORGE_STEPS = useMemo(() => ([
-    { label: 'Design', phases: ['maker_workspace', 'spec', 'foundation', 'queued'] },
-    { label: 'Art', phases: ['assets'] },
-    { label: 'Code', phases: ['build', 'build_continuing', 'build_truncated'] },
-    { label: 'Test', phases: ['verify', 'repair', 'save'] },
-  ]), []);
+/**
+ * Real drafts, from GET /ai/drafts. What was here before was a `useMemo` that
+ * fabricated at most one entry out of whatever game the feed happened to be
+ * showing, labelled it "Playable draft", and never called the endpoint.
+ */
+function DraftsPanel({ onBack }: { onBack: () => void }) {
+  const [drafts, setDrafts] = useState<any[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res: any = await ai.drafts();
+        if (!mounted) return;
+        setDrafts(Array.isArray(res) ? res : res?.drafts || []);
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(e?.message || 'Could not load your drafts.');
+        setDrafts([]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  return (
+    <div className="drafts-panel">
+      <div className="drafts-header">
+        <h1>{drafts === null ? 'Drafts' : `${drafts.length} draft${drafts.length === 1 ? '' : 's'}`}</h1>
+        <button onClick={onBack}><Plus size={16} /> New game</button>
+      </div>
+      {drafts === null && <p className="drafts-empty">Loading your drafts…</p>}
+      {error && <p className="drafts-empty">{error}</p>}
+      {drafts !== null && drafts.length === 0 && !error && (
+        <p className="drafts-empty">No drafts yet. Build something and it'll show up here.</p>
+      )}
+      <div className="draft-grid">
+        {(drafts || []).map((draft) => (
+          <button key={draft.id} onClick={onBack}>
+            {draft.thumbnail && <img src={resolveGameThumbnail(draft.thumbnail, draft.id, draft)} alt="" />}
+            <span>
+              <strong>{draft.title || 'Untitled Dream'}</strong>
+              <small>{draft.isDraft === false ? 'Published' : 'Draft'}</small>
+            </span>
+            <Play size={16} fill="currentColor" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CreateScreen({
+  onOpenGame,
+  user,
+  onAuthRequired,
+}: {
+  onOpenGame: (game: Game) => void;
+  user: AuthUser | null;
+  onAuthRequired: () => void;
+}) {
+  const forge = useDreamForge();
   const [phase, setPhase] = useState<CreatePhase>('idle');
   const [studioTab, setStudioTab] = useState<'create' | 'drafts'>('create');
-  const [prompt, setPrompt] = useState('');
+  // Same hand-off as the desktop workspace: a brief typed on the home hero seeds
+  // the composer here rather than being lost on the way in.
+  const [prompt, setPrompt] = useState(takePendingBrief);
   const [selectedIdea, setSelectedIdea] = useState(PROMPT_IDEAS[0]);
-  const [progress, setProgress] = useState(0);
-  const [forgePhase, setForgePhase] = useState('queued');
-  const [forgeMessage, setForgeMessage] = useState('Starting forge...');
+  // Required, and permanent — see OrientationPicker. Starts unset on purpose.
+  const [orientation, setOrientation] = useState<Orientation | null>(null);
+  const [showPublish, setShowPublish] = useState(false);
   const [showTools, setShowTools] = useState(false);
-  const [labsMode] = useState(false);
+  /** Attachment/upload complaints, kept apart from build failures. */
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [attachedAssets, setAttachedAssets] = useState<DreamAttachment[]>([]);
   const [showAudioModal, setShowAudioModal] = useState(false);
   const [audioTab, setAudioTab] = useState<'bgm' | 'sfx'>('bgm');
@@ -1354,8 +1578,6 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
   const [audioError, setAudioError] = useState<string | null>(null);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<FreesoundTrack | null>(null);
   const [previewingAudioId, setPreviewingAudioId] = useState<number | null>(null);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [generateError, setGenerateError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const audioFileInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
@@ -1367,9 +1589,6 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
     if (!looksAssetHeavy) return null;
     return 'Detailed games with lots of characters, vehicles, or art usually take 15–25 minutes — most of that is AI art generation.';
   }, [prompt, selectedIdea]);
-  const drafts = useMemo(() => [
-    ...(fallbackGame ? [{ id: 'draft-1', title: fallbackGame.name, status: 'Playable draft', game: fallbackGame }] : []),
-  ], [fallbackGame]);
   const genreRows = useMemo(() => [
     GENRE_CHIPS.filter((_, index) => index % 3 === 0),
     GENRE_CHIPS.filter((_, index) => index % 3 === 1),
@@ -1384,83 +1603,39 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
     { label: 'Feature', icon: <Zap size={26} />, tone: 'orange', action: () => setShowTools(true) },
   ];
 
+  // The forge drives the screen: a resumed build (page reload mid-generation)
+  // has to land on the generating view without the user re-triggering anything.
   useEffect(() => {
-    if (phase !== 'generating') return undefined;
+    if (forge.status === 'building') setPhase('generating');
+    else if (forge.status === 'ready') setPhase('preview');
+    else if (forge.status === 'error') setPhase('refining');
+  }, [forge.status]);
 
-    let cancelled = false;
-    setProgress(8);
-    setForgePhase('queued');
-    setForgeMessage('Connecting to Dream Forge...');
-    setGenerateError(null);
-
-    const runGeneration = async () => {
-      try {
-        const finalPrompt = (prompt || selectedIdea).trim();
-        const attachments = attachedAssets.map(({ type, role, url, label, instruction, duration }) => ({
-          type,
-          role,
-          url,
-          label,
-          title: label,
-          instruction,
-          duration,
-        }));
-
-        const dreamCall = labsMode ? ai.dreamLabs : ai.dream;
-        const { promise } = dreamCall(finalPrompt, attachments, {
-          onJobStarted: () => {
-            setProgress((value) => Math.max(value, 12));
-            setForgeMessage('Forge agent online — reading your game idea...');
-          },
-          onJobProgress: ({ progress: serverProgress, phase: serverPhase, statusMessage, queuePosition }) => {
-            if (typeof serverProgress === 'number') {
-              setProgress((prev) => Math.max(prev, serverProgress));
-            }
-            if (serverPhase) setForgePhase(serverPhase);
-            if (statusMessage) {
-              setForgeMessage(statusMessage);
-            } else if (serverPhase === 'queued' && queuePosition) {
-              setForgeMessage(`Queued — position ${queuePosition} in line...`);
-            }
-          },
-        });
-        const result: any = await promise;
-        if (cancelled) return;
-
-        if (result?.htmlPreview) {
-          setPreviewHtml(result.htmlPreview);
-          setProgress(100);
-          setForgeMessage('Preview ready.');
-          setPhase('preview');
-          return;
-        }
-
-        throw new Error(result?.error || 'Generation finished without a playable preview.');
-      } catch (error: any) {
-        if (cancelled) return;
-        setGenerateError(error?.message || 'Generation failed.');
-        setPhase('refining');
-      }
-    };
-
-    void runGeneration();
-    return () => {
-      cancelled = true;
-    };
-  }, [attachedAssets, labsMode, phase, prompt, selectedIdea]);
-
-  const activeForgeStep = useMemo(() => {
-    const byPhase = FORGE_STEPS.findIndex((step) => step.phases.includes(forgePhase));
-    if (byPhase >= 0) return byPhase;
-    if (progress >= 78) return 3;
-    if (progress >= 52) return 2;
-    if (progress >= 28) return 1;
-    return 0;
-  }, [FORGE_STEPS, forgePhase, progress]);
+  const launchBuild = () => {
+    if (!orientation) return;
+    const finalPrompt = (prompt || selectedIdea).trim();
+    if (!finalPrompt) return;
+    if (!user) {
+      onAuthRequired();
+      return;
+    }
+    forge.start({
+      prompt: finalPrompt,
+      orientation,
+      attachments: attachedAssets.map(({ type, role, url, label, instruction, duration }) => ({
+        type,
+        role,
+        url,
+        label,
+        title: label,
+        instruction,
+        duration,
+      })),
+    });
+  };
 
   const start = () => {
     if (!prompt.trim()) setPrompt(selectedIdea);
-    setGenerateError(null);
     setPhase('refining');
   };
 
@@ -1468,7 +1643,6 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
     const idea = PROMPT_IDEAS[Math.floor(Math.random() * PROMPT_IDEAS.length)];
     setSelectedIdea(idea);
     setPrompt(idea);
-    setGenerateError(null);
   };
 
   const addAttachment = (attachment: Omit<DreamAttachment, 'id'>) => {
@@ -1566,7 +1740,7 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
     event.target.value = '';
     if (!file) return;
     if (file.size > 12 * 1024 * 1024) {
-      setGenerateError('That video is a bit large — keep clips under ~12MB so they load fast in the game.');
+      setUploadError('That video is a bit large — keep clips under ~12MB so they load fast in the game.');
       return;
     }
     const reader = new FileReader();
@@ -1684,6 +1858,9 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
               rows={4}
             />
             {!prompt.trim() && <p>Write a brief or tap Surprise me to seed one.</p>}
+
+            <OrientationPicker value={orientation} onChange={setOrientation} />
+
             <div className="input-bottom-row">
               <button className="surprise-button" type="button" onClick={surprise}><Sparkles size={16} /> Surprise me</button>
               <button className={`forge-button ${!prompt.trim() ? 'idle' : ''}`} type="button" onClick={start}>
@@ -1721,35 +1898,19 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
             ))}
           </div>
 
-          {generateError && (
+          {(forge.error || uploadError) && (
             <div className="create-error-box">
-              <span>{generateError}</span>
-              <button onClick={() => setGenerateError(null)}><X size={16} /></button>
+              <span>{forge.error || uploadError}</span>
+              {forge.error && forge.retryable && (
+                <button className="retry" onClick={forge.retry}><RefreshCw size={14} /> Retry</button>
+              )}
+              <button onClick={() => { setUploadError(null); forge.reset(); }}><X size={16} /></button>
             </div>
           )}
         </div>
       )}
 
-      {studioTab === 'drafts' && (
-        <div className="drafts-panel">
-          <div className="drafts-header">
-            <h1>{drafts.length} drafts</h1>
-            <button onClick={() => setStudioTab('create')}><Plus size={16} /> New game</button>
-          </div>
-          <div className="draft-grid">
-            {drafts.map((draft) => (
-              <button key={draft.id} onClick={() => onOpenGame(draft.game)}>
-                <img src={getThumbnailUrl(draft.game)} alt="" onError={e => handleThumbError(e, draft.game)} />
-                <span>
-                  <strong>{draft.title}</strong>
-                  <small>{draft.status}</small>
-                </span>
-                <Play size={16} fill="currentColor" />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      {studioTab === 'drafts' && <DraftsPanel onBack={() => setStudioTab('create')} />}
 
       {(phase === 'idle' || studioTab === 'drafts') && (
         <div className="create-bottom-tabs">
@@ -1757,7 +1918,7 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
             <Home size={20} /> <span>Home</span>
           </button>
           <button className={studioTab === 'drafts' ? 'active' : ''} onClick={() => setStudioTab('drafts')}>
-            <Gamepad2 size={20} /> <span>Drafts{drafts.length ? ` (${drafts.length})` : ''}</span>
+            <Gamepad2 size={20} /> <span>Drafts</span>
           </button>
         </div>
       )}
@@ -1776,12 +1937,23 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
               <li>Score loop, feedback, polish, and publish flow</li>
             </ul>
           </div>
+          <OrientationPicker value={orientation} onChange={setOrientation} className="on-refine" />
           <div className="refine-actions">
             <button onClick={() => setPhase('idle')}>Edit Wish</button>
-            <button className="primary" onClick={() => setPhase('generating')}><Zap size={16} /> Build Game</button>
+            <button className="primary" disabled={!orientation} onClick={launchBuild}>
+              <Zap size={16} /> Build Game
+            </button>
           </div>
+          {!orientation && <p className="create-hint">Pick a screen shape — it can't be changed later.</p>}
           {forgeDurationHint && <p className="forge-duration-hint">{forgeDurationHint}</p>}
-          {generateError && <p className="create-error">{generateError}</p>}
+          {forge.error && (
+            <div className="create-error-box">
+              <span>{forge.error}</span>
+              {forge.retryable && (
+                <button className="retry" onClick={forge.retry}><RefreshCw size={14} /> Retry</button>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -1790,20 +1962,23 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
           <div className="forge-loader">
             <RefreshCw className="spin" size={44} />
           </div>
-          <h1>Forging your game...</h1>
-          <p className="forge-live-status">{forgeMessage}</p>
-          <p className="forge-live-phase">{forgePhase.replace(/_/g, ' ')}</p>
-          <div className="progress-track"><span style={{ width: `${Math.min(100, progress)}%` }} /></div>
-          <div className="step-list">
-            {FORGE_STEPS.map((step, index) => (
-              <span key={step.label} className={index <= activeForgeStep ? 'done' : ''}>{step.label}</span>
-            ))}
-          </div>
-          {(forgeDurationHint || forgePhase === 'assets' || progress >= 42) && (
-            <p className="forge-duration-hint">
-              {forgeDurationHint || 'Generating custom art takes a while — hang tight while the artist agent paints your game.'}
+          <h1>{forge.resuming ? 'Reconnecting to your build…' : 'Forging your game…'}</h1>
+          <p className="forge-live-status">{forge.message || forgePhaseLabel(forge.phase)}</p>
+          {forge.queue.ahead != null && forge.queue.ahead > 0 && (
+            <p className="forge-queue">
+              {forge.queue.ahead} {forge.queue.ahead === 1 ? 'build' : 'builds'} ahead of yours
+              {forge.queue.running ? ` · ${forge.queue.running} running now` : ''}
             </p>
           )}
+          <div className="progress-track"><span style={{ width: `${Math.min(100, forge.progress)}%` }} /></div>
+          <p className="forge-live-phase">{Math.round(forge.progress)}%</p>
+          <div className="step-list">
+            {FORGE_STEPS.map((step, index) => (
+              <span key={step.label} className={index <= forge.activeStep ? 'done' : ''}>{step.label}</span>
+            ))}
+          </div>
+          {forgeDurationHint && <p className="forge-duration-hint">{forgeDurationHint}</p>}
+          <button className="forge-cancel" onClick={forge.cancel}>Cancel build</button>
         </div>
       )}
 
@@ -1811,21 +1986,42 @@ function CreateScreen({ onOpenGame, fallbackGame }: { onOpenGame: (game: Game) =
         <div className="preview-panel">
           <div className="preview-toolbar">
             <button onClick={() => setShowTools((value) => !value)}><Wand2 size={16} /> Modify</button>
-            <button><ImageIcon size={16} /> Swap Art</button>
-            <button><Pause size={16} /> Test</button>
           </div>
-          <div className="preview-game">
+          <div className={`preview-game ${isLandscape(forge.result?.orientation) ? 'is-landscape' : ''}`}>
             <iframe
               title="Preview game"
-              src={previewHtml || !fallbackGame ? undefined : getGameUrl(fallbackGame)}
-              srcDoc={previewHtml || undefined}
+              // Sandboxed: this is model-written code running against the creator's
+              // own session. allow-same-origin is needed for the game's storage.
+              sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+              srcDoc={forge.result?.previewHtml || undefined}
             />
           </div>
           <div className="publish-bar">
-            <button onClick={() => setPhase('idle')}>Keep Editing</button>
-            <button className="primary" disabled={!fallbackGame} onClick={() => fallbackGame && onOpenGame(fallbackGame)}><Play size={16} fill="currentColor" /> Publish</button>
+            <button onClick={() => { forge.reset(); setPhase('idle'); }}>Keep Editing</button>
+            <button
+              className="primary"
+              disabled={!forge.result?.draftId}
+              onClick={() => setShowPublish(true)}
+            >
+              <Play size={16} fill="currentColor" /> Publish
+            </button>
           </div>
         </div>
+      )}
+
+      {showPublish && forge.result && (
+        <PublishSheet
+          draftId={forge.result.draftId}
+          defaultTitle={forge.result.title}
+          html={forge.result.previewHtml}
+          onClose={() => setShowPublish(false)}
+          onPublished={(game) => {
+            setShowPublish(false);
+            forge.reset();
+            setPhase('idle');
+            if (game.id) onOpenGame({ id: game.id, name: game.name || 'New game' } as Game);
+          }}
+        />
       )}
 
       {showTools && (
@@ -2173,11 +2369,6 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
         </div>
         <h1>{displayName}</h1>
         <p>@{handle}</p>
-        <div className="badge-row">
-          <span>Creator</span>
-          <span>Game Builder</span>
-          <span>Early Access</span>
-        </div>
       </div>
 
       <div className="profile-stats">
@@ -2300,20 +2491,69 @@ function DesktopRail({
   return <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} />;
 }
 
+// Store links for the native apps. Glyph paths are the same ones the legacy
+// about/ page uses, so the web and the marketing pages stay visually in step.
+function StoreButtons({ className = '' }: { className?: string }) {
+  return (
+    <div className={`store-buttons ${className}`.trim()}>
+      <a href={IOS_STORE_URL} target="_blank" rel="noreferrer" className="store-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+        </svg>
+        <span>
+          <small>Download on the</small>
+          <strong>App Store</strong>
+        </span>
+      </a>
+      <a href={ANDROID_STORE_URL} target="_blank" rel="noreferrer" className="store-button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+        </svg>
+        <span>
+          <small>Get it on</small>
+          <strong>Google Play</strong>
+        </span>
+      </a>
+    </div>
+  );
+}
+
 function DesktopHomeHero({
+  games,
+  loading,
   onCreate,
   onExplore,
   onAuth,
   onPage,
+  onOpenGame,
+  onPlay,
 }: {
-  onCreate: () => void;
+  games: Game[];
+  loading: boolean;
+  onCreate: (brief?: string) => void;
   onExplore: () => void;
   onAuth: (mode?: AuthMode) => void;
   onPage: (page: MarketingPage) => void;
+  onOpenGame: (game: Game) => void;
+  onPlay: () => void;
 }) {
   const [videoIndex, setVideoIndex] = useState(0);
   const [brief, setBrief] = useState('');
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  // Signed-out visitors get real games to play, not just a pitch. Trending is by
+  // lifetime plays; Fresh is newest-first where the backend gave us a date.
+  const trending = useMemo(
+    () => [...games].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 18),
+    [games],
+  );
+  const fresh = useMemo(
+    () =>
+      [...games]
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+        .slice(0, 18),
+    [games],
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -2334,67 +2574,101 @@ function DesktopHomeHero({
 
   return (
     <section className="desktop-home-hero">
-      {HOME_VIDEOS.map((src, i) => (
-        <video
-          key={src}
-          ref={(el) => { videoRefs.current[i] = el; }}
-          className={`desktop-hero-video ${i === videoIndex ? 'is-active' : ''}`}
-          src={src}
-          preload="auto"
-          muted
-          loop
-          playsInline
-          autoPlay={i === 0}
-        />
-      ))}
-      <div className="desktop-hero-shade" />
-
-      <header className="desktop-home-topbar">
-        <div className="desktop-wordmark">
-          <img src="/app-assets/icon.png" alt="" />
-          <strong>GameTok</strong>
-        </div>
-        <nav>
-          <button onClick={() => onPage('games')}>Games</button>
-          <button onClick={() => onPage('blog')}>Blog</button>
-          <button onClick={() => onPage('earn')}>Earn</button>
-          <button onClick={onExplore}>Explore</button>
-          <button onClick={onCreate}>Create</button>
-        </nav>
-        <div className="desktop-auth-actions">
-          <button onClick={() => onAuth('login')}>Log in</button>
-          <button onClick={() => onAuth('signup')}>Sign up</button>
-        </div>
-      </header>
-
-      <div className="desktop-hero-copy">
-        <span className="desktop-live-pill"><span /> New game model is live <ChevronRight size={14} /></span>
-        <h1>Make any game you can imagine.</h1>
-        <p>GameTok lets you build entire games and worlds by chatting with AI.</p>
-
-        <div className="desktop-hero-composer">
-          <span className="desktop-model-badge"><span /> New game model</span>
-          <textarea
-            value={brief}
-            onChange={(event) => setBrief(event.target.value)}
-            placeholder="A platformer where a ninja can double jump through glass skyscrapers..."
+      {/* The video band is its own 100vh box so the page below it can scroll
+          without the absolutely-positioned clips stretching over everything. */}
+      <div className="desktop-hero-band">
+        {HOME_VIDEOS.map((src, i) => (
+          <video
+            key={src}
+            ref={(el) => { videoRefs.current[i] = el; }}
+            className={`desktop-hero-video ${i === videoIndex ? 'is-active' : ''}`}
+            src={src}
+            preload="auto"
+            muted
+            loop
+            playsInline
+            autoPlay={i === 0}
           />
-          <div className="desktop-composer-row">
-            <button aria-label="Upload image"><ImageIcon size={18} /></button>
-            <button aria-label="Voice prompt"><Mic size={18} /></button>
-            <span>{brief.length}/500</span>
-            <button className="primary" onClick={onCreate}>
-              Create game
-            </button>
+        ))}
+        <div className="desktop-hero-shade" />
+
+        <header className="desktop-home-topbar">
+          <div className="desktop-wordmark">
+            <img src="/app-assets/icon.png" alt="" />
+            <strong>GameTok</strong>
+          </div>
+          <nav>
+            <button onClick={() => onPage('games')}>Games</button>
+            <button onClick={() => onPage('blog')}>Blog</button>
+            <button onClick={() => onPage('earn')}>Earn</button>
+            <button onClick={onExplore}>Explore</button>
+            <button onClick={() => onCreate()}>Create</button>
+          </nav>
+          <div className="desktop-auth-actions">
+            <button onClick={() => onAuth('login')}>Log in</button>
+            <button onClick={() => onAuth('signup')}>Sign up</button>
+          </div>
+        </header>
+
+        <div className="desktop-hero-copy">
+          <span className="desktop-live-pill"><span /> New game model is live <ChevronRight size={14} /></span>
+          <h1>Make any game you can imagine.</h1>
+          <p>GameTok lets you build entire games and worlds by chatting with AI.</p>
+
+          <div className="desktop-hero-composer">
+            <span className="desktop-model-badge"><span /> New game model</span>
+            <textarea
+              value={brief}
+              maxLength={500}
+              onChange={(event) => setBrief(event.target.value)}
+              placeholder="A platformer where a ninja can double jump through glass skyscrapers..."
+            />
+            <div className="desktop-composer-row">
+              <button aria-label="Upload image"><ImageIcon size={18} /></button>
+              <button aria-label="Voice prompt"><Mic size={18} /></button>
+              <span>{brief.length}/500</span>
+              <button className="primary" onClick={() => onCreate(brief)}>
+                Create game
+              </button>
+            </div>
+          </div>
+
+          <StoreButtons className="on-hero" />
+
+          <div className="desktop-proof-bar">
+            <span>Featured in <strong>PC GAMER</strong></span>
+            <span>Presented at <strong>AFRO EXPO 2026</strong></span>
+            <span><Users size={14} /> <strong>30,000+</strong> AI game builders</span>
           </div>
         </div>
-
-        <div className="desktop-proof-bar">
-          <span>Featured in <strong>PC GAMER</strong></span>
-          <span>Presented at <strong>AFRO EXPO 2026</strong></span>
-          <span><Users size={14} /> <strong>30,000+</strong> AI game builders</span>
-        </div>
       </div>
+
+      {/* Games you can play before signing up. This is the whole point of the
+          signed-out home: it should be a place to play, not only a pitch. */}
+      <div className="desktop-home-play">
+        <div className="desktop-home-play-head">
+          <div>
+            <h2>Play now</h2>
+            <p>Thousands of games made on GameTok. No account needed.</p>
+          </div>
+          <button onClick={onPlay}>
+            <Play size={16} fill="currentColor" /> Open the feed
+          </button>
+        </div>
+
+        {games.length > 0 ? (
+          <>
+            <DesktopExploreRow title="Trending" games={trending} onOpenGame={onOpenGame} />
+            <DesktopExploreRow title="New" games={fresh} onOpenGame={onOpenGame} />
+          </>
+        ) : (
+          <div className="desktop-explore-empty">
+            <p>{loading ? 'Loading games…' : 'No games to show yet.'}</p>
+          </div>
+        )}
+      </div>
+
+      <MarketingFooter onPage={onPage} onCreate={() => onCreate()} />
     </section>
   );
 }
@@ -2417,7 +2691,8 @@ function DesktopPlayHome({
   onToggleSave,
   onToggleFollow,
 }: {
-  user: AuthUser;
+  // Null for signed-out visitors — /play and /game/:id are open to everyone.
+  user: AuthUser | null;
   game: Game;
   games: Game[];
   index: number;
@@ -2582,8 +2857,10 @@ function MarketingFooter({ onPage, onCreate }: { onPage: (page: MarketingPage) =
 
 function StaticMarketingPage({
   page,
+  postSlug,
   games,
   onPage,
+  onOpenPost,
   onHome,
   onCreate,
   onExplore,
@@ -2591,16 +2868,18 @@ function StaticMarketingPage({
   onOpenGame,
 }: {
   page: MarketingPage;
+  postSlug: string | null;
   games: Game[];
   onPage: (page: MarketingPage) => void;
+  onOpenPost: (slug: string | null) => void;
   onHome: () => void;
   onCreate: () => void;
   onExplore: () => void;
   onAuth: (mode?: AuthMode) => void;
   onOpenGame: (game: Game) => void;
 }) {
-  const [activePost, setActivePost] = useState<string | null>(null);
-  const selectedPost = BLOG_POSTS.find((post) => post.slug === activePost);
+  // Which post is open comes from /blog/:slug, so a post is a shareable link.
+  const selectedPost = BLOG_POSTS.find((post) => post.slug === postSlug);
   const pageTitle: Record<MarketingPage, string> = {
     games: 'Explore games made on GameTok',
     pricing: 'Simple pricing',
@@ -2611,10 +2890,6 @@ function StaticMarketingPage({
     privacy: 'Privacy Policy',
     terms: 'Terms of Service',
   };
-
-  useEffect(() => {
-    setActivePost(null);
-  }, [page]);
 
   return (
     <main className="marketing-page">
@@ -2668,7 +2943,7 @@ function StaticMarketingPage({
       {page === 'blog' && (
         selectedPost ? (
           <article className="blog-detail">
-            <button onClick={() => setActivePost(null)}><ChevronLeft size={16} /> Back to blog</button>
+            <button onClick={() => onOpenPost(null)}><ChevronLeft size={16} /> Back to blog</button>
             <span>{selectedPost.category} · {selectedPost.date}</span>
             <h2>{selectedPost.title}</h2>
             {selectedPost.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
@@ -2676,7 +2951,7 @@ function StaticMarketingPage({
         ) : (
           <section className="blog-list">
             {BLOG_POSTS.map((post) => (
-              <button key={post.slug} onClick={() => setActivePost(post.slug)}>
+              <button key={post.slug} onClick={() => onOpenPost(post.slug)}>
                 <span>{post.category} · {post.date}</span>
                 <h2>{post.title}</h2>
                 <p>{post.excerpt}</p>
@@ -2761,47 +3036,30 @@ function marketingSubtitle(page: MarketingPage, isPost: boolean) {
 function DesktopExploreScreen({
   user,
   games,
-  creators,
   onTab,
   onOpenGame,
-  onOpenCreator,
   onCreate,
+  onPlay,
   variant = 'desktop',
+  surface = 'explore',
 }: {
   user: AuthUser | null;
   games: Game[];
-  creators: Creator[];
   onTab: (tab: Tab) => void;
   onOpenGame: (game: Game) => void;
-  onOpenCreator: (creator: Creator) => void;
   onCreate: () => void;
+  onPlay?: () => void;
   variant?: 'desktop' | 'mobile';
+  /**
+   * Mobile home and mobile explore share this screen but are not the same place:
+   * home leads with playing (a big feed CTA), explore leads with searching.
+   */
+  surface?: 'home' | 'explore';
 }) {
   const isMobile = variant === 'mobile';
+  const isHome = surface === 'home';
   const [query, setQuery] = useState('');
   const [recentIds] = useState<string[]>(() => readRecentGameIds());
-  const [following, setFollowing] = useState<Creator[]>([]);
-
-  useEffect(() => {
-    let mounted = true;
-    if (!user?.id) return;
-    (async () => {
-      try {
-        const rows = await request(`/users/${user.id}/following`);
-        if (!mounted) return;
-        if (Array.isArray(rows)) setFollowing(rows as Creator[]);
-      } catch {
-        // Non-fatal — strip just falls back to suggestions only.
-      }
-    })();
-    return () => { mounted = false; };
-  }, [user?.id]);
-
-  const followingIds = useMemo(() => new Set(following.map((c) => c.id)), [following]);
-  const suggestions = useMemo(
-    () => creators.filter((c) => !followingIds.has(c.id)).slice(0, 20),
-    [creators, followingIds],
-  );
 
   const searchQ = query.trim().toLowerCase();
   const matchesQuery = (g: Game) =>
@@ -2821,36 +3079,49 @@ function DesktopExploreScreen({
     [games, searchQ],
   );
 
-  const fresh = useMemo(() => games.filter(matchesQuery), [games, searchQ]);
+  const fresh = useMemo(
+    () =>
+      [...games]
+        .filter(matchesQuery)
+        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()),
+    [games, searchQ],
+  );
 
   return (
-    <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'}`}>
-      {!isMobile && <DesktopAppSidebar activeTab="explore" user={user} onTab={onTab} />}
+    <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'} ${isHome ? 'is-home' : ''}`}>
+      {!isMobile && <DesktopAppSidebar activeTab={isHome ? 'home' : 'explore'} user={user} onTab={onTab} />}
       <main className="desktop-explore-main">
         <header className="desktop-explore-header">
           <div>
             <p>GAMETOK</p>
-            <h1>Explore</h1>
+            <h1>{isHome ? 'Home' : 'Explore'}</h1>
           </div>
           <button className="desktop-explore-create" onClick={onCreate}>
             <Wand2 size={16} /> Create
           </button>
         </header>
 
-        <div className="desktop-explore-search">
-          <Search size={18} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search games, creators, worlds"
-          />
-        </div>
+        {isHome ? (
+          <button className="mobile-home-play-cta" onClick={onPlay}>
+            <span className="mobile-home-play-icon"><Play size={22} fill="currentColor" /></span>
+            <span>
+              <strong>Play the feed</strong>
+              <small>Swipe through games one after another</small>
+            </span>
+            <ChevronRight size={20} />
+          </button>
+        ) : (
+          <div className="desktop-explore-search">
+            <Search size={18} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search games, creators, worlds"
+            />
+          </div>
+        )}
 
-        <DesktopExplorePeopleStrip
-          following={following}
-          suggestions={suggestions}
-          onOpenCreator={onOpenCreator}
-        />
+        {isMobile && isHome && <StoreButtons className="on-mobile-explore" />}
 
         {continueGames.length > 0 && (
           <DesktopExploreRow title="Continue" games={continueGames} onOpenGame={onOpenGame} />
@@ -2896,40 +3167,6 @@ function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games:
   );
 }
 
-function DesktopExplorePeopleStrip({
-  following,
-  suggestions,
-  onOpenCreator,
-}: {
-  following: Creator[];
-  suggestions: Creator[];
-  onOpenCreator: (creator: Creator) => void;
-}) {
-  if (following.length === 0 && suggestions.length === 0) return null;
-  const renderTile = (creator: Creator, kind: 'friend' | 'suggested') => (
-    <button
-      key={`${kind}-${creator.id}`}
-      className="desktop-explore-person"
-      onClick={() => onOpenCreator(creator)}
-    >
-      <div className="desktop-explore-person-avatar">
-        <img src={avatarUrl(creator.username, creator.avatar, 128)} alt="" />
-      </div>
-      <strong>{creator.displayName || creator.username}</strong>
-      <small>{kind === 'friend' ? `@${creator.username}` : 'Suggested'}</small>
-    </button>
-  );
-  return (
-    <section className="desktop-explore-people">
-      <h2>{following.length > 0 ? 'Friends' : 'People to follow'}</h2>
-      <div className="desktop-explore-people-scroll">
-        {following.map((c) => renderTile(c, 'friend'))}
-        {suggestions.map((c) => renderTile(c, 'suggested'))}
-      </div>
-    </section>
-  );
-}
-
 function DesktopCreateWorkspace({
   games,
   activeTab,
@@ -2943,17 +3180,24 @@ function DesktopCreateWorkspace({
   user: AuthUser | null;
   onAuthRequired: () => void;
 }) {
-  const [brief, setBrief] = useState('');
+  // Seeded from the home hero's composer. Read once on mount, and cleared as it's
+  // read, so a later re-render can't clobber what the creator has since typed.
+  const forge = useDreamForge();
+  const [brief, setBrief] = useState<string>(takePendingBrief);
   const [animatedPrompt, setAnimatedPrompt] = useState('');
   const [promptIndex, setPromptIndex] = useState(0);
   const [isDeletingPrompt, setIsDeletingPrompt] = useState(false);
-  const [isBuilding, setIsBuilding] = useState(false);
-  const [buildMessage, setBuildMessage] = useState('');
-  const [buildError, setBuildError] = useState<string | null>(null);
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
-  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
-  const [activeGameTitle, setActiveGameTitle] = useState('Untitled Dream');
-  const cancelBuildRef = useRef<(() => void) | null>(null);
+  // Required, and permanent for the life of the game — see OrientationPicker.
+  const [orientation, setOrientation] = useState<Orientation | null>(null);
+  const [showPublish, setShowPublish] = useState(false);
+  // Refine can replace the preview without going back through the forge.
+  const [refinedHtml, setRefinedHtml] = useState<string | null>(null);
+  const [refinedTitle, setRefinedTitle] = useState<string | null>(null);
+
+  const isBuilding = forge.status === 'building';
+  const previewHtml = refinedHtml || forge.result?.previewHtml || null;
+  const activeDraftId = forge.result?.draftId || null;
+  const activeGameTitle = refinedTitle || forge.result?.title || 'Untitled Dream';
   useEffect(() => {
     const prompt = DESKTOP_CREATE_PROMPTS[promptIndex];
     let delay = isDeletingPrompt ? 24 : 42;
@@ -3013,63 +3257,19 @@ function DesktopCreateWorkspace({
       prompt: 'Make a fantasy RPG where every quest changes the village and unlocks new powers',
     },
   ];
-  const startDreamForge = async () => {
+  const startDreamForge = () => {
     if (!user && !getToken()) {
       onAuthRequired();
       return;
     }
-
+    if (!orientation) return;
     const finalPrompt = (brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]).trim();
     if (!finalPrompt) return;
+    setRefinedHtml(null);
+    setRefinedTitle(null);
+    forge.start({ prompt: finalPrompt, orientation, attachments: [] });
+  };
 
-    setIsBuilding(true);
-    setBuildError(null);
-    setPreviewHtml(null);
-    setActiveDraftId(null);
-    setActiveGameTitle('Untitled Dream');
-    setBuildMessage('Starting Dream Forge...');
-    try {
-      const dreamJob = ai.dream(finalPrompt, [], {
-        onJobStarted: () => setBuildMessage('Dream Forge queued your game...'),
-        onJobProgress: ({ phase, progress, statusMessage, queuePosition }) => {
-          if (statusMessage) {
-            setBuildMessage(statusMessage);
-          } else if (queuePosition) {
-            setBuildMessage(`Queued — position ${queuePosition} in line...`);
-          } else if (phase) {
-            setBuildMessage(`${phase.replace(/_/g, ' ')}${typeof progress === 'number' ? ` · ${Math.round(progress)}%` : ''}`);
-          }
-        },
-      });
-      cancelBuildRef.current = dreamJob.cancelRemote || dreamJob.cancel;
-      const result: any = await dreamJob.promise;
-      if (result?.htmlPreview) {
-        setPreviewHtml(result.htmlPreview);
-        setActiveDraftId(result.draftId || result.id || null);
-        setActiveGameTitle(result.title || result.name || 'Untitled Dream');
-        setBuildMessage('Preview ready.');
-      } else {
-        setBuildMessage('Dream Forge finished.');
-      }
-    } catch (error: any) {
-      if (error?.name === 'AbortError') {
-        setBuildMessage('Generation stopped.');
-      } else {
-        setBuildError(error?.message || 'Dream Forge failed.');
-        setBuildMessage('');
-      }
-    } finally {
-      setIsBuilding(false);
-      cancelBuildRef.current = null;
-    }
-  };
-  const stopDreamForge = () => {
-    if (!cancelBuildRef.current) return;
-    cancelBuildRef.current();
-    cancelBuildRef.current = null;
-    setIsBuilding(false);
-    setBuildMessage('Generation stopped.');
-  };
   const forgeActive = isBuilding || Boolean(previewHtml);
 
   return (
@@ -3092,34 +3292,50 @@ function DesktopCreateWorkspace({
                   gameTitle={activeGameTitle}
                   currentSummary={brief}
                   onApplied={(result) => {
-                    if (result?.htmlPreview) setPreviewHtml(result.htmlPreview);
-                    if (result?.title || result?.name) setActiveGameTitle(result.title || result.name);
+                    if (result?.htmlPreview) setRefinedHtml(result.htmlPreview);
+                    if (result?.title || result?.name) setRefinedTitle(result.title || result.name);
                   }}
                 />
               ) : (
                 <DesktopBuildPanel
                   prompt={brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]}
-                  status={buildError || buildMessage || 'Getting started...'}
-                  error={Boolean(buildError)}
-                  onStop={isBuilding ? stopDreamForge : undefined}
+                  status={forge.error || forge.message || 'Getting started…'}
+                  error={Boolean(forge.error)}
+                  onStop={isBuilding ? forge.cancel : undefined}
+                  onRetry={forge.retryable ? forge.retry : undefined}
                 />
               )}
             </aside>
 
             <div className="desktop-forge-stage">
               {previewHtml ? (
-                <iframe
-                  className="desktop-create-preview"
-                  title="Dream Forge preview"
-                  srcDoc={previewHtml}
-                  sandbox="allow-scripts allow-same-origin allow-pointer-lock"
-                />
+                <>
+                  <iframe
+                    className={`desktop-create-preview ${isLandscape(forge.result?.orientation) ? 'is-landscape' : ''}`}
+                    title="Dream Forge preview"
+                    srcDoc={previewHtml}
+                    sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+                  />
+                  <div className="desktop-preview-actions">
+                    <button
+                      className="primary"
+                      disabled={!activeDraftId}
+                      onClick={() => setShowPublish(true)}
+                    >
+                      <Play size={15} fill="currentColor" /> Publish
+                    </button>
+                  </div>
+                </>
               ) : (
                 <div className="desktop-forge-card">
                   <ForgeDefenseStage
                     active={isBuilding}
                     prompt={brief || animatedPrompt || DESKTOP_CREATE_PROMPTS[promptIndex]}
-                    message={buildMessage}
+                    message={forge.message || forgePhaseLabel(forge.phase)}
+                    progress={forge.progress}
+                    step={forge.activeStep}
+                    queueAhead={forge.queue.ahead}
+                    resuming={forge.resuming}
                   />
                 </div>
               )}
@@ -3148,25 +3364,60 @@ function DesktopCreateWorkspace({
                 onChange={(event) => setBrief(event.target.value)}
                 placeholder={animatedPrompt || DESKTOP_CREATE_PROMPTS[0]}
               />
+              <OrientationPicker value={orientation} onChange={setOrientation} className="on-desktop-create" />
               <div className="desktop-create-composer-row">
-                <button className="primary" onClick={startDreamForge}>
+                <button className="primary" onClick={startDreamForge} disabled={!orientation}>
                   Create game
                 </button>
               </div>
-              {buildError && (
-                <p className="desktop-create-status is-error">
-                  {buildError}
-                </p>
+              {!orientation && (
+                <p className="desktop-create-status">Pick a screen shape — it can't be changed later.</p>
+              )}
+              {forge.error && (
+                <p className="desktop-create-status is-error">{forge.error}</p>
               )}
             </div>
           </>
         )}
       </div>
+
+      {showPublish && forge.result && (
+        <PublishSheet
+          draftId={activeDraftId}
+          defaultTitle={activeGameTitle}
+          html={previewHtml}
+          onClose={() => setShowPublish(false)}
+          onPublished={() => {
+            setShowPublish(false);
+            setRefinedHtml(null);
+            setRefinedTitle(null);
+            forge.reset();
+            onTab('home');
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function ForgeDefenseStage({ active, prompt, message }: { active: boolean; prompt: string; message?: string }) {
+function ForgeDefenseStage({
+  active,
+  prompt,
+  message,
+  progress = 0,
+  step = 0,
+  queueAhead,
+  resuming,
+}: {
+  active: boolean;
+  prompt: string;
+  message?: string;
+  /** Real backend progress. This rig used to be pure decoration with no data at all. */
+  progress?: number;
+  step?: number;
+  queueAhead?: number;
+  resuming?: boolean;
+}) {
   const motes = Array.from({ length: 12 }, (_, index) => index);
   const shards = Array.from({ length: 5 }, (_, index) => index);
   const spokes = Array.from({ length: 6 }, (_, index) => index);
@@ -3208,7 +3459,7 @@ function ForgeDefenseStage({ active, prompt, message }: { active: boolean; promp
       ))}
       <div className="forge-defense-copy">
         <span>GAME WORLD IN PROGRESS</span>
-        <strong>{active ? 'Forging your world' : 'Dream Forge'}</strong>
+        <strong>{resuming ? 'Reconnecting to your build' : active ? 'Forging your world' : 'Dream Forge'}</strong>
         <small>Geometry, motion, audio, and feel are being fused into one playable world.</small>
       </div>
       <div className="forge-defense-progress">
@@ -3216,8 +3467,22 @@ function ForgeDefenseStage({ active, prompt, message }: { active: boolean; promp
           <span>ASSEMBLY PROGRESS</span>
           <strong>{message || (active ? 'Waiting for backend' : 'Ready')}</strong>
         </div>
-        <small>{active ? 'World layout' : 'Standby'}</small>
-        <i />
+        <small>
+          {active
+            ? queueAhead
+              ? `${queueAhead} ahead in queue`
+              : `${FORGE_STEPS[step]?.label || 'Working'} · ${Math.round(progress)}%`
+            : 'Standby'}
+        </small>
+        {/* Was a bare <i/> with nothing driving it. */}
+        <i style={{ width: `${Math.max(2, Math.min(100, progress))}%` }} />
+      </div>
+      <div className="forge-defense-steps">
+        {FORGE_STEPS.map((forgeStep, index) => (
+          <span key={forgeStep.label} className={active && index <= step ? 'done' : ''}>
+            {forgeStep.label}
+          </span>
+        ))}
       </div>
       <div className="forge-defense-prompt">
         <span>SPELL</span>
@@ -3228,66 +3493,49 @@ function ForgeDefenseStage({ active, prompt, message }: { active: boolean; promp
   );
 }
 
+/**
+ * The build-time chat panel. It deliberately has no follow-up composer: there is
+ * no way to amend a job that is already running, and the box that used to sit
+ * here only appended to local state — it said "you can add follow-ups here while
+ * the forge works" and then dropped every word. Editing happens in
+ * DesktopRefinePanel once there's a preview to edit.
+ */
 function DesktopBuildPanel({
   prompt,
   status,
   error,
   onStop,
+  onRetry,
 }: {
   prompt: string;
   status: string;
   error?: boolean;
   onStop?: () => void;
+  onRetry?: () => void;
 }) {
-  const [followup, setFollowup] = useState('');
-  const [notes, setNotes] = useState<string[]>([]);
-  const sendFollowup = () => {
-    const value = followup.trim();
-    if (!value) return;
-    setNotes((items) => [...items, value]);
-    setFollowup('');
-  };
-
   return (
     <div className="desktop-build-panel">
       <header>
-        <button aria-label="Back to create"><ChevronLeft size={18} /></button>
         <span>
           <strong>New Game</strong>
-          <small>Editing now</small>
+          <small>{error ? 'Build failed' : onStop ? 'Building now' : 'Ready'}</small>
         </span>
-        <ChevronDown size={16} />
       </header>
 
       <div className="desktop-build-thread">
-        <p className="desktop-build-bubble ai">I’m starting the first build. You can add follow-ups here while the forge works.</p>
+        <p className="desktop-build-bubble ai">
+          Building your game now. This can take a while — you can leave this page and come back.
+        </p>
         <p className="desktop-build-bubble user">{prompt}</p>
         <p className={`desktop-build-bubble ai ${error ? 'is-error' : ''}`}>{status}</p>
-        {notes.map((note) => (
-          <p className="desktop-build-bubble user" key={note}>{note}</p>
-        ))}
-        {notes.length > 0 && (
-          <p className="desktop-build-bubble ai">Got it. I’ll keep that ready for the first refine pass once the preview is available.</p>
-        )}
       </div>
 
       <div className="desktop-build-bottom">
-        <div className="desktop-build-followup">
-          <textarea
-            value={followup}
-            onChange={(event) => setFollowup(event.target.value)}
-            placeholder="Add a follow-up..."
-          />
-          <div>
-            <button aria-label="Attach image"><ImageIcon size={16} /></button>
-            <button aria-label="Attach file"><Plus size={16} /></button>
-            <span><Sparkles size={15} /> Smart</span>
-            <button aria-label="Voice"><Mic size={16} /></button>
-            <button className="send" disabled={!followup.trim()} onClick={sendFollowup} aria-label="Send follow-up">
-              <ArrowUp size={17} />
-            </button>
-          </div>
-        </div>
+        {onRetry && (
+          <button className="desktop-forge-retry" onClick={onRetry}>
+            <RefreshCw size={16} /> Retry build
+          </button>
+        )}
         {onStop && (
           <button className="desktop-forge-stop" onClick={onStop}>
             <X size={17} /> Stop generation
@@ -3304,15 +3552,8 @@ function DesktopForgeRail({ onBack, onHome }: { onBack: () => void; onHome: () =
       <button className="forge-rail-logo" onClick={onHome} aria-label="GameTok home">
         <img src="/app-assets/icon.png" alt="" />
       </button>
-      <button onClick={onBack} aria-label="Back to create"><Plus size={22} /></button>
+      <button onClick={onBack} aria-label="New game"><Plus size={22} /></button>
       <i />
-      <button><span>S</span></button>
-      <button><span>J</span></button>
-      <div className="forge-rail-bottom">
-        <button aria-label="Notifications"><Bell size={17} /></button>
-        <button aria-label="Profile"><User size={18} /></button>
-        <strong>0</strong>
-      </div>
     </aside>
   );
 }
@@ -3452,8 +3693,9 @@ function DesktopAppSidebar({
   onTab: (tab: Tab) => void;
 }) {
   const navItems: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
-    { tab: 'create', label: 'Home', icon: <Home size={22} /> },
+    { tab: 'home', label: 'Home', icon: <Home size={22} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={22} /> },
+    { tab: 'create', label: 'Create', icon: <Wand2 size={22} /> },
     { tab: 'connect', label: 'Connect', icon: <Users size={22} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={22} /> },
   ];
@@ -3494,7 +3736,7 @@ function DesktopAppSidebar({
           <img src={avatarUrl(user?.username || 'gametok-player', user?.avatar || null, 80)} alt="" />
           <span>
             <strong>{username}</strong>
-            <small>{user ? 'Game builder' : 'Sign in'}</small>
+            <small>{user ? `@${user.username}` : 'Sign in'}</small>
           </span>
         </button>
       </div>
@@ -3514,12 +3756,13 @@ function SearchSheet({
   onCreate: () => void;
 }) {
   const [query, setQuery] = useState('');
-  const categories = ['Arcade', 'Puzzle', 'Action', 'Casual', 'Sports', 'Racing'];
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return games;
     return games.filter((game) =>
-      `${game.name} ${game.description || ''} ${game.category || ''} ${game.creatorDisplayName || ''}`.toLowerCase().includes(q)
+      `${game.name} ${game.description || ''} ${(game.categories || []).join(' ')} ${game.creatorDisplayName || ''}`
+        .toLowerCase()
+        .includes(q)
     );
   }, [games, query]);
   const creatorResults = useMemo(() => {
@@ -3536,11 +3779,10 @@ function SearchSheet({
       </label>
       {!query && (
         <div className="search-categories">
-          {categories.map((category, index) => (
-            <button key={category} onClick={() => setQuery(category)}>
-              <span>{['🕹️', '🧩', '⚔️', '🎯', '🏀', '🏁'][index]}</span>
-              <strong>{category}</strong>
-              <small>{games.filter((game) => (game.category || '').toLowerCase().includes(category.toLowerCase())).length} games</small>
+          {CATEGORIES.map((category) => (
+            <button key={category.slug} onClick={() => setQuery(category.label)}>
+              <strong>{category.label}</strong>
+              <small>{games.filter((game) => (game.categories || []).includes(category.slug)).length} games</small>
             </button>
           ))}
         </div>
@@ -3559,7 +3801,7 @@ function SearchSheet({
             <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
             <span>
               <strong>{game.name}</strong>
-              <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
+              <small>{categoryLabel((game.categories || [])[0] || 'Game')} · {formatCount(game.plays)} plays</small>
             </span>
             <Play size={16} fill="currentColor" />
           </button>
@@ -3627,7 +3869,7 @@ function CreatorProfileSheet({
             <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
             <span>
               <strong>{game.name}</strong>
-              <small>{game.category || 'Game'} · {formatCount(game.plays)} plays</small>
+              <small>{categoryLabel((game.categories || [])[0] || 'Game')} · {formatCount(game.plays)} plays</small>
             </span>
             <Play size={16} fill="currentColor" />
           </button>
