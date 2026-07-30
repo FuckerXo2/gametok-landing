@@ -1905,22 +1905,40 @@ function CreateScreen({
           <div className="starter-rail-header">
             <p>Fast templates for mechanics-heavy prompts.</p>
           </div>
-          <div className="mobile-idea-lanes">
-            {genreRows.map((row, rowIndex) => (
-              <div className="mobile-idea-row" key={`genre-row-${rowIndex}`}>
-                {[...row, ...row].map((chip, index) => (
-                  <button key={`${chip}-${index}`} type="button" onClick={() => {
-                    const idea = PROMPT_IDEAS[(GENRE_CHIPS.indexOf(chip) + index) % PROMPT_IDEAS.length];
-                    setSelectedIdea(idea);
-                    setPrompt(idea);
-                  }}>
-                    <Sparkles size={15} />
-                    {chip}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
+          {/* Mobile runs three marquee lanes, each chip duplicated so the row can
+              scroll forever. Desktop has the width to show every genre at once, and
+              the duplication would read as a bug there — so it wraps instead. */}
+          {isDesktop ? (
+            <div className="desktop-idea-grid">
+              {GENRE_CHIPS.map((chip, index) => (
+                <button key={chip} type="button" onClick={() => {
+                  const idea = PROMPT_IDEAS[(GENRE_CHIPS.indexOf(chip) + index) % PROMPT_IDEAS.length];
+                  setSelectedIdea(idea);
+                  setPrompt(idea);
+                }}>
+                  <Sparkles size={15} />
+                  {chip}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mobile-idea-lanes">
+              {genreRows.map((row, rowIndex) => (
+                <div className="mobile-idea-row" key={`genre-row-${rowIndex}`}>
+                  {[...row, ...row].map((chip, index) => (
+                    <button key={`${chip}-${index}`} type="button" onClick={() => {
+                      const idea = PROMPT_IDEAS[(GENRE_CHIPS.indexOf(chip) + index) % PROMPT_IDEAS.length];
+                      setSelectedIdea(idea);
+                      setPrompt(idea);
+                    }}>
+                      <Sparkles size={15} />
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
 
           {(forge.error || uploadError) && (
             <div className="create-error-box">
