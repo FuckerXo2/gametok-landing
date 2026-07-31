@@ -258,6 +258,7 @@ function parseRoute(pathname: string): ParsedRoute {
 }
 type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview';
 type Modal = 'comments' | 'leaderboard' | 'share' | 'auth' | 'search' | 'notifications' | 'creator-profile' | 'message';
+type MarketingFrame = 'site' | 'app';
 type MarketingPage = 'about' | 'games' | 'pricing' | 'blog' | 'changelog' | 'earn' | 'faq' | 'privacy' | 'terms';
 type AuthMode = 'signup' | 'login';
 
@@ -758,6 +759,9 @@ function App() {
   // /play, or /game/:id when a specific game was opened.
   const route = useMemo(() => parseRoute(location.pathname), [location.pathname]);
   const { tab: activeTab, marketingPage, deck: gameDeckMode, gameId: routeGameId, postSlug } = route;
+  // Which frame the info pages wear. Arriving from More inside the app gives the
+  // in-product layout; arriving from the public home gives the marketing site.
+  const [marketingFrame, setMarketingFrame] = useState<MarketingFrame>('site');
   const [gameIndex, setGameIndex] = useState(0);
   const [hudHidden, setHudHidden] = useState(false);
   const [gamePaused, setGamePaused] = useState(false);
@@ -939,7 +943,8 @@ function App() {
     navigate(TAB_PATHS[tab]);
   };
 
-  const goMarketingPage = (page: MarketingPage) => {
+  const goMarketingPage = (page: MarketingPage, frame: MarketingFrame = 'site') => {
+    setMarketingFrame(frame);
     setHudHidden(false);
     setModal(null);
     navigate(MARKETING_PATHS[page]);
@@ -1167,15 +1172,17 @@ function App() {
           this frame. */}
       {!isMobile && marketingPage && (
         <StaticMarketingPage
+          frame={marketingFrame}
           page={marketingPage}
           postSlug={postSlug}
           games={games}
-          onPage={goMarketingPage}
+          onPage={(page) => goMarketingPage(page, marketingFrame)}
           onOpenPost={(slug) => navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog)}
           onHome={closePlayer}
           onCreate={() => goTab('create')}
           onExplore={() => goTab('explore')}
           onOpenGame={openGame}
+          onAuth={openAuth}
         />
       )}
 
@@ -1187,7 +1194,7 @@ function App() {
           to show for a beat. Say so instead of flashing an empty screen. */}
       {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && !activeGame && (
         <section className="desktop-deck-pending">
-          <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} onPage={goMarketingPage} />
+          <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
           <EmptyAppState
             loading={loading}
             title="Game not found"
@@ -1214,7 +1221,7 @@ function App() {
           onToggleLike={toggleActiveLike}
           onToggleSave={toggleActiveSave}
           onToggleFollow={toggleActiveFollow}
-          onPage={goMarketingPage}
+          onPage={(page) => goMarketingPage(page, 'app')}
         />
       )}
 
@@ -1226,7 +1233,7 @@ function App() {
           onCreate={goCreateWithBrief}
           onExplore={() => goTab('explore')}
           onAuth={openAuth}
-          onPage={goMarketingPage}
+          onPage={(page) => goMarketingPage(page, 'site')}
           onOpenPost={(slug) => navigate(`/blog/${slug}`)}
           onOpenGame={openGame}
           onPlay={openPlayer}
@@ -1251,7 +1258,7 @@ function App() {
           onToggleLike={toggleActiveLike}
           onToggleSave={toggleActiveSave}
           onToggleFollow={toggleActiveFollow}
-          onPage={goMarketingPage}
+          onPage={(page) => goMarketingPage(page, 'app')}
         />
       )}
 
@@ -1260,7 +1267,7 @@ function App() {
           weaker create experience maintained in parallel. */}
       {!isMobile && activeTab === 'create' && !marketingPage && (
         <section className="desktop-create-shell">
-          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={goMarketingPage} />
+          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
           <CreateScreen
             variant="desktop"
             onOpenGame={openGame}
@@ -1278,12 +1285,12 @@ function App() {
           onTab={goTab}
           onOpenGame={openGame}
           onCreate={() => goTab('create')}
-          onPage={goMarketingPage}
+          onPage={(page) => goMarketingPage(page, 'app')}
         />
       )}
 
       {!isMobile && activeTab !== 'home' && activeTab !== 'create' && activeTab !== 'explore' && !marketingPage && (
-        <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} onPage={goMarketingPage} />
+        <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
       )}
 
       {modal && (
@@ -2940,12 +2947,12 @@ function MarketingTopbar({
   active,
   onHome,
   onPage,
-  onCreate,
+  onExplore,
 }: {
   active: MarketingPage;
   onHome: () => void;
   onPage: (page: MarketingPage) => void;
-  onCreate: () => void;
+  onExplore: () => void;
 }) {
   return (
     <header className="marketing-topbar">
@@ -2964,7 +2971,8 @@ function MarketingTopbar({
           </button>
         ))}
       </nav>
-      <button className="marketing-cta" onClick={onCreate}>
+      {/* Into the feed, not the composer — you play first, then create. */}
+      <button className="marketing-cta" onClick={onExplore}>
         Play &amp; Create <ChevronRight size={15} />
       </button>
     </header>
@@ -2999,6 +3007,7 @@ function MarketingFooter({ onPage, onCreate }: { onPage: (page: MarketingPage) =
  * it from inside GameTok via More. Same content, different frame.
  */
 function MarketingPageBody({
+  frame = 'app',
   page,
   postSlug,
   games,
@@ -3007,6 +3016,7 @@ function MarketingPageBody({
   onOpenGame,
   onOpenPost,
 }: {
+  frame?: MarketingFrame;
   page: MarketingPage;
   postSlug: string | null;
   games: Game[];
@@ -3021,6 +3031,7 @@ function MarketingPageBody({
           each one can be rewritten independently. */}
       {page === 'about' && (
         <About
+          variant={frame}
           games={games}
           onCreate={onCreate}
           onExplore={onExplore}
@@ -3129,7 +3140,40 @@ function MarketingPageBody({
   );
 }
 
+/** The public-site topbar, as it was before: plain nav plus log in / sign up. */
+function MarketingSiteTopbar({
+  onHome,
+  onPage,
+  onCreate,
+  onAuth,
+}: {
+  onHome: () => void;
+  onPage: (page: MarketingPage) => void;
+  onCreate: () => void;
+  onAuth: (mode?: AuthMode) => void;
+}) {
+  return (
+    <header className="marketing-topbar">
+      <button className="desktop-wordmark" onClick={onHome}>
+        <img src="/app-assets/icon.png" alt="" />
+        <strong>GameTok</strong>
+      </button>
+      <nav>
+        <button onClick={() => onPage('games')}>Games</button>
+        <button onClick={() => onPage('about')}>About</button>
+        <button onClick={() => onPage('blog')}>Blog</button>
+        <button onClick={onCreate}>Create</button>
+      </nav>
+      <div className="desktop-auth-actions">
+        <button onClick={() => onAuth('login')}>Log in</button>
+        <button onClick={() => onAuth('signup')}>Sign up</button>
+      </div>
+    </header>
+  );
+}
+
 function StaticMarketingPage({
+  frame,
   page,
   postSlug,
   games,
@@ -3139,7 +3183,11 @@ function StaticMarketingPage({
   onCreate,
   onExplore,
   onOpenGame,
+  onAuth,
 }: {
+  /** 'app' = arrived from More inside the product. 'site' = arrived from the
+   *  public home. Same content, different chrome. */
+  frame: MarketingFrame;
   page: MarketingPage;
   postSlug: string | null;
   games: Game[];
@@ -3149,8 +3197,11 @@ function StaticMarketingPage({
   onCreate: () => void;
   onExplore: () => void;
   onOpenGame: (game: Game) => void;
+  onAuth: (mode?: AuthMode) => void;
 }) {
-  const ownsItsHeader = page === 'about' || page === 'blog';
+  // In the app frame the page brings its own big hero, so the band would stack a
+  // second one. In the site frame the band IS the header.
+  const ownsItsHeader = frame === 'app' && (page === 'about' || page === 'blog');
   const pageTitle: Record<MarketingPage, string> = {
     about: 'About GameTok',
     games: 'Explore games made on GameTok',
@@ -3165,7 +3216,9 @@ function StaticMarketingPage({
 
   return (
     <main className="marketing-page">
-      <MarketingTopbar active={page} onHome={onHome} onPage={onPage} onCreate={onCreate} />
+      {frame === 'app'
+        ? <MarketingTopbar active={page} onHome={onHome} onPage={onPage} onExplore={onExplore} />
+        : <MarketingSiteTopbar onHome={onHome} onPage={onPage} onCreate={onCreate} onAuth={onAuth} />}
       {/* About and Blog bring their own headers and CTAs, so the generic band
           would stack a second hero on top of theirs. */}
       {!ownsItsHeader && (
@@ -3180,6 +3233,7 @@ function StaticMarketingPage({
       )}
 
       <MarketingPageBody
+        frame={frame}
         page={page}
         postSlug={postSlug}
         games={games}

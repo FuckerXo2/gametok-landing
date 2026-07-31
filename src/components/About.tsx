@@ -46,11 +46,14 @@ const HOW_IT_WORKS = [
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function About({
+  variant = 'app',
   games,
   onCreate,
   onExplore,
   onThumbError,
 }: {
+  /** 'site' suppresses the big hero — the marketing band above already is one. */
+  variant?: 'site' | 'app';
   games: Game[];
   onCreate: () => void;
   onExplore: () => void;
@@ -61,7 +64,8 @@ export default function About({
   const strip = games.slice(0, 7);
 
   return (
-    <div className="about">
+    <div className={`about is-${variant}`}>
+      {variant === 'app' && (
       <section className="about-hero">
         <h1>Everyone has a game in them.</h1>
         <p>
@@ -88,6 +92,7 @@ export default function About({
           </div>
         )}
       </section>
+      )}
 
       {ABOUT_PRESS.length > 0 && (
         <section className="about-press">
