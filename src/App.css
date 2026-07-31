@@ -7590,3 +7590,199 @@ kbd {
   background: rgba(192, 132, 252, 0.16);
   border-color: #c084fc;
 }
+
+/* ─── Announcement modal (the live pill on the home hero) ───────────────────── */
+
+.announce-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(10px);
+  animation: announce-fade 0.18s ease-out;
+}
+
+@keyframes announce-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.announce-card {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  border-radius: 22px;
+  background: #111114;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
+  animation: announce-rise 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  scrollbar-width: none;
+}
+
+.announce-card::-webkit-scrollbar { display: none; }
+
+@keyframes announce-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.announce-art {
+  position: relative;
+  aspect-ratio: 16 / 8;
+  overflow: hidden;
+  background: #08080c;
+}
+
+.announce-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Fades the art into the body so there is no hard seam. */
+.announce-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, #111114);
+}
+
+.announce-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background 0.15s ease;
+}
+
+.announce-close:hover { background: rgba(0, 0, 0, 0.75); }
+
+.announce-body {
+  padding: 4px 40px 34px;
+  text-align: center;
+}
+
+.announce-body h2 {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+
+.announce-sub {
+  margin: 12px auto 0;
+  max-width: 520px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.announce-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 28px 0 26px;
+  text-align: left;
+}
+
+.announce-item {
+  display: flex;
+  gap: 12px;
+  padding: 15px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.announce-item-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(168, 85, 247, 0.16);
+  color: #c084fc;
+}
+
+.announce-item strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 750;
+  color: #fff;
+}
+
+.announce-item small {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.announce-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.announce-primary,
+.announce-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.announce-primary {
+  border: 0;
+  background: #fff;
+  color: #000;
+}
+
+.announce-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.announce-primary:hover,
+.announce-secondary:hover { transform: translateY(-2px); }
+.announce-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* The pill is a real button now. */
+.desktop-live-pill {
+  cursor: pointer;
+  font: inherit;
+}
+
+@media (max-width: 700px) {
+  .announce-body { padding: 4px 22px 26px; }
+  .announce-body h2 { font-size: 28px; }
+  .announce-sub { font-size: 15px; }
+  .announce-grid { grid-template-columns: 1fr; margin: 22px 0 20px; }
+  .announce-actions { flex-direction: column; }
+  .announce-primary, .announce-secondary { justify-content: center; }
+}

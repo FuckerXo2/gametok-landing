@@ -37,6 +37,7 @@ import {
   Search,
   Send,
   Share2,
+  Smartphone,
   Sparkles,
   Trophy,
   User,
@@ -51,6 +52,7 @@ import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesA
 import MobileGate, { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
+import AnnouncementModal, { type Announcement } from './components/AnnouncementModal';
 import { useDreamForge, FORGE_STEPS, forgePhaseLabel } from './hooks/useDreamForge';
 import { isLandscape, type Orientation } from './constants/orientation';
 // Still used by the search sheet and the feed caption — the backend no longer
@@ -361,6 +363,40 @@ const CHANGELOG_ITEMS = [
   { date: 'June 2026', title: 'Hybrid Create direction', text: 'Desktop Create is moving toward a cinematic prompt workspace while mobile keeps the app-style Dream Forge.' },
   { date: 'June 2026', title: 'Google Sign-In web shell', text: 'Google Identity Services are wired on the frontend and ready for end-to-end OAuth verification.' },
 ];
+
+/**
+ * What the live pill on the home hero opens. Copy lives here so it can be edited in
+ * one place; when the announcements feed exists this becomes its most recent entry.
+ */
+const CURRENT_ANNOUNCEMENT: Announcement = {
+  image: '/app-assets/dream-forge-hero.png',
+  title: 'Meet Dream Forge',
+  subtitle: 'Describe the game you want and get something playable back — no engine, no setup, no code.',
+  highlights: [
+    {
+      icon: Sparkles,
+      title: 'One prompt, one game',
+      body: 'Write a brief and the forge builds a complete, playable game around it.',
+    },
+    {
+      icon: Smartphone,
+      title: 'Tall or wide',
+      body: 'Pick the screen shape up front and the game is built and tested for it.',
+    },
+    {
+      icon: ImageIcon,
+      title: 'Bring your own assets',
+      body: 'Attach images, clips, sound effects and music, and tell the forge how to use them.',
+    },
+    {
+      icon: Zap,
+      title: 'Publish to the feed',
+      body: 'Post it to GameTok when it is ready, and let anyone play or remix it.',
+    },
+  ],
+  primaryLabel: 'Try Dream Forge',
+  primaryIcon: Wand2,
+};
 
 const HOME_VIDEOS = [
   '/home-videos/hero-1.mp4',
@@ -2597,6 +2633,7 @@ function DesktopHomeHero({
 }) {
   const [videoIndex, setVideoIndex] = useState(0);
   const [brief, setBrief] = useState('');
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   // Signed-out visitors get real games to play, not just a pitch. Trending is by
@@ -2669,7 +2706,9 @@ function DesktopHomeHero({
         </header>
 
         <div className="desktop-hero-copy">
-          <span className="desktop-live-pill"><span /> New game model is live <ChevronRight size={14} /></span>
+          <button className="desktop-live-pill" onClick={() => setShowAnnouncement(true)}>
+            <span /> New game model is live <ChevronRight size={14} />
+          </button>
           <h1>Make any game you can imagine.</h1>
           <p>GameTok lets you build entire games and worlds by chatting with AI.</p>
 
@@ -2727,6 +2766,17 @@ function DesktopHomeHero({
       </div>
 
       <MarketingFooter onPage={onPage} onCreate={() => onCreate()} />
+
+      {showAnnouncement && (
+        <AnnouncementModal
+          announcement={CURRENT_ANNOUNCEMENT}
+          onClose={() => setShowAnnouncement(false)}
+          onPrimary={() => {
+            setShowAnnouncement(false);
+            onCreate();
+          }}
+        />
+      )}
     </section>
   );
 }
