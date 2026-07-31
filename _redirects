@@ -13,6 +13,12 @@ http://www.gametok.co/* https://gametok.co/:splat 301!
 # download/, admin.html, game.html, .well-known/, assets/, app-assets/,
 # home-videos/) plus the game.html Pages Function, and a catch-all risks
 # shadowing them. Add a line here whenever a route is added to parseRoute.
+# NOTE: /about collides with the legacy static about/index.html. This rule makes
+# the React page win on a cold load; the images under /about/ (icon.png,
+# game-cards-hero-sm.png) are deeper paths and are NOT matched, so the meta tags
+# in index.html keep working. Verify after deploy, and retire about/index.html
+# once the React page is the real one.
+/about /index.html 200
 /explore /index.html 200
 /explore/* /index.html 200
 /create /index.html 200

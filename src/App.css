@@ -7786,3 +7786,26 @@ kbd {
   .announce-actions { flex-direction: column; }
   .announce-primary, .announce-secondary { justify-content: center; }
 }
+
+.about-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 8px 24px 72px;
+  display: grid;
+  gap: 34px;
+}
+
+.about-page h2 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 850;
+  letter-spacing: -0.015em;
+  color: #fff;
+}
+
+.about-page p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.62);
+}

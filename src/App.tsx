@@ -210,6 +210,7 @@ const TAB_PATHS: Record<Tab, string> = {
 };
 
 const MARKETING_PATHS: Record<MarketingPage, string> = {
+  about: '/about',
   games: '/games',
   pricing: '/pricing',
   blog: '/blog',
@@ -257,7 +258,7 @@ function parseRoute(pathname: string): ParsedRoute {
 }
 type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview';
 type Modal = 'comments' | 'leaderboard' | 'share' | 'auth' | 'search' | 'notifications' | 'creator-profile' | 'message';
-type MarketingPage = 'games' | 'pricing' | 'blog' | 'changelog' | 'earn' | 'faq' | 'privacy' | 'terms';
+type MarketingPage = 'about' | 'games' | 'pricing' | 'blog' | 'changelog' | 'earn' | 'faq' | 'privacy' | 'terms';
 type AuthMode = 'signup' | 'login';
 
 type Game = {
@@ -2694,8 +2695,8 @@ function DesktopHomeHero({
           </div>
           <nav>
             <button onClick={() => onPage('games')}>Games</button>
+            <button onClick={() => onPage('about')}>About</button>
             <button onClick={() => onPage('blog')}>Blog</button>
-            <button onClick={() => onPage('earn')}>Earn</button>
             <button onClick={onExplore}>Explore</button>
             <button onClick={() => onCreate()}>Create</button>
           </nav>
@@ -2930,8 +2931,8 @@ function MarketingTopbar({
       </button>
       <nav>
         <button onClick={() => onPage('games')}>Games</button>
+        <button onClick={() => onPage('about')}>About</button>
         <button onClick={() => onPage('blog')}>Blog</button>
-        <button onClick={() => onPage('earn')}>Earn</button>
         <button onClick={onCreate}>Create</button>
       </nav>
       <div className="desktop-auth-actions">
@@ -2989,6 +2990,7 @@ function StaticMarketingPage({
   // Which post is open comes from /blog/:slug, so a post is a shareable link.
   const selectedPost = BLOG_POSTS.find((post) => post.slug === postSlug);
   const pageTitle: Record<MarketingPage, string> = {
+    about: 'About GameTok',
     games: 'Explore games made on GameTok',
     pricing: 'Simple pricing',
     blog: selectedPost?.title || 'Blog',
@@ -3011,6 +3013,35 @@ function StaticMarketingPage({
           <button onClick={onExplore}><Compass size={16} /> Explore app</button>
         </div>
       </section>
+
+      {/* Starting scaffold — copy is yours to direct. Structured as sections so
+          each one can be rewritten independently. */}
+      {page === 'about' && (
+        <section className="about-page">
+          <article>
+            <h2>What GameTok is</h2>
+            <p>
+              GameTok is a place where anyone can make a game by describing it, and anyone
+              can play what other people made — in a feed, instantly, with nothing to install.
+            </p>
+          </article>
+          <article>
+            <h2>How it works</h2>
+            <p>
+              You write a brief and pick a screen shape. The forge designs, builds and tests a
+              playable game around it, then you publish it to the feed where it can be played
+              and remixed.
+            </p>
+          </article>
+          <article>
+            <h2>Where it is going</h2>
+            <p>
+              This page is a starting point. The direction, the story and the detail still
+              need writing.
+            </p>
+          </article>
+        </section>
+      )}
 
       {page === 'games' && (
         <section className="marketing-grid-section">
@@ -3132,6 +3163,7 @@ function StaticMarketingPage({
 
 function marketingSubtitle(page: MarketingPage, isPost: boolean) {
   if (isPost) return 'A GameTok field note for the playable social web.';
+  if (page === 'about') return 'What GameTok is, who it is for, and where it is going.';
   if (page === 'games') return 'Discover playable games, creators, and worlds built for a social feed.';
   if (page === 'pricing') return 'Static v1 pricing cards for product storytelling. Payments come later.';
   if (page === 'blog') return 'Updates on AI game creation, playable feeds, and creator tools.';
