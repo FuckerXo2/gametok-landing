@@ -469,3 +469,32 @@ export function getGameUrl(game: any) {
   }
   return `${GAMES_HOST}/${game.id}/`;
 }
+
+// ─── Blog posts & announcements ──────────────────────────────
+export type Post = {
+  id: string;
+  slug: string;
+  kind: 'blog' | 'announcement';
+  title: string;
+  excerpt?: string | null;
+  coverImage?: string | null;
+  /** Only present on GET /posts/:slug — the index omits it to keep cards light. */
+  bodyMarkdown?: string | null;
+  authorName?: string | null;
+  authorAvatar?: string | null;
+  categories: string[];
+  publishedAt?: string | null;
+  createdAt?: string | null;
+};
+
+export const posts = {
+  list: async (options?: { category?: string; kind?: string; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.category) params.set('category', options.category);
+    if (options?.kind) params.set('kind', options.kind);
+    if (options?.limit) params.set('limit', String(options.limit));
+    const qs = params.toString();
+    return request(`/posts${qs ? `?${qs}` : ''}`);
+  },
+  get: async (slug: string) => request(`/posts/${encodeURIComponent(slug)}`),
+};

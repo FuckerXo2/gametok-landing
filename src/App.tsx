@@ -50,6 +50,8 @@ import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesA
 import MobileGate, { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
+import { BlogIndex, BlogPost, useLatestAnnouncement } from './components/Blog';
+import About from './components/About';
 import AnnouncementModal, { type Announcement } from './components/AnnouncementModal';
 import { useDreamForge, FORGE_STEPS, forgePhaseLabel } from './hooks/useDreamForge';
 import { isLandscape, type Orientation } from './constants/orientation';
@@ -294,43 +296,6 @@ type Creator = {
   verified?: boolean;
 };
 
-const BLOG_POSTS = [
-  {
-    slug: 'building-playable-social-games',
-    category: 'Product',
-    date: 'June 2026',
-    title: 'Building playable social games for the feed era',
-    excerpt: 'GameTok is becoming a place where every post can be played, remixed, shared, and turned into a new world.',
-    body: [
-      'GameTok starts from a simple idea: the feed should not only show games, it should let people play them immediately.',
-      'The web experience gives creators a bigger canvas to describe ideas, attach references, and turn those ideas into playable social moments.',
-      'Our direction is mobile-native energy with desktop creation power: fast discovery, expressive avatars, and playable games that travel like posts.',
-    ],
-  },
-  {
-    slug: 'creator-first-game-generation',
-    category: 'Studio',
-    date: 'June 2026',
-    title: 'Creator-first game generation',
-    excerpt: 'The Create experience is being shaped around prompts, references, drafts, previews, and a fast path back into the feed.',
-    body: [
-      'Game creation needs to feel less like opening a game engine and more like posting an idea with superpowers.',
-      'That means the desktop Create surface should be cinematic and focused, while mobile Create keeps the app-like Dream Forge flow.',
-      'The result is a hybrid system: powerful on desktop, familiar on mobile, and connected to the same playable feed.',
-    ],
-  },
-  {
-    slug: 'why-playable-social-matters',
-    category: 'Vision',
-    date: 'June 2026',
-    title: 'Why playable social matters',
-    excerpt: 'Screenshots and trailers are not enough. The next social gaming surface should let the audience touch the idea instantly.',
-    body: [
-      'A playable post collapses the distance between watching and trying.',
-      'For creators, that means faster feedback. For players, it means discovery feels alive. For GameTok, it means the feed is the product.',
-    ],
-  },
-];
 
 const PRICING_PLANS = [
   { name: 'Starter', price: '$0', audience: 'For players and first-time builders.', features: ['Play community games', 'Create starter drafts', 'Public sharing', 'GameTok avatar profile'] },
@@ -1247,6 +1212,7 @@ function App() {
           onExplore={() => goTab('explore')}
           onAuth={openAuth}
           onPage={goMarketingPage}
+          onOpenPost={(slug) => navigate(`/blog/${slug}`)}
           onOpenGame={openGame}
           onPlay={openPlayer}
         />
@@ -2641,6 +2607,7 @@ function DesktopHomeHero({
   onExplore,
   onAuth,
   onPage,
+  onOpenPost,
   onOpenGame,
   onPlay,
 }: {
@@ -2650,12 +2617,15 @@ function DesktopHomeHero({
   onExplore: () => void;
   onAuth: (mode?: AuthMode) => void;
   onPage: (page: MarketingPage) => void;
+  onOpenPost: (slug: string) => void;
   onOpenGame: (game: Game) => void;
   onPlay: () => void;
 }) {
   const [videoIndex, setVideoIndex] = useState(0);
   const [brief, setBrief] = useState('');
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  // Read-more only appears once there is a published announcement to point at.
+  const announcementSlug = useLatestAnnouncement();
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   // Signed-out visitors get real games to play, not just a pitch. Trending is by
@@ -2791,12 +2761,19 @@ function DesktopHomeHero({
 
       {showAnnouncement && (
         <AnnouncementModal
-          announcement={CURRENT_ANNOUNCEMENT}
+          announcement={{
+            ...CURRENT_ANNOUNCEMENT,
+            readMoreLabel: announcementSlug ? 'Read the announcement' : undefined,
+          }}
           onClose={() => setShowAnnouncement(false)}
           onPrimary={() => {
             setShowAnnouncement(false);
             onCreate();
           }}
+          onReadMore={announcementSlug ? () => {
+            setShowAnnouncement(false);
+            onOpenPost(announcementSlug);
+          } : undefined}
         />
       )}
     </section>
@@ -3010,13 +2987,12 @@ function StaticMarketingPage({
   onAuth: (mode?: AuthMode) => void;
   onOpenGame: (game: Game) => void;
 }) {
-  // Which post is open comes from /blog/:slug, so a post is a shareable link.
-  const selectedPost = BLOG_POSTS.find((post) => post.slug === postSlug);
+  const ownsItsHeader = page === 'about' || page === 'blog';
   const pageTitle: Record<MarketingPage, string> = {
     about: 'About GameTok',
     games: 'Explore games made on GameTok',
     pricing: 'Simple pricing',
-    blog: selectedPost?.title || 'Blog',
+    blog: 'Blog',
     changelog: 'Changelog',
     earn: 'Make a game. Share it. Grow.',
     faq: 'Frequently Asked Questions',
@@ -3027,43 +3003,29 @@ function StaticMarketingPage({
   return (
     <main className="marketing-page">
       <MarketingTopbar onHome={onHome} onPage={onPage} onCreate={onCreate} onAuth={onAuth} />
-      <section className="marketing-hero-band">
-        <span><Sparkles size={14} /> GameTok web</span>
-        <h1>{pageTitle[page]}</h1>
-        <p>{marketingSubtitle(page, Boolean(selectedPost))}</p>
-        <div>
-          <button onClick={onCreate}><Wand2 size={16} /> Create a game</button>
-          <button onClick={onExplore}><Compass size={16} /> Explore app</button>
-        </div>
-      </section>
+      {/* About and Blog bring their own headers and CTAs, so the generic band
+          would stack a second hero on top of theirs. */}
+      {!ownsItsHeader && (
+        <section className="marketing-hero-band">
+          <span><Sparkles size={14} /> GameTok web</span>
+          <h1>{pageTitle[page]}</h1>
+          <p>{marketingSubtitle(page, Boolean(postSlug))}</p>
+          <div>
+            <button onClick={onCreate}><Wand2 size={16} /> Create a game</button>
+            <button onClick={onExplore}><Compass size={16} /> Explore app</button>
+          </div>
+        </section>
+      )}
 
       {/* Starting scaffold — copy is yours to direct. Structured as sections so
           each one can be rewritten independently. */}
       {page === 'about' && (
-        <section className="about-page">
-          <article>
-            <h2>What GameTok is</h2>
-            <p>
-              GameTok is a place where anyone can make a game by describing it, and anyone
-              can play what other people made — in a feed, instantly, with nothing to install.
-            </p>
-          </article>
-          <article>
-            <h2>How it works</h2>
-            <p>
-              You write a brief and pick a screen shape. The forge designs, builds and tests a
-              playable game around it, then you publish it to the feed where it can be played
-              and remixed.
-            </p>
-          </article>
-          <article>
-            <h2>Where it is going</h2>
-            <p>
-              This page is a starting point. The direction, the story and the detail still
-              need writing.
-            </p>
-          </article>
-        </section>
+        <About
+          games={games}
+          onCreate={onCreate}
+          onExplore={onExplore}
+          onThumbError={handleThumbError}
+        />
       )}
 
       {page === 'games' && (
@@ -3103,25 +3065,9 @@ function StaticMarketingPage({
       )}
 
       {page === 'blog' && (
-        selectedPost ? (
-          <article className="blog-detail">
-            <button onClick={() => onOpenPost(null)}><ChevronLeft size={16} /> Back to blog</button>
-            <span>{selectedPost.category} · {selectedPost.date}</span>
-            <h2>{selectedPost.title}</h2>
-            {selectedPost.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-          </article>
-        ) : (
-          <section className="blog-list">
-            {BLOG_POSTS.map((post) => (
-              <button key={post.slug} onClick={() => onOpenPost(post.slug)}>
-                <span>{post.category} · {post.date}</span>
-                <h2>{post.title}</h2>
-                <p>{post.excerpt}</p>
-                <small>Read post <ChevronRight size={14} /></small>
-              </button>
-            ))}
-          </section>
-        )
+        postSlug
+          ? <BlogPost slug={postSlug} onBack={() => onOpenPost(null)} />
+          : <BlogIndex onOpenPost={onOpenPost} />
       )}
 
       {page === 'changelog' && (

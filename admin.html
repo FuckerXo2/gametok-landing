@@ -278,7 +278,7 @@
   <div class="container">
     <div class="login-form active" id="loginForm">
       <h2>🎮 GameTOK Admin</h2>
-      <input type="password" id="password" placeholder="Enter admin password">
+      <input type="password" id="password" placeholder="Enter admin secret" onkeydown="if(event.key==='Enter')login()">
       <button onclick="login()">Login</button>
     </div>
     
@@ -445,22 +445,51 @@
 
   <script>
     const API = 'https://gametok-backend-production.up.railway.app';
-    const ADMIN_PASSWORD = 'gametok2024';
-    
+
+    // The admin secret is the real gate now — the server checks it on every
+    // /api/admin/* request. What used to be here was a hardcoded password
+    // compared in the browser, which anyone could read in view-source and which
+    // the server never saw.
+    const SECRET_KEY = 'gt_admin_secret';
+    const getSecret = () => sessionStorage.getItem(SECRET_KEY) || '';
+
+    // Injected at the fetch layer rather than at each of the ~17 admin call
+    // sites, so a newly added admin request is authenticated by default.
+    const rawFetch = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (url.includes('/api/admin')) {
+        init = { ...init, headers: { ...(init.headers || {}), 'x-admin-secret': getSecret() } };
+      }
+      return rawFetch(input, init);
+    };
+
     // Cloudinary config - UPDATE THESE WITH YOUR VALUES
     const CLOUDINARY_CLOUD_NAME = 'dujntgrjd';
     const CLOUDINARY_UPLOAD_PRESET = 'gametok_unsigned';
     
-    function login() {
-      const pwd = document.getElementById('password').value;
-      if (pwd === ADMIN_PASSWORD) {
-        document.getElementById('loginForm').classList.remove('active');
-        document.getElementById('adminContent').classList.add('active');
-        loadGames();
-        loadStats();
-      } else {
-        alert('Wrong password');
+    // Validated against the server rather than in the browser: we store the
+    // secret, then make one real admin request to see whether it is accepted.
+    async function login() {
+      const secret = document.getElementById('password').value.trim();
+      if (!secret) return;
+      sessionStorage.setItem(SECRET_KEY, secret);
+      try {
+        const res = await fetch(`${API}/api/admin/thumbnail-status`);
+        if (res.status === 401 || res.status === 403) {
+          sessionStorage.removeItem(SECRET_KEY);
+          alert('Wrong admin secret');
+          return;
+        }
+      } catch (e) {
+        sessionStorage.removeItem(SECRET_KEY);
+        alert('Could not reach the API');
+        return;
       }
+      document.getElementById('loginForm').classList.remove('active');
+      document.getElementById('adminContent').classList.add('active');
+      loadGames();
+      loadStats();
     }
     
     function showTab(tab) {
