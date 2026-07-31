@@ -9,7 +9,7 @@
 // the constants below and the sections appear.
 
 import type React from 'react';
-import { ArrowRight, Sparkles, Wand2 } from 'lucide-react';
+import { ArrowRight, Wand2 } from 'lucide-react';
 import { getThumbnailUrl } from '../services/api';
 
 type Game = { id: string; name: string; thumbnail?: string; color?: string };
@@ -108,7 +108,7 @@ export default function About({
 
       <section className="about-how">
         <header>
-          <span className="about-eyebrow"><Sparkles size={13} /> How it works</span>
+          <span className="about-eyebrow">How it works</span>
           <h2>From a sentence to something playable.</h2>
         </header>
         <div className="about-how-grid">
