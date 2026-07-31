@@ -1234,7 +1234,7 @@ function App() {
           onExplore={() => goTab('explore')}
           onAuth={openAuth}
           onPage={(page) => goMarketingPage(page, 'site')}
-          onOpenPost={(slug) => navigate(`/blog/${slug}`)}
+          onOpenPost={(slug) => { setMarketingFrame('app'); navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog); }}
           onOpenGame={openGame}
           onPlay={openPlayer}
         />
@@ -2639,7 +2639,7 @@ function DesktopHomeHero({
   onExplore: () => void;
   onAuth: (mode?: AuthMode) => void;
   onPage: (page: MarketingPage) => void;
-  onOpenPost: (slug: string) => void;
+  onOpenPost: (slug: string | null) => void;
   onOpenGame: (game: Game) => void;
   onPlay: () => void;
 }) {
@@ -2783,19 +2783,17 @@ function DesktopHomeHero({
 
       {showAnnouncement && (
         <AnnouncementModal
-          announcement={{
-            ...CURRENT_ANNOUNCEMENT,
-            readMoreLabel: announcementSlug ? 'Read the announcement' : undefined,
-          }}
+          announcement={{ ...CURRENT_ANNOUNCEMENT, readMoreLabel: 'Read the announcement' }}
           onClose={() => setShowAnnouncement(false)}
           onPrimary={() => {
             setShowAnnouncement(false);
             onCreate();
           }}
-          onReadMore={announcementSlug ? () => {
+          onReadMore={() => {
             setShowAnnouncement(false);
+            // Falls back to the blog index until the announcement post exists.
             onOpenPost(announcementSlug);
-          } : undefined}
+          }}
         />
       )}
     </section>
