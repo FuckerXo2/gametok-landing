@@ -1051,7 +1051,7 @@ function App() {
   }, [activeTab, games.length, marketingPage, modal]);
 
   return (
-    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage && !authUser && !isMobile ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile ? 'explore-mode' : ''}`}>
+    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage && !isMobile ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile ? 'explore-mode' : ''}`}>
       <MobileGate
         onContinueInBrowser={() => {
           setMobileGateOpen(false);
@@ -1162,12 +1162,10 @@ function App() {
         />
       </div>}
 
-      {/* Two frames, same content. Someone signed in reached this from More
-          inside the app, so it keeps the app chrome — sidebar, no marketing
-          topbar or footer. A signed-out visitor came from the public home, so
-          they get the marketing site. Previously every route rendered the
-          marketing shell, which ejected app users out of the product. */}
-      {!isMobile && marketingPage && !authUser && (
+      {/* More takes you out to the marketing site, the same way Astrocade's More
+          opens /about-us with its own top nav. Signed in or not, desktop gets
+          this frame. */}
+      {!isMobile && marketingPage && (
         <StaticMarketingPage
           page={marketingPage}
           postSlug={postSlug}
@@ -1177,26 +1175,8 @@ function App() {
           onHome={closePlayer}
           onCreate={() => goTab('create')}
           onExplore={() => goTab('explore')}
-          onAuth={openAuth}
           onOpenGame={openGame}
         />
-      )}
-
-      {!isMobile && marketingPage && authUser && (
-        <section className="desktop-app-main desktop-info-shell">
-          <DesktopAppSidebar activeTab={activeTab} user={authUser} onTab={goTab} onPage={goMarketingPage} />
-          <main className="desktop-info-main">
-            <MarketingPageBody
-              page={marketingPage}
-              postSlug={postSlug}
-              games={games}
-              onCreate={() => goTab('create')}
-              onExplore={() => goTab('explore')}
-              onOpenGame={openGame}
-              onOpenPost={(slug) => navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog)}
-            />
-          </main>
-        </section>
       )}
 
       {/* The player serves /play and /game/:id for everyone, signed in or not.
@@ -2947,16 +2927,25 @@ function DesktopPlayHome({
   );
 }
 
+/** Nav shown on the marketing site. `active` gets the filled pill. */
+const MARKETING_NAV: Array<{ page: MarketingPage; label: string }> = [
+  { page: 'about', label: 'About' },
+  { page: 'blog', label: 'Blog' },
+  { page: 'games', label: 'Games' },
+  { page: 'changelog', label: 'Changelog' },
+  { page: 'faq', label: 'FAQ' },
+];
+
 function MarketingTopbar({
+  active,
   onHome,
   onPage,
   onCreate,
-  onAuth,
 }: {
+  active: MarketingPage;
   onHome: () => void;
   onPage: (page: MarketingPage) => void;
   onCreate: () => void;
-  onAuth: (mode?: AuthMode) => void;
 }) {
   return (
     <header className="marketing-topbar">
@@ -2964,16 +2953,20 @@ function MarketingTopbar({
         <img src="/app-assets/icon.png" alt="" />
         <strong>GameTok</strong>
       </button>
-      <nav>
-        <button onClick={() => onPage('games')}>Games</button>
-        <button onClick={() => onPage('about')}>About</button>
-        <button onClick={() => onPage('blog')}>Blog</button>
-        <button onClick={onCreate}>Create</button>
+      <nav className="marketing-nav">
+        {MARKETING_NAV.map((item) => (
+          <button
+            key={item.page}
+            className={active === item.page ? 'is-active' : ''}
+            onClick={() => onPage(item.page)}
+          >
+            {item.label}
+          </button>
+        ))}
       </nav>
-      <div className="desktop-auth-actions">
-        <button onClick={() => onAuth('login')}>Log in</button>
-        <button onClick={() => onAuth('signup')}>Sign up</button>
-      </div>
+      <button className="marketing-cta" onClick={onCreate}>
+        Play &amp; Create <ChevronRight size={15} />
+      </button>
     </header>
   );
 }
@@ -3145,7 +3138,6 @@ function StaticMarketingPage({
   onHome,
   onCreate,
   onExplore,
-  onAuth,
   onOpenGame,
 }: {
   page: MarketingPage;
@@ -3156,7 +3148,6 @@ function StaticMarketingPage({
   onHome: () => void;
   onCreate: () => void;
   onExplore: () => void;
-  onAuth: (mode?: AuthMode) => void;
   onOpenGame: (game: Game) => void;
 }) {
   const ownsItsHeader = page === 'about' || page === 'blog';
@@ -3174,7 +3165,7 @@ function StaticMarketingPage({
 
   return (
     <main className="marketing-page">
-      <MarketingTopbar onHome={onHome} onPage={onPage} onCreate={onCreate} onAuth={onAuth} />
+      <MarketingTopbar active={page} onHome={onHome} onPage={onPage} onCreate={onCreate} />
       {/* About and Blog bring their own headers and CTAs, so the generic band
           would stack a second hero on top of theirs. */}
       {!ownsItsHeader && (
