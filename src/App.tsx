@@ -18,8 +18,6 @@ import {
   Compass,
   Gamepad2,
   Grid3X3,
-  Globe,
-  Hash,
   Heart,
   Home,
   Image as ImageIcon,
@@ -398,6 +396,24 @@ const CURRENT_ANNOUNCEMENT: Announcement = {
   primaryLabel: 'Try Dream Forge',
   primaryIcon: Wand2,
 };
+
+/** Real accounts, lifted from the legacy about/ and more/ pages. */
+const SOCIAL_LINKS: Array<{ label: string; url: string }> = [
+  { label: 'X', url: 'https://x.com/thegametok' },
+  { label: 'Instagram', url: 'https://instagram.com/gametok.co' },
+  { label: 'TikTok', url: 'https://tiktok.com/@gametok.co' },
+];
+
+/** What the sidebar's More menu links to. */
+const MORE_PAGES: Array<{ page: MarketingPage; label: string }> = [
+  { page: 'about', label: 'About' },
+  { page: 'blog', label: 'Blog' },
+  { page: 'changelog', label: 'Changelog' },
+  { page: 'games', label: 'Games' },
+  { page: 'faq', label: 'FAQ' },
+  { page: 'privacy', label: 'Privacy Policy' },
+  { page: 'terms', label: 'Terms of Service' },
+];
 
 const HOME_VIDEOS = [
   '/home-videos/hero-1.mp4',
@@ -1191,7 +1207,7 @@ function App() {
           to show for a beat. Say so instead of flashing an empty screen. */}
       {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && !activeGame && (
         <section className="desktop-deck-pending">
-          <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} />
+          <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} onPage={goMarketingPage} />
           <EmptyAppState
             loading={loading}
             title="Game not found"
@@ -1218,6 +1234,7 @@ function App() {
           onToggleLike={toggleActiveLike}
           onToggleSave={toggleActiveSave}
           onToggleFollow={toggleActiveFollow}
+          onPage={goMarketingPage}
         />
       )}
 
@@ -1253,6 +1270,7 @@ function App() {
           onToggleLike={toggleActiveLike}
           onToggleSave={toggleActiveSave}
           onToggleFollow={toggleActiveFollow}
+          onPage={goMarketingPage}
         />
       )}
 
@@ -1261,7 +1279,7 @@ function App() {
           weaker create experience maintained in parallel. */}
       {!isMobile && activeTab === 'create' && !marketingPage && (
         <section className="desktop-create-shell">
-          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} />
+          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={goMarketingPage} />
           <CreateScreen
             variant="desktop"
             onOpenGame={openGame}
@@ -1279,11 +1297,12 @@ function App() {
           onTab={goTab}
           onOpenGame={openGame}
           onCreate={() => goTab('create')}
+          onPage={goMarketingPage}
         />
       )}
 
       {!isMobile && activeTab !== 'home' && activeTab !== 'create' && activeTab !== 'explore' && !marketingPage && (
-        <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} />
+        <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} onPage={goMarketingPage} />
       )}
 
       {modal && (
@@ -2578,12 +2597,14 @@ function DesktopRail({
   activeTab,
   user,
   onTab,
+  onPage,
 }: {
   activeTab: Tab;
   user: AuthUser | null;
   onTab: (tab: Tab) => void;
+  onPage?: (page: MarketingPage) => void;
 }) {
-  return <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} />;
+  return <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} onPage={onPage} />;
 }
 
 // Store links for the native apps. Glyph paths are the same ones the legacy
@@ -2799,9 +2820,11 @@ function DesktopPlayHome({
   onToggleLike,
   onToggleSave,
   onToggleFollow,
+  onPage,
 }: {
   // Null for signed-out visitors — /play and /game/:id are open to everyone.
   user: AuthUser | null;
+  onPage?: (page: MarketingPage) => void;
   game: Game;
   games: Game[];
   index: number;
@@ -2853,7 +2876,7 @@ function DesktopPlayHome({
 
   return (
     <section className="desktop-app-main desktop-play-home">
-      <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} />
+      <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
 
       <main className="desktop-feed-stage">
         <div className="desktop-feed-topline">
@@ -2952,9 +2975,9 @@ function MarketingFooter({ onPage, onCreate }: { onPage: (page: MarketingPage) =
         <span>Playable social gaming.</span>
       </div>
       <nav>
+        <button onClick={() => onPage('about')}>About</button>
         <button onClick={() => onPage('blog')}>Blog</button>
         <button onClick={() => onPage('changelog')}>Changelog</button>
-        <button onClick={() => onPage('earn')}>Earn</button>
         <button onClick={() => onPage('faq')}>FAQ</button>
         <button onClick={() => onPage('privacy')}>Privacy Policy</button>
         <button onClick={() => onPage('terms')}>Terms of Service</button>
@@ -3180,11 +3203,13 @@ function DesktopExploreScreen({
   onOpenGame,
   onCreate,
   onPlay,
+  onPage,
   variant = 'desktop',
   surface = 'explore',
 }: {
   user: AuthUser | null;
   games: Game[];
+  onPage?: (page: MarketingPage) => void;
   onTab: (tab: Tab) => void;
   onOpenGame: (game: Game) => void;
   onCreate: () => void;
@@ -3229,7 +3254,7 @@ function DesktopExploreScreen({
 
   return (
     <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'} ${isHome ? 'is-home' : ''}`}>
-      {!isMobile && <DesktopAppSidebar activeTab={isHome ? 'home' : 'explore'} user={user} onTab={onTab} />}
+      {!isMobile && <DesktopAppSidebar activeTab={isHome ? 'home' : 'explore'} user={user} onTab={onTab} onPage={onPage} />}
       <main className="desktop-explore-main">
         <header className="desktop-explore-header">
           <div>
@@ -3443,11 +3468,36 @@ function DesktopAppSidebar({
   activeTab,
   user,
   onTab,
+  onPage,
 }: {
   activeTab: Tab;
   user: AuthUser | null;
   onTab: (tab: Tab) => void;
+  /** Marketing pages, reached through More. */
+  onPage?: (page: MarketingPage) => void;
 }) {
+  // The marketing pages were unreachable from inside the app — nav only existed on
+  // the signed-out hero. More is that door, and it gives the previously dead
+  // social icons somewhere to live.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!moreRef.current?.contains(e.target as Node)) setMoreOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [moreOpen]);
+
   const navItems: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
     { tab: 'home', label: 'Home', icon: <Home size={22} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={22} /> },
@@ -3479,15 +3529,45 @@ function DesktopAppSidebar({
             <span>{item.label}</span>
           </button>
         ))}
+
+        <div className="desktop-sidebar-more" ref={moreRef}>
+          <button
+            className={moreOpen ? 'active' : ''}
+            onClick={() => setMoreOpen((open) => !open)}
+            aria-expanded={moreOpen}
+            aria-haspopup="menu"
+          >
+            <Grid3X3 size={22} />
+            <span>More</span>
+          </button>
+
+          {moreOpen && (
+            <div className="desktop-more-menu" role="menu">
+              {onPage && MORE_PAGES.map((item) => (
+                <button
+                  key={item.page}
+                  role="menuitem"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    onPage(item.page);
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+              <div className="desktop-more-socials">
+                {SOCIAL_LINKS.map((social) => (
+                  <a key={social.label} href={social.url} target="_blank" rel="noreferrer">
+                    {social.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </nav>
 
       <div className="desktop-sidebar-footer">
-        <div className="desktop-sidebar-socials">
-          <MessageCircle size={20} />
-          <Hash size={20} />
-          <Globe size={20} />
-          <Grid3X3 size={20} />
-        </div>
         <button className="desktop-sidebar-user" onClick={() => onTab('profile')}>
           <img src={avatarUrl(user?.username || 'gametok-player', user?.avatar || null, 80)} alt="" />
           <span>

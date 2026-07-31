@@ -7809,3 +7809,78 @@ kbd {
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.62);
 }
+
+/* ─── Sidebar "More" ────────────────────────────────────────────────────────── */
+
+.desktop-sidebar-more {
+  position: relative;
+}
+
+/* Inherits the nav button look so More sits flush with the other items. */
+.desktop-sidebar-more > button {
+  width: 100%;
+}
+
+/* Flies out to the right rather than upward: the list is tall enough that an
+   upward popover covered the entire nav it sits under. */
+.desktop-more-menu {
+  position: absolute;
+  bottom: 0;
+  left: calc(100% + 10px);
+  width: 210px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 16px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  animation: more-rise 0.15s ease-out;
+}
+
+@keyframes more-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.desktop-more-menu > button {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.desktop-more-menu > button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.desktop-more-socials {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desktop-more-socials a {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.desktop-more-socials a:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
