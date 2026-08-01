@@ -1,3 +1,7 @@
+/* Poppins is the rounded geometric the reference site uses. Loaded first so the
+   marketing pages don't flash in the old Inter grotesk. */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap');
+
 :root {
   --bg-dark: #060714;
   --bg-card: #15162b;
@@ -11,7 +15,7 @@
   --border-subtle: rgba(255, 255, 255, 0.08);
   --glass-bg: rgba(21, 22, 43, 0.6);
   --glass-border: rgba(255, 255, 255, 0.1);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 * {

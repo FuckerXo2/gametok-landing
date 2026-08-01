@@ -26,11 +26,18 @@ export function categoryLabel(slug: string) {
   return POST_CATEGORIES.find((c) => c.slug === slug)?.label || slug;
 }
 
+/** "1st", "2nd", "3rd", "4th"… — the reference bylines carry the ordinal suffix. */
+function ordinal(day: number) {
+  if (day % 100 >= 11 && day % 100 <= 13) return `${day}th`;
+  return `${day}${['th', 'st', 'nd', 'rd'][day % 10] || 'th'}`;
+}
+
 function formatDate(value?: string | null) {
   if (!value) return '';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const month = d.toLocaleDateString('en-US', { month: 'long' });
+  return `${month} ${ordinal(d.getDate())}, ${d.getFullYear()}`;
 }
 
 function renderMarkdown(md: string): string {
@@ -84,7 +91,7 @@ export function BlogIndex({ onOpenPost }: { onOpenPost: (slug: string) => void }
 
       {available.length > 0 && (
         <nav className="blog-filters">
-          <button className={!active ? 'is-active' : ''} onClick={() => setActive(null)}>All</button>
+          {/* "All" sits last, after the categories — same order as the reference. */}
           {available.map((c) => (
             <button
               key={c.slug}
@@ -94,6 +101,7 @@ export function BlogIndex({ onOpenPost }: { onOpenPost: (slug: string) => void }
               {c.label}
             </button>
           ))}
+          <button className={!active ? 'is-active' : ''} onClick={() => setActive(null)}>All</button>
         </nav>
       )}
 
