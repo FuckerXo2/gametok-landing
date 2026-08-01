@@ -78,8 +78,8 @@ export function BlogIndex({ onOpenPost }: { onOpenPost: (slug: string) => void }
   return (
     <section className="blog-index">
       <header className="blog-index-head">
-        <h1>Blog</h1>
-        <p>News, product notes, and what creators are building.</p>
+        <h1>GameTok Blog</h1>
+        <p>Get the latest news and insights</p>
       </header>
 
       {available.length > 0 && (

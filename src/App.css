@@ -7873,15 +7873,16 @@ kbd {
 
 .blog-index-head h1 {
   margin: 0;
-  font-size: 52px;
+  font-size: clamp(40px, 5vw, 68px);
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
 }
 
 .blog-index-head p {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
   font-size: 17px;
-  color: rgba(255, 255, 255, 0.52);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .blog-filters {
@@ -7916,34 +7917,42 @@ kbd {
 
 .blog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 26px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 28px;
 }
 
 .blog-card {
   display: flex;
   flex-direction: column;
-  padding: 0 0 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.025);
+  padding: 0 0 22px;
+  border: 0;
+  border-radius: 22px;
+  /* Violet-tinted and lighter than the page, so a card reads as an object on a
+     surface. A near-black card on a near-black page has no edge at all. */
+  background: #1a1430;
   color: #fff;
   text-align: left;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.16s ease;
+  transition: transform 0.16s ease, background 0.16s ease;
 }
 
 .blog-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: #221a3c;
 }
 
 .blog-card-cover {
   position: relative;
-  aspect-ratio: 16 / 9;
+  /* 4:3 so the art carries the card. At 16:9 the image was a short band and the
+     card read bottom-heavy under the text block. */
+  aspect-ratio: 4 / 3;
   background: #16161c;
-  overflow: hidden;
+}
+
+.blog-card-cover img,
+.blog-card-cover .blog-card-cover-fallback {
+  border-radius: 22px 22px 0 0;
 }
 
 .blog-card-cover img {
@@ -7963,32 +7972,35 @@ kbd {
 
 .blog-card-tags {
   position: absolute;
-  left: 12px;
-  bottom: 12px;
+  left: 14px;
+  /* Straddles the bottom edge rather than sitting inside the image. */
+  bottom: -14px;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
 .blog-card-tags span {
-  padding: 5px 11px;
+  padding: 7px 14px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(8px);
-  font-size: 11px;
+  background: rgba(38, 30, 66, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
   font-weight: 750;
 }
 
 .blog-card h2 {
-  margin: 18px 20px 0;
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
+  margin: 30px 22px 0;
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
 }
 
 .blog-card > p {
-  margin: 9px 20px 0;
+  margin: 10px 22px 0;
   font-size: 14px;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.55);
@@ -7998,7 +8010,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 18px 20px 0;
+  margin: 20px 22px 0;
 }
 
 .blog-card footer img {
@@ -8621,4 +8633,14 @@ kbd {
   .about-strip-tile:nth-child(4),
   .about-strip-tile:nth-child(5) { transform: none; border-width: 0; }
   .marketing-topbar .marketing-nav { overflow-x: auto; scrollbar-width: none; }
+}
+
+
+/* The marketing pages sit on a deep violet ground rather than flat black —
+   without it the tinted blog cards have no surface to read against. */
+.marketing-page {
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(88, 44, 168, 0.30), transparent 60%),
+    radial-gradient(900px 500px at 90% 10%, rgba(34, 211, 238, 0.07), transparent 55%),
+    #0b0616;
 }

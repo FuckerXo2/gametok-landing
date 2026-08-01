@@ -3005,7 +3005,6 @@ function MarketingFooter({ onPage, onCreate }: { onPage: (page: MarketingPage) =
  * it from inside GameTok via More. Same content, different frame.
  */
 function MarketingPageBody({
-  frame = 'app',
   page,
   postSlug,
   games,
@@ -3014,7 +3013,6 @@ function MarketingPageBody({
   onOpenGame,
   onOpenPost,
 }: {
-  frame?: MarketingFrame;
   page: MarketingPage;
   postSlug: string | null;
   games: Game[];
@@ -3029,7 +3027,7 @@ function MarketingPageBody({
           each one can be rewritten independently. */}
       {page === 'about' && (
         <About
-          variant={frame}
+          variant="app"
           games={games}
           onCreate={onCreate}
           onExplore={onExplore}
@@ -3171,7 +3169,6 @@ function MarketingSiteTopbar({
 }
 
 function StaticMarketingPage({
-  frame,
   page,
   postSlug,
   games,
@@ -3182,10 +3179,11 @@ function StaticMarketingPage({
   onExplore,
   onOpenGame,
   onAuth,
+  frame = 'site',
 }: {
   /** 'app' = arrived from More inside the product. 'site' = arrived from the
    *  public home. Same content, different chrome. */
-  frame: MarketingFrame;
+  frame?: MarketingFrame;
   page: MarketingPage;
   postSlug: string | null;
   games: Game[];
@@ -3199,7 +3197,7 @@ function StaticMarketingPage({
 }) {
   // In the app frame the page brings its own big hero, so the band would stack a
   // second one. In the site frame the band IS the header.
-  const ownsItsHeader = frame === 'app' && (page === 'about' || page === 'blog');
+  const ownsItsHeader = page === 'about' || page === 'blog';
   const pageTitle: Record<MarketingPage, string> = {
     about: 'About GameTok',
     games: 'Explore games made on GameTok',
@@ -3231,7 +3229,6 @@ function StaticMarketingPage({
       )}
 
       <MarketingPageBody
-        frame={frame}
         page={page}
         postSlug={postSlug}
         games={games}
