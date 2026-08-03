@@ -24,7 +24,6 @@ import {
   Menu,
   MessageCircle,
   Mic,
-  Palette,
   Pause,
   Play,
   RotateCcw,
@@ -1560,11 +1559,12 @@ function HomeFeed({
       onPointerUp={(e) => { if (e.pointerType === 'mouse') onDragEnd(); }}
     >
       <div className="feed-topbar">
-        <button className="icon-button" onClick={onOpenExplore} aria-label="Explore">
-          <Search size={19} />
-        </button>
-        <button className="icon-button" aria-label="Notifications" onClick={() => onOpenModal('notifications')}>
-          <Bell size={19} />
+        <div className="for-you-pill">
+          <span>For You</span>
+          <i className="pink-dot" />
+        </div>
+        <button className="icon-button" onClick={onOpenExplore} aria-label="Search">
+          <Search size={20} />
         </button>
       </div>
 
@@ -1605,10 +1605,21 @@ function HomeFeed({
                   )}
                   <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
                   {ri === index && (!gameStarted || showPreviewArt) && (
-                    <div className="game-preview-art">
-                      <img src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
-                      <strong>{g.name}</strong>
-                      <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
+                    <div className="game-preview-card" onClick={() => setGameStarted(true)}>
+                      <img className="card-poster" src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
+                      <div className="card-overlay">
+                        <div className="card-title-pill">
+                          <strong>{g.name}</strong>
+                          <span className="controller-badge"><Gamepad2 size={13} fill="currentColor" /></span>
+                        </div>
+                        <div className="card-creator-pill">
+                          <div className="creator-avatar-badge">
+                            <img src={avatarUrl(g.creatorDisplayName || g.creatorUsername, g.creatorAvatar, 48)} alt="" />
+                            <span className="plus-dot">+</span>
+                          </div>
+                          <span>{g.creatorDisplayName || g.creatorUsername || 'anonymous'}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
                   {ri === index && offline && <div className="offline-pill">Offline</div>}
@@ -2657,7 +2668,7 @@ function BottomNav({
   hudHidden,
   paused: _paused,
   onTab,
-  onPlay,
+  onPlay: _onPlay,
   onTogglePlay,
   onNext,
   onPrevious,
@@ -2700,14 +2711,14 @@ function BottomNav({
       <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onTab('home')}>
         <Home size={23} /><span>Home</span>
       </button>
+      <button className={activeTab === 'explore' ? 'active' : ''} onClick={() => onTab('explore')}>
+        <Compass size={23} /><span>Explore</span>
+      </button>
+      <button className="create-tab" onClick={() => onTab('create')} aria-label="Create">
+        <span className="create-tab-box"><Plus size={22} strokeWidth={2.5} /></span>
+      </button>
       <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
         <Users size={23} /><span>Connect</span>
-      </button>
-      <button className="play-tab" onClick={onPlay} aria-label="Play">
-        <span className="play-tab-circle"><Play size={24} fill="currentColor" /></span>
-      </button>
-      <button className={activeTab === 'create' ? 'active' : ''} onClick={() => onTab('create')}>
-        <Palette size={23} /><span>Create</span>
       </button>
       <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => onTab('profile')}>
         <User size={23} /><span>Profile</span>
