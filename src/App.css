@@ -114,30 +114,21 @@ textarea {
   background: #050505;
 }
 
-/* TikTok-style native scroll-snap feed container. Each .feed-item is a
-   full-viewport snap point; native scroll handles inertia + snap. */
-.feed-scroll {
+.feed-card-stack {
   position: absolute;
   inset: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  scrollbar-width: none;
-}
-
-.feed-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.feed-item {
-  position: relative;
-  height: 100%;
-  width: 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
   overflow: hidden;
+  touch-action: pan-x;
+  user-select: none;
+}
+
+.feed-card {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  will-change: transform;
 }
 
 .game-iframe {

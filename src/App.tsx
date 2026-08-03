@@ -1433,10 +1433,16 @@ function HomeFeed({
   onToggleFollow: () => void;
   onOpenExplore: () => void;
 }) {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const programmaticScrollUntil = useRef(0);
+  const containerRef = useRef<HTMLElement | null>(null);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+
+  // ─── Drag state for TikTok-style vertical swipe ───
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const dragStartY = useRef(0);
+  const isDragging = useRef(false);
+  const SWIPE_THRESHOLD = 60;
 
   useEffect(() => {
     setGameStarted(true);
@@ -1445,45 +1451,114 @@ function HomeFeed({
     return () => window.clearTimeout(timer);
   }, [game.id]);
 
-  // Sync active index from native scroll snapping — TikTok-style.
-  useEffect(() => {
-    const scroll = scrollRef.current;
-    if (!scroll || games.length === 0) return;
-    const items = scroll.querySelectorAll<HTMLElement>('.feed-item');
-    if (items.length === 0) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        let best = { ratio: 0, idx: -1 };
-        entries.forEach((entry) => {
-          if (entry.intersectionRatio > best.ratio) {
-            const idx = Number((entry.target as HTMLElement).dataset.index);
-            best = { ratio: entry.intersectionRatio, idx };
-          }
-        });
-        if (Date.now() < programmaticScrollUntil.current) return;
-        if (best.idx >= 0 && best.ratio > 0.6 && best.idx !== index) {
-          onIndex(best.idx);
-        }
-      },
-      { root: scroll, threshold: [0.4, 0.6, 0.8] },
-    );
-    items.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
-  }, [games.length, index, onIndex]);
+  // ─── Touch / pointer handlers ───
+  const onDragStart = useCallback((clientY: number) => {
+    if (isAnimating) return;
+    dragStartY.current = clientY;
+    isDragging.current = true;
+    setDragOffset(0);
+  }, [isAnimating]);
 
-  // Programmatically align the scroll container with the current index.
+  const onDragMove = useCallback((clientY: number) => {
+    if (!isDragging.current || isAnimating) return;
+    const dy = clientY - dragStartY.current;
+    // Clamp at edges
+    if (index === 0 && dy > 0) {
+      setDragOffset(dy * 0.3); // rubber-band at top
+    } else if (index >= games.length - 1 && dy < 0) {
+      setDragOffset(dy * 0.3); // rubber-band at bottom
+    } else {
+      setDragOffset(dy);
+    }
+  }, [isAnimating, index, games.length]);
+
+  const onDragEnd = useCallback(() => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+
+    const dy = dragOffset;
+    if (dy < -SWIPE_THRESHOLD && index < games.length - 1) {
+      // Swipe up → next game
+      setIsAnimating(true);
+      // We let the CSS transition handle the snap
+      const el = containerRef.current;
+      const h = el?.clientHeight || window.innerHeight;
+      setDragOffset(-h);
+      window.setTimeout(() => {
+        onIndex(index + 1);
+        setDragOffset(0);
+        setIsAnimating(false);
+      }, 220);
+    } else if (dy > SWIPE_THRESHOLD && index > 0) {
+      // Swipe down → previous game
+      setIsAnimating(true);
+      const el = containerRef.current;
+      const h = el?.clientHeight || window.innerHeight;
+      setDragOffset(h);
+      window.setTimeout(() => {
+        onIndex(index - 1);
+        setDragOffset(0);
+        setIsAnimating(false);
+      }, 220);
+    } else {
+      // Snap back
+      setDragOffset(0);
+    }
+  }, [dragOffset, index, games.length, onIndex]);
+
+  // ─── Wheel scroll (desktop) ───
+  const wheelLock = useRef(0);
   useEffect(() => {
-    const scroll = scrollRef.current;
-    if (!scroll || games.length === 0) return;
-    const target = scroll.querySelector<HTMLElement>(`.feed-item[data-index="${index}"]`);
-    if (!target) return;
-    if (Math.abs(target.offsetTop - scroll.scrollTop) < 8) return;
-    programmaticScrollUntil.current = Date.now() + 400;
-    scroll.scrollTo({ top: target.offsetTop, behavior: 'auto' });
-  }, [index, games.length]);
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (isAnimating) return;
+      if (Math.abs(e.deltaY) < 30) return;
+      const now = Date.now();
+      if (now - wheelLock.current < 600) return;
+      wheelLock.current = now;
+
+      if (e.deltaY > 0 && index < games.length - 1) {
+        setIsAnimating(true);
+        const h = el.clientHeight || window.innerHeight;
+        setDragOffset(-h);
+        window.setTimeout(() => {
+          onIndex(index + 1);
+          setDragOffset(0);
+          setIsAnimating(false);
+        }, 220);
+      } else if (e.deltaY < 0 && index > 0) {
+        setIsAnimating(true);
+        const h = el.clientHeight || window.innerHeight;
+        setDragOffset(h);
+        window.setTimeout(() => {
+          onIndex(index - 1);
+          setDragOffset(0);
+          setIsAnimating(false);
+        }, 220);
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: true });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [index, games.length, onIndex, isAnimating]);
+
+  // Build the 3-card window: [prev, current, next]
+  const slots: Array<{ game: Game; position: number; realIndex: number }> = [];
+  if (index > 0) slots.push({ game: games[index - 1], position: -1, realIndex: index - 1 });
+  if (games[index]) slots.push({ game: games[index], position: 0, realIndex: index });
+  if (index < games.length - 1) slots.push({ game: games[index + 1], position: 1, realIndex: index + 1 });
 
   return (
-    <section className="home-feed">
+    <section
+      className="home-feed"
+      ref={containerRef}
+      onTouchStart={(e) => onDragStart(e.touches[0].clientY)}
+      onTouchMove={(e) => onDragMove(e.touches[0].clientY)}
+      onTouchEnd={onDragEnd}
+      onPointerDown={(e) => { if (e.pointerType === 'mouse') onDragStart(e.clientY); }}
+      onPointerMove={(e) => { if (e.pointerType === 'mouse' && isDragging.current) onDragMove(e.clientY); }}
+      onPointerUp={(e) => { if (e.pointerType === 'mouse') onDragEnd(); }}
+    >
       <div className="feed-topbar">
         <button className="icon-button" onClick={onOpenExplore} aria-label="Explore">
           <Search size={19} />
@@ -1499,34 +1574,48 @@ function HomeFeed({
           <p>Loading games...</p>
         </div>
       ) : (
-        <div className="feed-scroll" ref={scrollRef}>
-          {games.map((g, i) => (
-            <article className="feed-item" key={g.id} data-index={i}>
-              <div className="game-frame">
-                {i === index && gameStarted && (
-                  <iframe
-                    key={`${g.id}-${restartKey}`}
-                    className="game-iframe"
-                    title={g.name}
-                    src={getGameUrl(g)}
-                    allow="autoplay; fullscreen; clipboard-write"
-                    onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
-                  />
-                )}
-                {Math.abs(i - index) <= 1 && (
+        <div className="feed-card-stack">
+          {slots.map(({ game: g, position, realIndex: ri }) => {
+            const h = containerRef.current?.clientHeight || window.innerHeight;
+            const baseY = position * h + dragOffset;
+            const transitioning = isAnimating || (isDragging.current && dragOffset !== 0);
+            return (
+              <div
+                className="feed-card"
+                key={g.id}
+                style={{
+                  transform: `translateY(${baseY}px)`,
+                  transition: (isAnimating || (!isDragging.current && dragOffset === 0))
+                    ? 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                    : 'none',
+                  zIndex: position === 0 ? 2 : 1,
+                }}
+              >
+                <div className="game-frame">
+                  {ri === index && gameStarted && (
+                    <iframe
+                      key={`${g.id}-${restartKey}`}
+                      className="game-iframe"
+                      title={g.name}
+                      src={getGameUrl(g)}
+                      allow="autoplay; fullscreen; clipboard-write"
+                      style={{ pointerEvents: transitioning ? 'none' : 'auto' }}
+                      onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
+                    />
+                  )}
                   <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
-                )}
-                {i === index && (!gameStarted || showPreviewArt) && (
-                  <div className="game-preview-art">
-                    <img src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
-                    <strong>{g.name}</strong>
-                    <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
-                  </div>
-                )}
-                {i === index && offline && <div className="offline-pill">Offline</div>}
+                  {ri === index && (!gameStarted || showPreviewArt) && (
+                    <div className="game-preview-art">
+                      <img src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
+                      <strong>{g.name}</strong>
+                      <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
+                    </div>
+                  )}
+                  {ri === index && offline && <div className="offline-pill">Offline</div>}
+                </div>
               </div>
-            </article>
-          ))}
+            );
+          })}
         </div>
       )}
 
