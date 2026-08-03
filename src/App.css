@@ -136,19 +136,21 @@ textarea {
   box-shadow: 0 0 8px #ff2a6d;
 }
 
-/* Floating Game Preview Card — matching RN App Screenshot 2 */
+/* Floating Game Preview Card — matching RN App thumbnailCardContainer */
 .game-preview-card {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -52%);
-  width: min(84vw, 340px);
-  aspect-ratio: 9 / 14;
-  border-radius: 28px;
+  transform: translate(-50%, -46%);
+  width: 75%;
+  max-width: 360px;
+  aspect-ratio: 0.72;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: #000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   cursor: pointer;
-  z-index: 3;
+  z-index: 5;
 }
 
 .card-poster {
@@ -158,82 +160,19 @@ textarea {
   display: block;
 }
 
-.card-overlay {
+.card-play-pill {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20px 16px 16px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.card-title-pill {
+  bottom: 14px;
+  left: 14px;
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.card-title-pill strong {
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 800;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-}
-
-.controller-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #8b5cf6;
-  color: #ffffff;
-}
-
-.card-creator-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 13.5px;
-  font-weight: 600;
-}
-
-.creator-avatar-badge {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1.5px solid #ffffff;
-}
-
-.creator-avatar-badge img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.plus-dot {
-  position: absolute;
-  bottom: -2px;
-  right: -2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #ff2a6d;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 5px 10px;
+  border-radius: 16px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .create-tab-box {
@@ -370,81 +309,152 @@ textarea {
 .feed-actions {
   position: absolute;
   z-index: 12;
-  right: 12px;
-  bottom: 124px;
+  right: 8px;
+  bottom: 64px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  gap: 18px;
 }
 
 .feed-action {
-  display: grid;
-  justify-items: center;
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   color: #fff;
-  font-weight: 800;
-  font-size: 11px;
-  text-shadow: 0 2px 8px #000;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .feed-action span {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.13);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+  transition: transform 0.15s ease;
 }
 
-.feed-action.active span {
-  background: rgba(168, 85, 247, 0.32);
-  color: #f0d8ff;
-  border-color: rgba(168, 85, 247, 0.65);
+.feed-action span:active {
+  transform: scale(0.85);
 }
 
-.game-caption {
+.feed-action.like-action.active span {
+  color: #ec2c7a;
+}
+
+.feed-action small {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+/* Floating Game Info - Bottom Left (matches RN HomeScreen layout) */
+.game-info {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 76px;
-  z-index: 11;
-  display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: end;
-  padding: 86px 72px 20px 18px;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.74) 45%, #000);
+  left: 14px;
+  bottom: 100px;
+  right: 80px;
+  z-index: 10;
+  pointer-events: box-none;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.game-name {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.85);
+  margin: 0;
+  line-height: 1.15;
+}
+
+.game-title-pill {
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: #a855f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+.creator-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .creator-avatar-wrap {
   position: relative;
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
+  border-radius: 27px;
+  flex-shrink: 0;
 }
 
 .creator-avatar-wrap img {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
+  width: 54px;
+  height: 54px;
+  border-radius: 27px;
   object-fit: cover;
-  background: #23232a;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-.creator-avatar-wrap button {
+.creator-follow-badge {
   position: absolute;
-  left: 50%;
-  bottom: -6px;
-  width: 18px;
-  height: 18px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: #fff;
-  color: #000;
-  display: grid;
-  place-items: center;
+  right: -3px;
+  bottom: -4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  background: #ff2d55;
+  border: 2px solid #050505;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255, 45, 85, 0.65);
+}
+
+.creator-follow-badge.following {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.65);
+}
+
+.creator-display-name {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .caption-copy {

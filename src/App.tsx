@@ -1400,7 +1400,7 @@ function HomeFeed({
   hudHidden,
   gameDeckMode,
   liked,
-  saved,
+  saved: _saved,
   following,
   restartKey = 0,
   getCommentCount,
@@ -1607,18 +1607,8 @@ function HomeFeed({
                   {ri === index && (!gameStarted || showPreviewArt) && (
                     <div className="game-preview-card" onClick={() => setGameStarted(true)}>
                       <img className="card-poster" src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
-                      <div className="card-overlay">
-                        <div className="card-title-pill">
-                          <strong>{g.name}</strong>
-                          <span className="controller-badge"><Gamepad2 size={13} fill="currentColor" /></span>
-                        </div>
-                        <div className="card-creator-pill">
-                          <div className="creator-avatar-badge">
-                            <img src={avatarUrl(g.creatorDisplayName || g.creatorUsername, g.creatorAvatar, 48)} alt="" />
-                            <span className="plus-dot">+</span>
-                          </div>
-                          <span>{g.creatorDisplayName || g.creatorUsername || 'anonymous'}</span>
-                        </div>
+                      <div className="card-play-pill">
+                        <Play size={12} fill="#fff" color="#fff" />
                       </div>
                     </div>
                   )}
@@ -1633,36 +1623,35 @@ function HomeFeed({
       {!hudHidden && (
         <>
           <div className="feed-actions">
-            <ActionButton active={liked} tone="like" icon={<Heart size={22} fill={liked ? 'currentColor' : 'none'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
-            <ActionButton icon={<MessageCircle size={22} />} label={formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))} onClick={() => onOpenModal('comments')} />
-            <ActionButton icon={<Share2 size={22} />} label="Share" onClick={() => onOpenModal('share')} />
-            <ActionButton icon={<GitBranch size={22} />} label="Remix" onClick={() => onRemix ? onRemix(game) : onOpenModal('share')} />
-            <ActionButton active={saved} icon={<Trophy size={22} />} label="Scores" onClick={() => onOpenModal('leaderboard')} />
+            <ActionButton active={liked} tone="like" icon={<Heart size={35} fill={liked ? '#ec2c7a' : 'none'} color={liked ? '#ec2c7a' : '#ffffff'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
+            <ActionButton icon={<MessageCircle size={32} color="#ffffff" />} label={formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))} onClick={() => onOpenModal('comments')} />
+            <ActionButton icon={<Share2 size={32} color="#ffffff" />} label="0" onClick={() => onOpenModal('share')} />
+            <ActionButton icon={<GitBranch size={30} color="#ffffff" />} label="Remix" onClick={() => onRemix ? onRemix(game) : onOpenModal('share')} />
           </div>
 
-          <div className="game-caption">
-            <div className="creator-avatar-wrap">
-              <img src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)} alt="" />
-              <button aria-label="Follow">
-                <Plus size={11} strokeWidth={3} />
-              </button>
+          <div className="game-info">
+            <div className="game-title-row">
+              <h1 className="game-name">{game.name}</h1>
+              <div className="game-title-pill">
+                <Gamepad2 size={13} fill="currentColor" />
+              </div>
             </div>
-            <div className="caption-copy">
-              <div className="creator-line">
-                <strong>@{game.creatorDisplayName || game.creatorUsername || 'anonymous'}</strong>
+            <div className="creator-row">
+              <div className="creator-avatar-wrap">
+                <img src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)} alt="" />
+                <button
+                  className={`creator-follow-badge ${following ? 'following' : ''}`}
+                  onClick={onToggleFollow}
+                  aria-label="Follow"
+                >
+                  {following ? '✓' : '+'}
+                </button>
+              </div>
+              <span className="creator-display-name">
+                {game.creatorDisplayName || game.creatorUsername || 'anonymous'}
                 {game.creatorVerified && <span className="verified-dot">✓</span>}
-              </div>
-              <h1>{game.name}</h1>
-              <div className="caption-tags">
-                {(game.categories || []).slice(0, 2).map((slug) => (
-                  <span key={slug}>{categoryLabel(slug)}</span>
-                ))}
-                <span>{formatCount(game.plays)} plays</span>
-              </div>
+              </span>
             </div>
-            <button className={`follow-pill ${following ? 'following' : ''}`} onClick={onToggleFollow}>
-              {following ? 'Following' : 'Follow'}
-            </button>
           </div>
         </>
       )}
