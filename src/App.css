@@ -481,12 +481,29 @@ textarea {
   color: #fff;
 }
 
-.deck-controls .playpause {
+.deck-controls .playpause,
+.deck-controls .replay {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #fff;
-  color: #000;
+  background: #ffffff;
+  color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.2);
+  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.deck-controls .replay:hover {
+  transform: scale(1.08);
+  background: #ffffff;
+}
+
+.deck-controls .replay:active {
+  transform: scale(0.92);
 }
 
 .deck-collapse {

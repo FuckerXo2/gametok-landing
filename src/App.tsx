@@ -10,13 +10,13 @@ import type { Options as CoreOptions } from '@dicebear/core';
 import {
   ArrowUp,
   Bell,
-  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   Compass,
   Gamepad2,
+  GitBranch,
   Grid3X3,
   Heart,
   Home,
@@ -27,6 +27,7 @@ import {
   Palette,
   Pause,
   Play,
+  RotateCcw,
   SkipBack,
   SkipForward,
   Volume2,
@@ -46,7 +47,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, getToken, setToken, resolveGameThumbnail } from './services/api';
+import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, comments as commentsApi, getToken, setToken, resolveGameThumbnail } from './services/api';
 import MobileGate, { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
@@ -784,6 +785,48 @@ function App() {
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [restartKey, setRestartKey] = useState(0);
+  const [commentsStore, setCommentsStore] = useState<Record<string, Array<{ id: string; username: string; text: string; likes: number; createdAt?: string }>>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('gametok_web_comments') || '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  const getCommentCount = useCallback((gameId: string, baseCount: number = 0) => {
+    const localList = commentsStore[gameId] || [];
+    return baseCount + localList.length;
+  }, [commentsStore]);
+
+  const addComment = useCallback((gameId: string, text: string, username: string) => {
+    const newComment = {
+      id: `local-${Date.now()}`,
+      username,
+      text,
+      likes: 0,
+      createdAt: new Date().toISOString(),
+    };
+    setCommentsStore((prev) => {
+      const updated = { ...prev, [gameId]: [newComment, ...(prev[gameId] || [])] };
+      try {
+        localStorage.setItem('gametok_web_comments', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  }, []);
+
+  const handleRemix = useCallback((game: Game) => {
+    const g = game as any;
+    if (g?.remixCode || g?.prompt || g?.code) {
+      const code = g.remixCode || g.code || '';
+      const prompt = g.prompt || `Remix of ${game.name}`;
+      sessionStorage.setItem('gametok_remix_prompt', prompt);
+      sessionStorage.setItem('gametok_remix_code', code);
+    }
+    navigate(TAB_PATHS.create);
+  }, [navigate]);
+
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
 
   // Restore session from the shared backend token (same token the mobile app uses).
@@ -998,13 +1041,7 @@ function App() {
     navigate(TAB_PATHS.home);
   };
 
-  // Freeze/resume the active game via the gt-pause/gt-resume handler the
-  // backend injects into every served game.
-  const toggleGamePause = () => {
-    const iframe = document.querySelector<HTMLIFrameElement>('.feed-scroll iframe');
-    iframe?.contentWindow?.postMessage({ type: gamePaused ? 'gt-resume' : 'gt-pause' }, '*');
-    setGamePaused((value) => !value);
-  };
+
   // A /game/:id deep link decides which game is showing. This runs once the feed
   // has loaded, since the index can only be resolved against a populated list.
   useEffect(() => {
@@ -1105,6 +1142,9 @@ function App() {
                 liked={likedGames.has(activeGame.id)}
                 saved={savedGames.has(activeGame.id)}
                 following={followedCreators.has(activeCreatorId)}
+                restartKey={restartKey}
+                getCommentCount={getCommentCount}
+                onRemix={handleRemix}
                 onIndex={setGameIndex}
                 onOpenModal={setModal}
                 onToggleLike={toggleActiveLike}
@@ -1159,7 +1199,7 @@ function App() {
             goTab(tab);
           }}
           onPlay={openPlayer}
-          onTogglePlay={toggleGamePause}
+          onTogglePlay={() => setRestartKey((k) => k + 1)}
           onNext={nextGame}
           onPrevious={previousGame}
           onToggleHud={() => setHudHidden((value) => !value)}
@@ -1213,6 +1253,8 @@ function App() {
           saved={savedGames.has(activeGame.id)}
           following={followedCreators.has(activeCreatorId)}
           feedMotion={feedMotion}
+          getCommentCount={getCommentCount}
+          onRemix={handleRemix}
           onTab={goTab}
           onNext={nextGame}
           onPrevious={previousGame}
@@ -1250,6 +1292,8 @@ function App() {
           saved={savedGames.has(activeGame.id)}
           following={followedCreators.has(activeCreatorId)}
           feedMotion={feedMotion}
+          getCommentCount={getCommentCount}
+          onRemix={handleRemix}
           onTab={goTab}
           onNext={nextGame}
           onPrevious={previousGame}
@@ -1295,7 +1339,7 @@ function App() {
 
       {modal && (
         <Sheet title={modalTitle(modal)} onClose={() => setModal(null)} variant={modal === 'auth' ? 'auth' : modal === 'message' ? 'message' : undefined}>
-          {modal === 'comments' && activeGame && <CommentsSheet game={activeGame} creators={creators} />}
+          {modal === 'comments' && activeGame && <CommentsSheet game={activeGame} creators={creators} commentsStore={commentsStore} onAddComment={addComment} user={authUser} />}
           {modal === 'leaderboard' && activeGame && <LeaderboardSheet game={activeGame} creators={creators} />}
           {modal === 'share' && activeGame && <ShareSheet game={activeGame} />}
           {modal === 'auth' && <AuthSheet initialMode={authMode} onAuthed={handleAuthed} onClose={() => setModal(null)} />}
@@ -1359,10 +1403,13 @@ function HomeFeed({
   liked,
   saved,
   following,
+  restartKey = 0,
+  getCommentCount,
+  onRemix,
   onIndex,
   onOpenModal,
   onToggleLike,
-  onToggleSave,
+  onToggleSave: _onToggleSave,
   onToggleFollow,
   onOpenExplore,
 }: {
@@ -1376,6 +1423,9 @@ function HomeFeed({
   liked: boolean;
   saved: boolean;
   following: boolean;
+  restartKey?: number;
+  getCommentCount?: (gameId: string, base: number) => number;
+  onRemix?: (game: Game) => void;
   onIndex: (idx: number) => void;
   onOpenModal: (modal: Modal) => void;
   onToggleLike: () => void;
@@ -1422,11 +1472,6 @@ function HomeFeed({
   }, [games.length, index, onIndex]);
 
   // Programmatically align the scroll container with the current index.
-  // Runs on index change (nav buttons/keyboard), on mount, and when games
-  // populate — that last one covers the case where the container remounts
-  // (HMR, tab switch) with scrollTop=0 while parent state still holds a
-  // non-zero index, which would otherwise mount the iframe in the wrong
-  // item and leave the visible one empty.
   useEffect(() => {
     const scroll = scrollRef.current;
     if (!scroll || games.length === 0) return;
@@ -1460,7 +1505,7 @@ function HomeFeed({
               <div className="game-frame">
                 {i === index && gameStarted && (
                   <iframe
-                    key={g.id}
+                    key={`${g.id}-${restartKey}`}
                     className="game-iframe"
                     title={g.name}
                     src={getGameUrl(g)}
@@ -1488,10 +1533,11 @@ function HomeFeed({
       {!hudHidden && (
         <>
           <div className="feed-actions">
-            <ActionButton icon={<Share2 size={22} />} label="Share" onClick={() => onOpenModal('share')} />
-            <ActionButton icon={<MessageCircle size={22} />} label={formatCount(game.commentsCount || 0)} onClick={() => onOpenModal('comments')} />
             <ActionButton active={liked} tone="like" icon={<Heart size={22} fill={liked ? 'currentColor' : 'none'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
-            <ActionButton active={saved} icon={<Bookmark size={22} fill={saved ? 'currentColor' : 'none'} />} label={saved ? 'Saved' : 'Save'} onClick={onToggleSave} />
+            <ActionButton icon={<MessageCircle size={22} />} label={formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))} onClick={() => onOpenModal('comments')} />
+            <ActionButton icon={<Share2 size={22} />} label="Share" onClick={() => onOpenModal('share')} />
+            <ActionButton icon={<GitBranch size={22} />} label="Remix" onClick={() => onRemix ? onRemix(game) : onOpenModal('share')} />
+            <ActionButton active={saved} icon={<Trophy size={22} />} label="Scores" onClick={() => onOpenModal('leaderboard')} />
           </div>
 
           <div className="game-caption">
@@ -2520,7 +2566,7 @@ function BottomNav({
   activeTab,
   gameDeckMode,
   hudHidden,
-  paused,
+  paused: _paused,
   onTab,
   onPlay,
   onTogglePlay,
@@ -2548,8 +2594,8 @@ function BottomNav({
         <i />
         <div className="deck-controls">
           <button onClick={onPrevious} aria-label="Previous game"><SkipBack size={22} fill="currentColor" /></button>
-          <button className="playpause" onClick={onTogglePlay} aria-label={paused ? 'Resume' : 'Pause'}>
-            {paused ? <Play size={24} fill="currentColor" /> : <Pause size={24} fill="currentColor" />}
+          <button className="replay" onClick={onTogglePlay} aria-label="Replay game">
+            <RotateCcw size={24} strokeWidth={2.5} />
           </button>
           <button onClick={onNext} aria-label="Next game"><SkipForward size={22} fill="currentColor" /></button>
         </div>
@@ -2806,16 +2852,18 @@ function DesktopPlayHome({
   games,
   index,
   liked,
-  saved,
+  saved: _saved,
   following,
   feedMotion,
+  getCommentCount,
+  onRemix,
   onTab,
   onNext,
   onPrevious,
   onOpenModal,
   onOpenCreator,
   onToggleLike,
-  onToggleSave,
+  onToggleSave: _onToggleSave,
   onToggleFollow,
   onPage,
 }: {
@@ -2829,6 +2877,8 @@ function DesktopPlayHome({
   saved: boolean;
   following: boolean;
   feedMotion: 'next' | 'previous' | null;
+  getCommentCount?: (gameId: string, base: number) => number;
+  onRemix?: (game: Game) => void;
   onTab: (tab: Tab) => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -2918,10 +2968,11 @@ function DesktopPlayHome({
         </div>
 
         <aside className="desktop-feed-actions">
-          <button onClick={() => onOpenModal('share')}><Send size={25} /><span>Share</span></button>
-          <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(game.commentsCount || 0)}</span></button>
           <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
-          <button onClick={onToggleSave} className={saved ? 'active' : ''}><Bookmark size={25} fill={saved ? 'currentColor' : 'none'} /><span>Favorite</span></button>
+          <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))}</span></button>
+          <button onClick={() => onOpenModal('share')}><Share2 size={25} /><span>Share</span></button>
+          <button onClick={() => onRemix ? onRemix(game) : onOpenModal('share')}><GitBranch size={25} /><span>Remix</span></button>
+          <button onClick={() => onOpenModal('leaderboard')}><Trophy size={25} /><span>Scores</span></button>
           <button className="desktop-feed-avatar-action" onClick={onOpenCreator}>
             <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
             <Plus size={18} />
@@ -3938,23 +3989,58 @@ function Sheet({
   );
 }
 
-function CommentsSheet({ game }: { game: Game; creators: Creator[] }) {
+function CommentsSheet({
+  game,
+  creators,
+  commentsStore = {},
+  onAddComment,
+  user,
+}: {
+  game: Game;
+  creators: Creator[];
+  commentsStore?: Record<string, Array<{ id: string; username: string; text: string; likes: number; createdAt?: string }>>;
+  onAddComment?: (gameId: string, text: string, username: string) => void;
+  user?: AuthUser | null;
+}) {
   const [draft, setDraft] = useState('');
-  const [localComments, setLocalComments] = useState<Array<{ id: string; username: string; text: string; likes: number }>>([]);
-  const comments = localComments;
+  const [apiComments, setApiComments] = useState<Array<{ id: string; username: string; text: string; likes: number; createdAt?: string }>>([]);
+
+  useEffect(() => {
+    if (!game?.id) return;
+    commentsApi.list(game.id).then((res: any) => {
+      if (res?.comments && Array.isArray(res.comments)) {
+        setApiComments(res.comments);
+      }
+    }).catch(() => {});
+  }, [game?.id]);
+
+  const localComments = commentsStore[game.id] || [];
+  const baseMockComments = creators.slice(0, 5).map((creator, index) => ({
+    id: `mock-${creator.id}-${index}`,
+    username: creator.username,
+    text: index % 2 ? `The polish on ${game.name} is wild.` : 'This needs a speedrun leaderboard immediately.',
+    likes: Math.max(0, 18 - index * 3),
+  }));
+
+  const allComments = [
+    ...localComments,
+    ...apiComments,
+    ...baseMockComments,
+  ];
 
   const postComment = () => {
     if (!draft.trim()) return;
-    setLocalComments((items) => [
-      { id: `local-${Date.now()}`, username: 'guest', text: draft.trim(), likes: 0 },
-      ...items,
-    ]);
+    const authorUsername = user?.username || user?.displayName || 'guest';
+    if (onAddComment) {
+      onAddComment(game.id, draft.trim(), authorUsername);
+    }
+    commentsApi.create(game.id, draft.trim()).catch(() => {});
     setDraft('');
   };
 
   return (
     <div className="comments-list">
-      {comments.map((comment) => (
+      {allComments.map((comment) => (
         <div className="comment-row" key={comment.id}>
           <img src={avatarUrl(comment.username, null, 96)} alt="" />
           <span>
@@ -3965,7 +4051,7 @@ function CommentsSheet({ game }: { game: Game; creators: Creator[] }) {
           <Heart size={16} />
         </div>
       ))}
-      {comments.length === 0 && <EmptyListState title="No comments yet" text={`Be the first to comment on ${game.name}.`} />}
+      {allComments.length === 0 && <EmptyListState title="No comments yet" text={`Be the first to comment on ${game.name}.`} />}
       <div className="comment-composer">
         <input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') postComment(); }} placeholder="Add a comment..." />
         <button onClick={postComment}><Send size={17} /></button>
