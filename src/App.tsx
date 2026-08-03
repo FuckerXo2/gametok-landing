@@ -486,9 +486,6 @@ const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, _game: Game
 };
 
 
-// Same distance the native feed uses to decide a drag was a page turn.
-const FEED_SWIPE_THRESHOLD = 50;
-
 const getGameUrl = (game: Game) => {
   if (game.embedUrl) {
     const raw = game.embedUrl.startsWith('/') ? `${API_ORIGIN}${game.embedUrl}` : game.embedUrl;
@@ -1387,26 +1384,16 @@ function HomeFeed({
   onOpenExplore: () => void;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const programmaticScrollUntil = useRef(0);
-  // Mirrors the native app's `interactedGameId`. Until the player taps in, the
-  // iframe is inert and every touch belongs to the feed — that is the only way
-  // a cross-origin game frame can share the screen with a swipe feed, and
-  // without it the deck could only be paged with the nav buttons.
-  const [live, setLive] = useState(false);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
-    setLive(false);
+    setGameStarted(true);
     setShowPreviewArt(true);
     const timer = window.setTimeout(() => setShowPreviewArt(false), 3500);
     return () => window.clearTimeout(timer);
   }, [game.id]);
-
-  const startGame = () => {
-    setShowPreviewArt(false);
-    setLive(true);
-  };
 
   // Sync active index from native scroll snapping — TikTok-style.
   useEffect(() => {
@@ -1450,79 +1437,6 @@ function HomeFeed({
     scroll.scrollTo({ top: target.offsetTop, behavior: 'auto' });
   }, [index, games.length]);
 
-  // Drag-to-page for the bands that sit *above* the iframe (the top strip and
-  // the caption). Native scroll-snap already handles the game surface itself
-  // while the game is inert, but once it goes live those bands are the only
-  // touch surface the feed still owns — the native app's edge zones, in CSS.
-  const drag = useRef<{ y: number; top: number; id: number } | null>(null);
-
-  const beginDrag = (event: React.PointerEvent<HTMLElement>) => {
-    const scroll = scrollRef.current;
-    if (!scroll || (event.target as HTMLElement).closest('button')) return;
-    scroll.style.scrollSnapType = 'none';
-    drag.current = { y: event.clientY, top: scroll.scrollTop, id: event.pointerId };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const moveDrag = (event: React.PointerEvent<HTMLElement>) => {
-    const state = drag.current;
-    const scroll = scrollRef.current;
-    if (!state || !scroll || state.id !== event.pointerId) return;
-    scroll.scrollTop = state.top - (event.clientY - state.y);
-  };
-
-  const endDrag = (event: React.PointerEvent<HTMLElement>) => {
-    const state = drag.current;
-    const scroll = scrollRef.current;
-    drag.current = null;
-    if (!state || !scroll) return;
-    const page = scroll.clientHeight || 1;
-    const travel = event.clientY - state.y;
-    let target = Math.round(state.top / page);
-    if (travel <= -FEED_SWIPE_THRESHOLD) target += 1;
-    else if (travel >= FEED_SWIPE_THRESHOLD) target -= 1;
-    target = Math.max(0, Math.min(games.length - 1, target));
-    // Own the index for the length of the animation, otherwise the observer
-    // reports the item we are scrolling *through* and fights the snap.
-    programmaticScrollUntil.current = Date.now() + 600;
-    scroll.scrollTo({ top: target * page, behavior: 'smooth' });
-    window.setTimeout(() => { scroll.style.scrollSnapType = ''; }, 480);
-    if (target !== index) onIndex(target);
-  };
-
-  const swipeHandlers = {
-    onPointerDown: beginDrag,
-    onPointerMove: moveDrag,
-    onPointerUp: endDrag,
-    onPointerCancel: endDrag,
-  };
-
-  // Belt and braces for the CSS snap. A scroller covered by a cross-origin frame
-  // drops its snap often enough to matter, and the feed then rests parked
-  // between two games. Once scrolling settles, land on the nearest one.
-  useEffect(() => {
-    const scroll = scrollRef.current;
-    if (!scroll || games.length === 0) return;
-    let timer = 0;
-    const settle = () => {
-      if (drag.current) return;
-      const page = scroll.clientHeight || 1;
-      const nearest = Math.max(0, Math.min(games.length - 1, Math.round(scroll.scrollTop / page)));
-      const offset = nearest * page;
-      if (Math.abs(scroll.scrollTop - offset) < 2) return;
-      scroll.scrollTo({ top: offset, behavior: 'smooth' });
-    };
-    const onScroll = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(settle, 140);
-    };
-    scroll.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      scroll.removeEventListener('scroll', onScroll);
-      window.clearTimeout(timer);
-    };
-  }, [games.length]);
-
   return (
     <section className="home-feed">
       <div className="feed-topbar">
@@ -1542,12 +1456,11 @@ function HomeFeed({
       ) : (
         <div className="feed-scroll" ref={scrollRef}>
           {games.map((g, i) => (
-            <article className={`feed-item ${i === index && live ? 'is-live' : ''}`} key={g.id} data-index={i}>
-              <div className="game-frame" onClick={i === index && !live ? startGame : undefined}>
-                {i === index && (
+            <article className="feed-item" key={g.id} data-index={i}>
+              <div className="game-frame">
+                {i === index && gameStarted && (
                   <iframe
                     key={g.id}
-                    ref={iframeRef}
                     className="game-iframe"
                     title={g.name}
                     src={getGameUrl(g)}
@@ -1558,17 +1471,12 @@ function HomeFeed({
                 {Math.abs(i - index) <= 1 && (
                   <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
                 )}
-                {i === index && showPreviewArt && (
+                {i === index && (!gameStarted || showPreviewArt) && (
                   <div className="game-preview-art">
                     <img src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
                     <strong>{g.name}</strong>
-                    <button onClick={startGame}><Play size={15} fill="currentColor" /> Play game</button>
+                    <button onClick={() => setGameStarted(true)}><Play size={15} fill="currentColor" /> Play game</button>
                   </div>
-                )}
-                {/* The game is running but inert, so say what the tap buys you —
-                    otherwise a player prods a live-looking game and nothing happens. */}
-                {i === index && !live && !showPreviewArt && (
-                  <div className="tap-to-play">Tap to play · swipe for next</div>
                 )}
                 {i === index && offline && <div className="offline-pill">Offline</div>}
               </div>
@@ -1576,8 +1484,6 @@ function HomeFeed({
           ))}
         </div>
       )}
-
-      <div className="feed-swipe-zone top" {...swipeHandlers} />
 
       {!hudHidden && (
         <>
@@ -1588,7 +1494,7 @@ function HomeFeed({
             <ActionButton active={saved} icon={<Bookmark size={22} fill={saved ? 'currentColor' : 'none'} />} label={saved ? 'Saved' : 'Save'} onClick={onToggleSave} />
           </div>
 
-          <div className="game-caption" {...swipeHandlers}>
+          <div className="game-caption">
             <div className="creator-avatar-wrap">
               <img src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)} alt="" />
               <button aria-label="Follow">
