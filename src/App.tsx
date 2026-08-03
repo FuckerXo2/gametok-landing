@@ -1558,15 +1558,17 @@ function HomeFeed({
       onPointerMove={(e) => { if (e.pointerType === 'mouse' && isDragging.current) onDragMove(e.clientY); }}
       onPointerUp={(e) => { if (e.pointerType === 'mouse') onDragEnd(); }}
     >
-      <div className="feed-topbar">
-        <div className="for-you-pill">
-          <span>For You</span>
-          <i className="pink-dot" />
+      {(!gameStarted || showPreviewArt) && (
+        <div className="feed-topbar">
+          <div className="for-you-pill">
+            <span>For You</span>
+            <i className="pink-dot" />
+          </div>
+          <button className="icon-button" onClick={onOpenExplore} aria-label="Search">
+            <Search size={20} />
+          </button>
         </div>
-        <button className="icon-button" onClick={onOpenExplore} aria-label="Search">
-          <Search size={20} />
-        </button>
-      </div>
+      )}
 
       {loading ? (
         <div className="game-loading">
@@ -1629,30 +1631,32 @@ function HomeFeed({
             <ActionButton icon={<GitBranch size={30} color="#ffffff" />} label="Remix" onClick={() => onRemix ? onRemix(game) : onOpenModal('share')} />
           </div>
 
-          <div className="game-info">
-            <div className="game-title-row">
-              <h1 className="game-name">{game.name}</h1>
-              <div className="game-title-pill">
-                <Gamepad2 size={13} fill="currentColor" />
+          {(!gameStarted || showPreviewArt) && (
+            <div className="game-info">
+              <div className="game-title-row">
+                <h1 className="game-name">{game.name}</h1>
+                <div className="game-title-pill">
+                  <Gamepad2 size={13} fill="currentColor" />
+                </div>
+              </div>
+              <div className="creator-row">
+                <div className="creator-avatar-wrap">
+                  <img src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)} alt="" />
+                  <button
+                    className={`creator-follow-badge ${following ? 'following' : ''}`}
+                    onClick={onToggleFollow}
+                    aria-label="Follow"
+                  >
+                    {following ? '✓' : '+'}
+                  </button>
+                </div>
+                <span className="creator-display-name">
+                  {game.creatorDisplayName || game.creatorUsername || 'anonymous'}
+                  {game.creatorVerified && <span className="verified-dot">✓</span>}
+                </span>
               </div>
             </div>
-            <div className="creator-row">
-              <div className="creator-avatar-wrap">
-                <img src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)} alt="" />
-                <button
-                  className={`creator-follow-badge ${following ? 'following' : ''}`}
-                  onClick={onToggleFollow}
-                  aria-label="Follow"
-                >
-                  {following ? '✓' : '+'}
-                </button>
-              </div>
-              <span className="creator-display-name">
-                {game.creatorDisplayName || game.creatorUsername || 'anonymous'}
-                {game.creatorVerified && <span className="verified-dot">✓</span>}
-              </span>
-            </div>
-          </div>
+          )}
         </>
       )}
 
