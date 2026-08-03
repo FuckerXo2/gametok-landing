@@ -108,9 +108,12 @@ textarea {
   justify-content: space-between;
 }
 
+/* The game gets the box the native app gives it: everything above the deck nav.
+   Full-bleed meant the nav sat on top of gameplay and the game laid itself out
+   for 76px it never actually had. */
 .game-frame {
   position: absolute;
-  inset: 0;
+  inset: 0 0 76px;
   background: #050505;
 }
 
@@ -147,6 +150,30 @@ textarea {
   background: #000;
   position: relative;
   z-index: 2;
+  /* Inert until the player taps in, so swipes reach the feed underneath.
+     A cross-origin frame cannot hand a gesture back, so it never gets to
+     see one it did not earn. */
+  pointer-events: none;
+}
+
+.feed-item.is-live .game-iframe {
+  pointer-events: auto;
+}
+
+/* The band the feed keeps for itself once the game is live — the web answer to
+   the native app's edge gesture zones. Below .feed-topbar (z 10) so the search
+   and notification buttons stay tappable. */
+.feed-swipe-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 9;
+  touch-action: none;
+}
+
+.feed-swipe-zone.top {
+  top: 0;
+  height: 15%;
 }
 
 .thumbnail-backdrop {
@@ -202,6 +229,29 @@ textarea {
   font-size: 13px;
   font-weight: 900;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
+}
+
+.tap-to-play {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 190px;
+  transform: translateX(-50%);
+  padding: 8px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: rgba(6, 6, 10, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+  animation: tap-to-play-in 260ms ease-out both;
+}
+
+@keyframes tap-to-play-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .game-loading {
@@ -285,6 +335,8 @@ textarea {
   align-items: end;
   padding: 86px 72px 20px 18px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.74) 45%, #000);
+  /* Doubles as a swipe band, so the browser must not claim the gesture. */
+  touch-action: none;
 }
 
 .creator-avatar-wrap {
