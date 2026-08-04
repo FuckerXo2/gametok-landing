@@ -10,17 +10,21 @@ import type { Options as CoreOptions } from '@dicebear/core';
 import {
   ArrowUp,
   Bell,
+  BookOpen,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   Compass,
+  FileText,
   Gamepad2,
   GitBranch,
   Grid3X3,
   Heart,
+  HelpCircle,
   Home,
   Image as ImageIcon,
+  Info,
   Menu,
   MessageCircle,
   Mic,
@@ -35,6 +39,7 @@ import {
   Search,
   Send,
   Share2,
+  Shield,
   Smartphone,
   Sparkles,
   Trophy,
@@ -192,7 +197,7 @@ function decodeJwt(token: string): any {
   }
 }
 
-type Tab = 'home' | 'explore' | 'create' | 'connect' | 'profile';
+type Tab = 'home' | 'explore' | 'create' | 'connect' | 'profile' | 'more';
 
 // ── Routing ───────────────────────────────────────────────────────────────────
 // The shell's navigation state (which tab, which marketing page, whether the
@@ -207,6 +212,7 @@ const TAB_PATHS: Record<Tab, string> = {
   create: '/create',
   connect: '/connect',
   profile: '/profile',
+  more: '/more',
 };
 
 const MARKETING_PATHS: Record<MarketingPage, string> = {
@@ -1187,6 +1193,7 @@ function App() {
             />
           )}
           {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
+          {activeTab === 'more' && <MoreScreen onPage={goMarketingPage} />}
         </main>
 
         <BottomNav
@@ -2655,6 +2662,94 @@ function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: G
   );
 }
 
+function MoreScreen({ onPage }: { onPage: (page: MarketingPage) => void }) {
+  return (
+    <section className="page-scroll more-screen">
+      <header className="more-top">
+        <div className="more-brand">
+          <span className="more-logo-dot" />
+          <strong>GameTok More</strong>
+        </div>
+        <p>Explore blog, about, changelog, FAQ, and platform links</p>
+      </header>
+
+      <div className="more-group">
+        <small className="more-group-label">Discover & Content</small>
+        <button className="more-card" onClick={() => onPage('blog')}>
+          <div className="more-card-icon icon-purple"><BookOpen size={20} /></div>
+          <div className="more-card-info">
+            <strong>Blog & Updates</strong>
+            <span>Articles on AI game creation, trends & announcements</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+
+        <button className="more-card" onClick={() => onPage('about')}>
+          <div className="more-card-icon icon-pink"><Info size={20} /></div>
+          <div className="more-card-info">
+            <strong>About GameTok</strong>
+            <span>Our vision, platform story, and creator mission</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+
+        <button className="more-card" onClick={() => onPage('changelog')}>
+          <div className="more-card-icon icon-cyan"><Sparkles size={20} /></div>
+          <div className="more-card-info">
+            <strong>Changelog</strong>
+            <span>Latest features, optimizations, and patch notes</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+
+        <button className="more-card" onClick={() => onPage('faq')}>
+          <div className="more-card-icon icon-yellow"><HelpCircle size={20} /></div>
+          <div className="more-card-info">
+            <strong>FAQ & Help</strong>
+            <span>Frequently asked questions and getting started</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+
+        <button className="more-card" onClick={() => onPage('earn')}>
+          <div className="more-card-icon icon-green"><Trophy size={20} /></div>
+          <div className="more-card-info">
+            <strong>Creator Rewards & Earn</strong>
+            <span>Monetize your games and win community bounties</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+      </div>
+
+      <div className="more-group">
+        <small className="more-group-label">Legal & Policies</small>
+        <button className="more-card" onClick={() => onPage('privacy')}>
+          <div className="more-card-icon icon-gray"><Shield size={20} /></div>
+          <div className="more-card-info">
+            <strong>Privacy Policy</strong>
+            <span>How we protect and manage your data</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+
+        <button className="more-card" onClick={() => onPage('terms')}>
+          <div className="more-card-icon icon-gray"><FileText size={20} /></div>
+          <div className="more-card-info">
+            <strong>Terms of Service</strong>
+            <span>Platform rules and usage agreement</span>
+          </div>
+          <ChevronRight size={18} className="more-chevron" />
+        </button>
+      </div>
+
+      <div className="more-group">
+        <small className="more-group-label">Get Native Apps</small>
+        <StoreButtons className="more-store-buttons" />
+      </div>
+    </section>
+  );
+}
+
 function BottomNav({
   activeTab,
   gameDeckMode,
@@ -2704,17 +2799,17 @@ function BottomNav({
       <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onTab('home')}>
         <Home size={23} /><span>Home</span>
       </button>
-      <button className={activeTab === 'explore' ? 'active' : ''} onClick={() => onTab('explore')}>
-        <Compass size={23} /><span>Explore</span>
+      <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
+        <Users size={23} /><span>Connect</span>
       </button>
       <button className="create-tab" onClick={() => onTab('create')} aria-label="Create">
         <span className="create-tab-box"><Plus size={22} strokeWidth={2.5} /></span>
       </button>
-      <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
-        <Users size={23} /><span>Connect</span>
-      </button>
       <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => onTab('profile')}>
         <User size={23} /><span>Profile</span>
+      </button>
+      <button className={activeTab === 'more' ? 'active' : ''} onClick={() => onTab('more')}>
+        <Menu size={23} /><span>More</span>
       </button>
     </nav>
   );
