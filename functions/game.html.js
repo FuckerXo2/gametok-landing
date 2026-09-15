@@ -1,5 +1,5 @@
 // Cloudflare Pages Function to dynamically set OG tags for game shares
-const API_URL = 'https://gametok-backend-production.up.railway.app';
+const API_URL = 'https://gametok-backend.onrender.com';
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
