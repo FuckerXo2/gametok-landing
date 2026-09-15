@@ -3163,42 +3163,31 @@ textarea {
   background: #000;
 }
 
-.desktop-feed-backdrop {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background-size: cover;
-  background-position: center;
-  filter: blur(28px) brightness(0.55) saturate(1.15);
-  transform: scale(1.12);
-  pointer-events: none;
-}
-
-/* ─── Landscape 16:9 widescreen card for landscape games only ──────────── */
+/* ─── Landscape 16:9 widescreen player for desktop ─────────────────────── */
 .desktop-feed-stage.is-landscape {
-  --landscape-w: min(960px, calc(100% - 260px), calc((100vh - 140px) * (16 / 9)));
+  --landscape-w: min(1080px, calc(100% - 280px), calc((100vh - 110px) * (16 / 9)));
 }
 
 .desktop-feed-card.is-landscape {
   position: absolute;
-  left: calc((100% - 180px) / 2);
+  left: calc((100% - 190px) / 2);
   top: 50%;
   width: var(--landscape-w);
   aspect-ratio: 16 / 9;
   height: auto;
-  max-height: calc(100vh - 140px);
+  max-height: calc(100vh - 110px);
   min-height: 0;
   overflow: hidden;
   transform: translate(-50%, -50%);
-  border-radius: 16px;
-  background: #110d18;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  border-radius: 18px;
+  background: #0a0610;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.75);
   z-index: 3;
 }
 
 .desktop-feed-card.is-landscape .desktop-feed-iframe {
-  border-radius: 16px;
+  border-radius: 18px;
   z-index: 3;
 }
 
@@ -3211,7 +3200,8 @@ textarea {
   transform: none;
   left: 0;
   top: 0;
-  border-radius: 16px;
+  border-radius: 18px;
+  background: #0d0914;
   z-index: 4;
 }
 
@@ -3219,20 +3209,54 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: 18px;
 }
 
 .desktop-feed-stage.is-landscape .desktop-feed-actions {
-  left: calc(((100% - 180px) / 2) + (var(--landscape-w) / 2) + 20px);
+  left: calc(((100% - 190px) / 2) + (var(--landscape-w) / 2) + 24px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
 }
 
 .desktop-feed-stage.is-landscape .desktop-feed-creator {
-  left: calc(((100% - 180px) / 2) - (var(--landscape-w) / 2));
-  bottom: clamp(14px, 2.5vh, 28px);
+  left: calc(((100% - 190px) / 2) - (var(--landscape-w) / 2));
+  bottom: clamp(16px, 2.5vh, 36px);
+  width: auto;
+  max-width: min(460px, 36vw);
+  background: rgba(14, 9, 20, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px 18px 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   z-index: 5;
+}
+
+.desktop-feed-stage.is-landscape .desktop-feed-creator strong {
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desktop-feed-stage.is-landscape .desktop-feed-title {
+  font-size: 14px;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 2px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desktop-feed-stage.is-landscape .desktop-feed-creator button {
+  min-height: 36px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .desktop-feed-card-shade {
