@@ -3109,18 +3109,21 @@ function DesktopPlayHome({
     };
   }, [onNext, onPrevious]);
 
+  const landscape = isLandscape(game.orientation);
+
   return (
-    <section className="desktop-app-main desktop-play-home">
+    <section className={`desktop-app-main desktop-play-home ${landscape ? 'is-landscape' : ''}`}>
       <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
 
-      <main className="desktop-feed-stage">
+      <main className={`desktop-feed-stage ${landscape ? 'is-landscape' : ''}`}>
+        <div className="desktop-feed-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(game)})` }} />
         <div className="desktop-feed-topline">
           <span>{index + 1}/{games.length}</span>
           <strong>For You</strong>
           <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
         </div>
 
-        <article className={`desktop-feed-card ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
+        <article className={`desktop-feed-card ${landscape ? 'is-landscape' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
           <iframe
             key={game.id}
             ref={iframeRef}
@@ -3278,7 +3281,7 @@ function MarketingPageBody({
         <section className="marketing-grid-section">
           <div className="marketing-section-head">
             <h2>Playable community worlds</h2>
-            <p>Borrowing the directory shape from competitors, but keeping the GameTok feed energy.</p>
+            <p>Explore trending games, interactive experiences, and instant worlds created on GameTok.</p>
           </div>
           <div className="marketing-game-grid">
             {games.slice(0, 18).map((game) => (
