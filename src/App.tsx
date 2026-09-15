@@ -3109,18 +3109,20 @@ function DesktopPlayHome({
     };
   }, [onNext, onPrevious]);
 
+  const landscape = isLandscape(game.orientation);
+
   return (
     <section className="desktop-app-main desktop-play-home">
       <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
 
-      <main className="desktop-feed-stage">
+      <main className={`desktop-feed-stage ${landscape ? 'is-landscape' : ''}`}>
         <div className="desktop-feed-topline">
           <span>{index + 1}/{games.length}</span>
           <strong>For You</strong>
           <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
         </div>
 
-        <article className={`desktop-feed-card ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
+        <article className={`desktop-feed-card ${landscape ? 'is-landscape' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
           <iframe
             key={game.id}
             ref={iframeRef}
