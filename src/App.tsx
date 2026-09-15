@@ -3112,7 +3112,7 @@ function DesktopPlayHome({
   const landscape = isLandscape(game.orientation);
 
   return (
-    <section className="desktop-app-main desktop-play-home">
+    <section className={`desktop-app-main desktop-play-home ${landscape ? 'is-landscape' : ''}`}>
       <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
 
       <main className={`desktop-feed-stage ${landscape ? 'is-landscape' : ''}`}>

@@ -3164,31 +3164,32 @@ textarea {
 }
 
 /* ─── Landscape 16:9 widescreen player for desktop ─────────────────────── */
-.desktop-feed-stage.is-landscape {
-  --landscape-w: min(1080px, calc(100% - 280px), calc((100vh - 110px) * (16 / 9)));
-}
-
 .desktop-feed-card.is-landscape {
   position: absolute;
-  left: calc((100% - 190px) / 2);
+  left: 42%;
   top: 50%;
-  width: var(--landscape-w);
+  width: min(880px, 48vw);
   aspect-ratio: 16 / 9;
   height: auto;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100vh - 140px);
   min-height: 0;
   overflow: hidden;
   transform: translate(-50%, -50%);
   border-radius: 18px;
-  background: #0a0610;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.75);
+  background: #0d0914;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
   z-index: 3;
 }
 
 .desktop-feed-card.is-landscape .desktop-feed-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 18px;
-  z-index: 3;
+  background: #000;
+  border: 0;
 }
 
 .desktop-feed-card.is-landscape .desktop-feed-poster {
@@ -3201,7 +3202,8 @@ textarea {
   left: 0;
   top: 0;
   border-radius: 18px;
-  background: #0d0914;
+  background: #120d1c;
+  overflow: hidden;
   z-index: 4;
 }
 
@@ -3209,22 +3211,23 @@ textarea {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 18px;
 }
 
 .desktop-feed-stage.is-landscape .desktop-feed-actions {
-  left: calc(((100% - 190px) / 2) + (var(--landscape-w) / 2) + 24px);
+  position: absolute;
+  left: calc(42% + min(440px, 24vw) + 24px);
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
 }
 
 .desktop-feed-stage.is-landscape .desktop-feed-creator {
-  left: calc(((100% - 190px) / 2) - (var(--landscape-w) / 2));
-  bottom: clamp(16px, 2.5vh, 36px);
+  position: absolute;
+  left: calc(42% - min(440px, 24vw));
+  bottom: clamp(16px, 3vh, 36px);
   width: auto;
-  max-width: min(460px, 36vw);
-  background: rgba(14, 9, 20, 0.88);
+  max-width: min(440px, 35vw);
+  background: rgba(14, 9, 20, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: 8px 18px 8px 10px;
@@ -3232,31 +3235,6 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   z-index: 5;
-}
-
-.desktop-feed-stage.is-landscape .desktop-feed-creator strong {
-  font-size: 16px;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.desktop-feed-stage.is-landscape .desktop-feed-title {
-  font-size: 14px;
-  font-weight: 650;
-  color: rgba(255, 255, 255, 0.72);
-  margin: 2px 0 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.desktop-feed-stage.is-landscape .desktop-feed-creator button {
-  min-height: 36px;
-  padding: 0 18px;
-  font-size: 14px;
-  font-weight: 800;
 }
 
 .desktop-feed-card-shade {
