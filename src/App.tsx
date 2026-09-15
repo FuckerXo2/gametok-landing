@@ -3087,14 +3087,24 @@ function DesktopPlayHome({
   const pauseGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-pause' }, '*');
   const resumeGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-resume' }, '*');
   const startGame = () => { resumeGame(); setGameStarted(true); };
+  const stopGame = () => { pauseGame(); setGameStarted(false); };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); onNext(); }
-      if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); onPrevious(); }
+      if (e.key === 'Escape' && gameStarted) {
+        e.preventDefault();
+        stopGame();
+        return;
+      }
+      if (!gameStarted) {
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); onNext(); }
+        if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); onPrevious(); }
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); startGame(); }
+      }
     };
     let wheelLock = 0;
     const onWheel = (e: WheelEvent) => {
+      if (gameStarted) return;
       if (Math.abs(e.deltaY) < 20) return;
       const now = Date.now();
       if (now - wheelLock < 500) return;
@@ -3107,22 +3117,26 @@ function DesktopPlayHome({
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('wheel', onWheel);
     };
-  }, [onNext, onPrevious]);
+  }, [onNext, onPrevious, gameStarted]);
 
   const landscape = isLandscape(game.orientation);
 
   return (
-    <section className={`desktop-app-main desktop-play-home ${landscape ? 'is-landscape' : ''}`}>
-      <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
+    <section className={`desktop-app-main desktop-play-home ${landscape ? 'is-landscape' : ''} ${gameStarted ? 'is-playing' : ''}`}>
+      {!gameStarted && (
+        <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
+      )}
 
-      <main className={`desktop-feed-stage ${landscape ? 'is-landscape' : ''}`}>
-        <div className="desktop-feed-topline">
-          <span>{index + 1}/{games.length}</span>
-          <strong>For You</strong>
-          <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
-        </div>
+      <main className={`desktop-feed-stage ${landscape ? 'is-landscape' : ''} ${gameStarted ? 'is-playing' : ''}`}>
+        {!gameStarted && (
+          <div className="desktop-feed-topline">
+            <span>{index + 1}/{games.length}</span>
+            <strong>For You</strong>
+            <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
+          </div>
+        )}
 
-        <article className={`desktop-feed-card ${landscape ? 'is-landscape' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
+        <article className={`desktop-feed-card ${landscape ? 'is-landscape' : ''} ${gameStarted ? 'is-playing' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
           <iframe
             key={game.id}
             ref={iframeRef}
@@ -3133,7 +3147,7 @@ function DesktopPlayHome({
             onLoad={pauseGame}
           />
           {!gameStarted && (
-            <div className="desktop-feed-poster">
+            <div className="desktop-feed-poster" onClick={startGame}>
               <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
               <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
                 <Play size={48} fill="currentColor" />
@@ -3143,31 +3157,49 @@ function DesktopPlayHome({
           )}
         </article>
 
-        <div className="desktop-feed-creator" onClick={onOpenCreator} role="button" tabIndex={0}>
-          <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
-          <span>
-            <strong>{creator}</strong>
-            <h2 className="desktop-feed-title">{game.name}</h2>
-          </span>
-          <button onClick={(event) => { event.stopPropagation(); onToggleFollow(); }}>{following ? 'Following' : 'Follow'}</button>
-        </div>
+        {gameStarted && (
+          <div className="desktop-fullscreen-hud">
+            <div className="desktop-fullscreen-title">
+              <strong>{game.name}</strong>
+              <small>@{game.creatorUsername || creator}</small>
+            </div>
+            <button className="desktop-fullscreen-exit-btn" onClick={stopGame} aria-label="Exit game">
+              <X size={18} />
+              <span>Exit</span>
+              <kbd>Esc</kbd>
+            </button>
+          </div>
+        )}
 
-        <div className="desktop-feed-controls">
-          <button onClick={onPrevious} aria-label="Previous game"><ChevronUp size={34} /></button>
-          <button onClick={onNext} aria-label="Next game"><ChevronDown size={34} /></button>
-        </div>
+        {!gameStarted && (
+          <>
+            <div className="desktop-feed-creator" onClick={onOpenCreator} role="button" tabIndex={0}>
+              <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
+              <span>
+                <strong>{creator}</strong>
+                <h2 className="desktop-feed-title">{game.name}</h2>
+              </span>
+              <button onClick={(event) => { event.stopPropagation(); onToggleFollow(); }}>{following ? 'Following' : 'Follow'}</button>
+            </div>
 
-        <aside className="desktop-feed-actions">
-          <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
-          <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))}</span></button>
-          <button onClick={() => onOpenModal('share')}><Share2 size={25} /><span>Share</span></button>
-          <button onClick={() => onRemix ? onRemix(game) : onOpenModal('share')}><GitBranch size={25} /><span>Remix</span></button>
-          <button onClick={() => onOpenModal('leaderboard')}><Trophy size={25} /><span>Scores</span></button>
-          <button className="desktop-feed-avatar-action" onClick={onOpenCreator}>
-            <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
-            <Plus size={18} />
-          </button>
-        </aside>
+            <div className="desktop-feed-controls">
+              <button onClick={onPrevious} aria-label="Previous game"><ChevronUp size={34} /></button>
+              <button onClick={onNext} aria-label="Next game"><ChevronDown size={34} /></button>
+            </div>
+
+            <aside className="desktop-feed-actions">
+              <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
+              <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))}</span></button>
+              <button onClick={() => onOpenModal('share')}><Share2 size={25} /><span>Share</span></button>
+              <button onClick={() => onRemix ? onRemix(game) : onOpenModal('share')}><GitBranch size={25} /><span>Remix</span></button>
+              <button onClick={() => onOpenModal('leaderboard')}><Trophy size={25} /><span>Scores</span></button>
+              <button className="desktop-feed-avatar-action" onClick={onOpenCreator}>
+                <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
+                <Plus size={18} />
+              </button>
+            </aside>
+          </>
+        )}
       </main>
     </section>
   );

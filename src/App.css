@@ -3237,6 +3237,139 @@ textarea {
   z-index: 5;
 }
 
+/* ─── True Fullscreen Canvas Mode on Desktop ───────────────────────────── */
+.desktop-play-home.is-playing {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: #000 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.desktop-feed-stage.is-playing {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: #000 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+.desktop-feed-card.is-playing {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  transform: none !important;
+  left: 0 !important;
+  top: 0 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: #000 !important;
+  box-shadow: none !important;
+  z-index: 10000 !important;
+}
+
+.desktop-feed-card.is-playing .desktop-feed-iframe {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #000 !important;
+}
+
+.desktop-fullscreen-hud {
+  position: fixed;
+  top: 18px;
+  left: 24px;
+  right: 24px;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.desktop-fullscreen-hud:hover {
+  opacity: 1;
+}
+
+.desktop-fullscreen-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  background: rgba(14, 8, 20, 0.86);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+.desktop-fullscreen-title strong {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.desktop-fullscreen-title small {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.desktop-fullscreen-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20, 12, 28, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transition: all 0.18s ease;
+  pointer-events: auto;
+}
+
+.desktop-fullscreen-exit-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+  border-color: rgba(239, 68, 68, 1);
+  transform: scale(1.04);
+}
+
+.desktop-fullscreen-exit-btn kbd {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 2px 7px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 2px;
+}
+
 .desktop-feed-card-shade {
   position: absolute;
   inset: 0;
