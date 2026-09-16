@@ -3037,8 +3037,8 @@ function DesktopHomeHero({
 function DesktopPlayHome({
   user,
   game,
-  games,
-  index,
+  games: _games,
+  index: _index,
   liked,
   saved: _saved,
   following,
@@ -3119,24 +3119,12 @@ function DesktopPlayHome({
     };
   }, [onNext, onPrevious, gameStarted]);
 
-  const landscape = isLandscape(game.orientation);
-
   return (
-    <section className={`desktop-app-main desktop-play-home ${landscape ? 'is-landscape' : ''} ${gameStarted ? 'is-playing' : ''}`}>
-      {!gameStarted && (
-        <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
-      )}
+    <section className="desktop-app-main desktop-play-home">
+      <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
 
-      <main className={`desktop-feed-stage ${landscape ? 'is-landscape' : ''} ${gameStarted ? 'is-playing' : ''}`}>
-        {!gameStarted && (
-          <div className="desktop-feed-topline">
-            <span>{index + 1}/{games.length}</span>
-            <strong>For You</strong>
-            <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
-          </div>
-        )}
-
-        <article className={`desktop-feed-card ${landscape ? 'is-landscape' : ''} ${gameStarted ? 'is-playing' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
+      <main className="desktop-feed-stage">
+        <article className={`desktop-feed-card ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
           <iframe
             key={game.id}
             ref={iframeRef}
@@ -3150,28 +3138,20 @@ function DesktopPlayHome({
             <div className="desktop-feed-poster" onClick={startGame}>
               <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
               <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
-                <Play size={48} fill="currentColor" />
+                <Play size={52} fill="currentColor" />
               </button>
               <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
             </div>
           )}
         </article>
 
-        {gameStarted && (
-          <div className="desktop-fullscreen-hud">
-            <div className="desktop-fullscreen-title">
-              <strong>{game.name}</strong>
-              <small>@{game.creatorUsername || creator}</small>
-            </div>
-            <button className="desktop-fullscreen-exit-btn" onClick={stopGame} aria-label="Exit game">
-              <X size={18} />
-              <span>Exit</span>
-              <kbd>Esc</kbd>
-            </button>
-          </div>
-        )}
-
-        {!gameStarted && (
+        {gameStarted ? (
+          <button className="desktop-stage-exit-btn" onClick={stopGame} aria-label="Exit game">
+            <X size={18} />
+            <span>Exit</span>
+            <kbd>Esc</kbd>
+          </button>
+        ) : (
           <>
             <div className="desktop-feed-creator" onClick={onOpenCreator} role="button" tabIndex={0}>
               <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
