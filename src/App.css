@@ -3062,21 +3062,50 @@ textarea {
   overflow: hidden;
   margin: 0;
   border-radius: 0;
-  background: #000;
+  background:
+    radial-gradient(circle at 46% 48%, rgba(168, 85, 247, 0.08), transparent 36%),
+    linear-gradient(90deg, #080011 0%, #080011 70%, #090014 100%);
   border-left: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .desktop-feed-card {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: 46%;
+  top: 50%;
+  width: min(480px, 32vw);
+  height: min(780px, calc(100vh - 84px));
+  aspect-ratio: 9 / 16;
+  max-height: calc(100vh - 84px);
   overflow: hidden;
-  border-radius: 0;
-  background: #000;
-  border: 0;
-  box-shadow: none;
-  transform: none;
+  transform: translate(-50%, -50%);
+  border-radius: 20px;
+  background: #161019;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
+  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.desktop-feed-card.is-playing {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+  left: 0 !important;
+  top: 0 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: #000 !important;
+  box-shadow: none !important;
+  z-index: 10 !important;
+}
+
+.desktop-feed-card.is-playing .desktop-feed-iframe {
+  border-radius: 0 !important;
 }
 
 .desktop-feed-motion-next {
@@ -3088,13 +3117,13 @@ textarea {
 }
 
 @keyframes desktopFeedSlideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+  from { transform: translate(-50%, 100vh); }
+  to   { transform: translate(-50%, -50%); }
 }
 
 @keyframes desktopFeedSlideDown {
-  from { transform: translateY(-100%); }
-  to   { transform: translateY(0); }
+  from { transform: translate(-50%, -150vh); }
+  to   { transform: translate(-50%, -50%); }
 }
 
 .desktop-feed-poster {
@@ -3103,8 +3132,9 @@ textarea {
   z-index: 2;
   width: 100%;
   height: 100%;
+  border-radius: 20px;
   overflow: hidden;
-  background: #000;
+  background: #161019;
   cursor: pointer;
 }
 
@@ -3122,6 +3152,7 @@ textarea {
   width: 100%;
   height: 100%;
   border: 0;
+  border-radius: 20px;
   background: #000;
 }
 
@@ -3129,7 +3160,7 @@ textarea {
   position: absolute;
   top: 24px;
   right: 28px;
-  z-index: 10;
+  z-index: 20;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -3297,22 +3328,21 @@ textarea {
 
 .desktop-feed-controls {
   position: absolute;
-  right: clamp(24px, 2.5vw, 44px);
+  right: clamp(28px, 3vw, 54px);
   top: 50%;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
+  z-index: 4;
+  display: grid;
+  gap: 26px;
   transform: translateY(-50%);
 }
 
 .desktop-feed-controls button,
 .desktop-feed-actions button {
-  width: 80px;
-  height: 80px;
+  width: 86px;
+  height: 86px;
   padding: 0;
   background: rgba(38, 28, 48, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 0;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   display: inline-flex;
@@ -3329,14 +3359,11 @@ textarea {
 
 .desktop-feed-actions {
   position: absolute;
-  right: clamp(120px, 9.5vw, 150px);
-  left: auto;
+  left: calc(46% + min(290px, 17vw) + 28px);
   top: 50%;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  z-index: 4;
+  display: grid;
+  gap: 24px;
   transform: translateY(-50%);
 }
 
@@ -3402,23 +3429,22 @@ textarea {
 
 .desktop-feed-creator {
   position: absolute;
-  left: clamp(28px, 3vw, 48px);
-  bottom: clamp(26px, 3.5vh, 48px);
+  left: calc(46% - min(290px, 17vw) + 32px);
+  bottom: clamp(26px, 4vh, 52px);
   z-index: 5;
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  width: auto;
-  max-width: min(520px, 45vw);
+  width: min(420px, 28vw);
+  color: #fff;
   background: rgba(14, 9, 20, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: 10px 22px 10px 12px;
+  padding: 10px 18px 10px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   cursor: pointer;
-  color: #fff;
   transition: transform 0.15s, background 0.15s;
 }
 
