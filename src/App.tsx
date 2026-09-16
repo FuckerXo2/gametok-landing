@@ -3145,13 +3145,16 @@ function DesktopPlayHome({
             onLoad={pauseGame}
           />
           {!gameStarted && (
-            <div className="desktop-feed-poster" onClick={startGame}>
-              <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
-              <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
-                <Play size={52} fill="currentColor" />
-              </button>
-              <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
-            </div>
+            <>
+              <div className="desktop-feed-card-shade" />
+              <div className="desktop-feed-poster" onClick={startGame}>
+                <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
+                <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
+                  <Play size={52} fill="currentColor" />
+                </button>
+                <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
+              </div>
+            </>
           )}
         </article>
 
