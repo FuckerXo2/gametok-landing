@@ -753,6 +753,18 @@ function useGameTokData(targetGameId?: string | null) {
     };
   }, [targetGameId]);
 
+  useEffect(() => {
+    if (!games || games.length === 0) return;
+    if (typeof Image === 'undefined') return;
+    games.slice(0, 8).forEach((g) => {
+      const url = getThumbnailUrl(g);
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [games]);
+
   return { games, setGames, creators, loading, offline };
 }
 
@@ -3184,6 +3196,24 @@ function DesktopPlayHome({
     setGameStarted(false);
   }, [game.id]);
 
+  // Preload adjacent game thumbnails so clicking down/up immediately displays the next thumbnail
+  useEffect(() => {
+    if (!games || games.length === 0) return;
+    if (typeof Image === 'undefined') return;
+    const targets = [index + 1, index + 2, index + 3, index - 1];
+    targets.forEach((i) => {
+      const idx = ((i % games.length) + games.length) % games.length;
+      const targetGame = games[idx];
+      if (targetGame) {
+        const url = getThumbnailUrl(targetGame);
+        if (url) {
+          const img = new Image();
+          img.src = url;
+        }
+      }
+    });
+  }, [games, index]);
+
   const pauseGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-pause' }, '*');
   const resumeGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-resume' }, '*');
   const startGame = () => { resumeGame(); setGameStarted(true); };
@@ -3232,7 +3262,10 @@ function DesktopPlayHome({
           </div>
         )}
 
-        <article className={`desktop-feed-card ${gameStarted ? 'is-playing' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}>
+        <article
+          key={game.id}
+          className={`desktop-feed-card ${gameStarted ? 'is-playing' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}
+        >
           <iframe
             key={game.id}
             ref={iframeRef}
@@ -3245,8 +3278,13 @@ function DesktopPlayHome({
           {!gameStarted && (
             <>
               <div className="desktop-feed-card-shade" />
-              <div className="desktop-feed-poster" onClick={startGame}>
-                <img src={getThumbnailUrl(game)} alt="" onError={e => handleThumbError(e, game)} />
+              <div className="desktop-feed-poster" key={game.id} onClick={startGame}>
+                <img
+                  key={game.id}
+                  src={getThumbnailUrl(game)}
+                  alt=""
+                  onError={e => handleThumbError(e, game)}
+                />
                 <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
                   <Play size={52} fill="currentColor" />
                 </button>
@@ -3264,8 +3302,8 @@ function DesktopPlayHome({
           </button>
         ) : (
           <>
-            <div className="desktop-feed-creator" onClick={onOpenCreator} role="button" tabIndex={0}>
-              <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
+            <div className="desktop-feed-creator" key={game.id} onClick={onOpenCreator} role="button" tabIndex={0}>
+              <img key={game.id} src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
               <span>
                 <strong>{creator}</strong>
                 <h2 className="desktop-feed-title">{game.name}</h2>
