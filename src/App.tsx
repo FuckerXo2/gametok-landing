@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, comments as commentsApi, getToken, setToken, resolveGameThumbnail } from './services/api';
-import MobileGate, { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
+import { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
 import { BlogIndex, BlogPost, useLatestAnnouncement } from './components/Blog';
@@ -706,7 +706,7 @@ function useGameTokData() {
     };
   }, []);
 
-  return { games, creators, loading, offline };
+  return { games, setGames, creators, loading, offline };
 }
 
 function extractIdSet(data: any, keys: string[]) {
@@ -759,7 +759,7 @@ function useIsMobile() {
 
 function App() {
   const isMobile = useIsMobile();
-  const { games, creators, loading, offline } = useGameTokData();
+  const { games, setGames, creators, loading, offline } = useGameTokData();
   const location = useLocation();
   const navigate = useNavigate();
   // Navigation state comes from the URL — see parseRoute. Home hosts the
@@ -776,18 +776,6 @@ function App() {
   const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
-  // Track whether the mobile app gate is still on screen. While it is, we must
-  // NOT mount the auth wall underneath — the semi-transparent gate paints over
-  // the wall and both surfaces show through each other.
-  const [mobileGateOpen, setMobileGateOpen] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const dismissed = localStorage.getItem('gt_mobile_gate_dismissed_v1') === '1';
-    const forced = new URLSearchParams(window.location.search).get('mobileGate') === '1';
-    const ua = navigator.userAgent || '';
-    const uaMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-    if (dismissed && !forced) return false;
-    return forced || (uaMobile && window.innerWidth < 900);
-  });
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
@@ -1053,8 +1041,21 @@ function App() {
   // has loaded, since the index can only be resolved against a populated list.
   useEffect(() => {
     if (!routeGameId || games.length === 0) return;
-    const routeIndex = games.findIndex((game) => game.id === routeGameId);
-    if (routeIndex >= 0) setGameIndex(routeIndex);
+    const routeIndex = games.findIndex((game) => game.id === routeGameId || game.id?.toLowerCase() === routeGameId.toLowerCase());
+    if (routeIndex >= 0) {
+      setGameIndex(routeIndex);
+    } else {
+      // Game not in initial trending feed — fetch directly by ID and prepend to games
+      request('/games/' + routeGameId).then((res: any) => {
+        const game = res?.game;
+        if (game && game.id) {
+          setGames((prev) => [game, ...prev.filter((g) => g.id !== game.id)]);
+          setGameIndex(0);
+        }
+      }).catch((e) => {
+        console.warn('[WebPlayer] Failed to fetch shared game by ID:', e);
+      });
+    }
   }, [routeGameId, games]);
 
   // Restore the last-played game only when the URL isn't already naming one, or
@@ -1101,15 +1102,7 @@ function App() {
 
   return (
     <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage && !isMobile ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile ? 'explore-mode' : ''}`}>
-      <MobileGate
-        onContinueInBrowser={() => {
-          setMobileGateOpen(false);
-          setAuthMode('login');
-          if (!isMobile) openAuth('login');
-        }}
-      />
-
-      {(!marketingPage || isMobile) && (!isMobile || !mobileGateOpen) && <div className="phone-stage">
+      {(!marketingPage || isMobile) && <div className="phone-stage">
         <main className="app-screen">
           {isMobile && marketingPage && (
             <div className="mobile-info-page page-scroll">

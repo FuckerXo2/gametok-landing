@@ -115,19 +115,7 @@
         
         <div id="loading">
             <div class="spinner"></div>
-            <p class="loading">Opening app...</p>
-        </div>
-        
-        <div id="fallback" style="display: none; margin-top: 24px;">
-            <a href="https://apps.apple.com/app/gametok/id6757498584" class="btn" id="ios-fallback" style="display: none;">
-                Download on App Store
-            </a>
-            <a href="https://play.google.com/store/apps/details?id=com.vogeza" class="btn" id="android-fallback" style="display: none;">
-                Download on Google Play
-            </a>
-            <a href="https://gametok.co" class="btn-secondary" style="margin-top: 16px;">
-                Visit Website
-            </a>
+            <p class="loading">Opening game...</p>
         </div>
     </div>
 
@@ -154,51 +142,22 @@
             ? `gametok://game/${gameId}`
             : 'gametok://';
         
-        // Universal link (iOS will intercept if app is installed)
-        const universalLink = gameId
-            ? `https://gametok.app/game/${gameId}`
-            : 'https://gametok.app';
-        
-        const appStoreUrl = 'https://apps.apple.com/app/gametok/id6757498584';
-        const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.vogeza';
-        
-        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
-        const isAndroid = /android/i.test(userAgent);
-        
-        const storeUrl = isAndroid ? playStoreUrl : appStoreUrl;
+        const webPlayUrl = gameId
+            ? `/game/${encodeURIComponent(gameId)}`
+            : '/';
 
-        // Try to open app
-        let appOpened = false;
-        
-        // Method 1: Try custom URL scheme
+        // Method 1: Try custom URL scheme via hidden iframe
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = deepLink;
         document.body.appendChild(iframe);
         
-        // Method 2: Also try window.location for some browsers
-        setTimeout(() => {
-            window.location.href = deepLink;
-        }, 100);
-        
-        // If still here after 1.5 seconds, app not installed - go straight to App Store
+        // If app isn't installed or hasn't opened, transition to the web game (no app store!)
         setTimeout(() => {
             if (!document.hidden) {
-                // Show manual fallback buttons since some in-app browsers (like WhatsApp) block automatic redirects
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('fallback').style.display = 'block';
-                
-                if (isAndroid) {
-                    document.getElementById('android-fallback').style.display = 'inline-block';
-                } else {
-                    document.getElementById('ios-fallback').style.display = 'inline-block';
-                }
-
-                // Still attempt the redirect just in case it works
-                window.location.href = storeUrl;
+                window.location.replace(webPlayUrl);
             }
-        }, 1500);
+        }, 350);
         
         // Track if user leaves the page (app opened)
         document.addEventListener('visibilitychange', () => {

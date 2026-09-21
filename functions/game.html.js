@@ -91,18 +91,26 @@ export async function onRequest(context) {
         <p class="subtitle">Swipe. Play. Compete.</p>
         <div id="loading">
             <div class="spinner"></div>
-            <p class="loading">Opening app...</p>
+            <p class="loading">Opening game...</p>
         </div>
     </div>
     <script>
-        const deepLink = 'gametok://game/${gameId}';
-        const appStoreUrl = 'https://apps.apple.com/app/gametok/id6757498584';
+        const gameId = ${JSON.stringify(gameId)};
+        const deepLink = 'gametok://game/' + encodeURIComponent(gameId);
+        const webPlayUrl = '/game/' + encodeURIComponent(gameId);
+
+        // Try opening app if installed (via hidden iframe)
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = deepLink;
         document.body.appendChild(iframe);
-        setTimeout(() => { window.location.href = deepLink; }, 100);
-        setTimeout(() => { if (!document.hidden) window.location.href = appStoreUrl; }, 1500);
+
+        // If app isn't installed or doesn't take over, open the game on the website immediately
+        setTimeout(() => {
+            if (!document.hidden) {
+                window.location.replace(webPlayUrl);
+            }
+        }, 350);
     </script>
 </body>
 </html>`;
