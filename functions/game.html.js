@@ -1,4 +1,4 @@
-// Cloudflare Pages Function to serve the GameTOK website SPA with dynamic OG tags for /game.html?id=:id
+// Cloudflare Pages Function for /game.html?id=:id
 const API_URL = 'https://gametok-backend.onrender.com';
 
 function escapeHtml(str) {
@@ -15,25 +15,19 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
   const gameId = url.searchParams.get('id') || url.searchParams.get('game');
 
-  // Fetch index.html from Cloudflare Pages static assets
-  let html = '';
-  try {
-    const assetRes = await context.env.ASSETS.fetch(new URL('/index.html', url));
-    if (assetRes.ok) {
-      html = await assetRes.text();
-    }
-  } catch (e) {}
-
-  if (!html) {
-    return context.next();
-  }
-
   if (!gameId) {
-    return new Response(html, {
-      headers: { 'Content-Type': 'text/html;charset=UTF-8' },
-    });
+    return Response.redirect('https://gametok.co/', 302);
   }
 
+  const userAgent = context.request.headers.get('user-agent') || '';
+  const isBot = /facebookexternalhit|twitterbot|whatsapp|applebot|slackbot|discordbot|telegrambot|bingbot|googlebot/i.test(userAgent);
+
+  // Real users: redirect immediately to the clean game feed route /game/:id
+  if (!isBot) {
+    return Response.redirect(`https://gametok.co/game/${encodeURIComponent(gameId)}`, 302);
+  }
+
+  // Social crawlers: render meta tags for link previews
   let gameName = gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   let thumbnailUrl = `https://games.gametok.co/thumbnails/${encodeURIComponent(gameId)}.png`;
   let gameDesc = `Play ${gameName} on GameTOK! Swipe, play, and compete with friends.`;
@@ -53,34 +47,25 @@ export async function onRequest(context) {
   const pageUrl = `https://gametok.co/game/${encodeURIComponent(gameId)}`;
   const deepLink = `gametok://game/${encodeURIComponent(gameId)}`;
 
-  const ogTags = `
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <title>Play ${escapeHtml(gameName)} on GameTOK</title>
     <meta name="apple-itunes-app" content="app-id=6757498584, app-argument=${escapeHtml(deepLink)}">
     <meta property="og:title" content="Play ${escapeHtml(gameName)} on GameTOK 🎮">
     <meta property="og:description" content="${escapeHtml(gameDesc)}">
     <meta property="og:image" content="${escapeHtml(thumbnailUrl)}">
-    <meta property="og:image:width" content="512">
-    <meta property="og:image:height" content="512">
     <meta property="og:url" content="${escapeHtml(pageUrl)}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Play ${escapeHtml(gameName)} on GameTOK 🎮">
     <meta name="twitter:description" content="${escapeHtml(gameDesc)}">
     <meta name="twitter:image" content="${escapeHtml(thumbnailUrl)}">
-    <script>
-      // Seamlessly set the route so React SPA boots directly into the game feed
-      try {
-        if (window.location.pathname !== '/game/${encodeURIComponent(gameId)}') {
-          window.history.replaceState(null, '', '/game/${encodeURIComponent(gameId)}');
-        }
-      } catch(e) {}
-    </script>
-  `;
-
-  if (html.includes('<title>')) {
-    html = html.replace(/<title>.*?<\/title>/, ogTags);
-  } else {
-    html = html.replace('</head>', `${ogTags}\n</head>`);
-  }
+</head>
+<body>
+    <script>window.location.replace('/game/${encodeURIComponent(gameId)}');</script>
+</body>
+</html>`;
 
   return new Response(html, {
     headers: { 'Content-Type': 'text/html;charset=UTF-8' },

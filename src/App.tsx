@@ -238,16 +238,25 @@ type ParsedRoute = {
   postSlug: string | null;
 };
 
-function parseRoute(pathname: string): ParsedRoute {
+function parseRoute(pathname: string, search: string = ''): ParsedRoute {
   const base: ParsedRoute = { tab: 'home', marketingPage: null, deck: false, gameId: null, postSlug: null };
   // Tolerate a trailing slash so /explore/ and /explore are the same place.
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   const segments = path.split('/').filter(Boolean);
   const [head, second] = segments;
 
-  if (!head) return base;
+  const searchParams = new URLSearchParams(search);
+  const queryGameId = searchParams.get('id') || searchParams.get('game');
 
-  if (head === 'game') return { ...base, deck: true, gameId: second || null };
+  if (head === 'game' || head === 'game.html') {
+    const gameId = second || queryGameId || null;
+    return { ...base, deck: true, gameId };
+  }
+
+  if (queryGameId) {
+    return { ...base, deck: true, gameId: queryGameId };
+  }
+
   if (head === 'play') return { ...base, deck: true };
   if (head === 'blog') return { ...base, marketingPage: 'blog', postSlug: second || null };
 
@@ -775,7 +784,7 @@ function App() {
   // Navigation state comes from the URL — see parseRoute. Home hosts the
   // explore-style browse screen; the full-screen player (deck mode) lives at
   // /play, or /game/:id when a specific game was opened.
-  const route = useMemo(() => parseRoute(location.pathname), [location.pathname]);
+  const route = useMemo(() => parseRoute(location.pathname, location.search), [location.pathname, location.search]);
   const { tab: activeTab, marketingPage, deck: gameDeckMode, gameId: routeGameId, postSlug } = route;
   // Which frame the info pages wear. Arriving from More inside the app gives the
   // in-product layout; arriving from the public home gives the marketing site.
