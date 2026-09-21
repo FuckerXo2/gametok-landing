@@ -151,6 +151,23 @@ textarea {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   z-index: 5;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.game-preview-card:active {
+  transform: translate(-50%, -46%) scale(0.97);
+}
+
+.game-preview-card.is-landscape {
+  width: 88%;
+  max-width: 420px;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  transform: translate(-50%, -50%);
+}
+
+.game-preview-card.is-landscape:active {
+  transform: translate(-50%, -50%) scale(0.97);
 }
 
 .card-poster {
@@ -168,11 +185,14 @@ textarea {
   align-items: center;
   gap: 6px;
   background: rgba(0, 0, 0, 0.75);
-  padding: 5px 10px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 12px;
   border-radius: 16px;
   color: #fff;
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .create-tab-box {
@@ -191,6 +211,10 @@ textarea {
   position: absolute;
   inset: 0;
   background: #050505;
+}
+
+.game-frame.is-playing {
+  z-index: 4;
 }
 
 .feed-card-stack {
@@ -215,8 +239,106 @@ textarea {
   height: 100%;
   border: 0;
   background: #000;
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
+}
+
+/* Landscape active gameplay iframe rotation for mobile portrait screens */
+@media (max-width: 900px) and (orientation: portrait) {
+  .feed-card.is-landscape .game-frame.is-playing .game-iframe {
+    width: 100vh;
+    width: 100dvh;
+    height: 100vw;
+    height: 100dvw;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center center;
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+  .feed-card.is-landscape .game-frame.is-playing .game-iframe {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    transform: none;
+  }
+}
+
+/* Floating active gameplay controls — matching mobile app HomeScreen.tsx */
+.gameplay-control-btn {
+  position: absolute;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  padding: 0;
+}
+
+.gameplay-control-btn:active {
+  transform: scale(0.9);
+  background: rgba(0, 0, 0, 0.85);
+}
+
+/* Portrait controls */
+.gameplay-control-btn.exit-btn:not(.is-landscape) {
+  top: max(14px, env(safe-area-inset-top, 14px));
+  left: 16px;
+}
+
+.gameplay-control-btn.restart-btn:not(.is-landscape) {
+  top: max(14px, env(safe-area-inset-top, 14px));
+  right: 16px;
+}
+
+/* Landscape game controls on portrait mobile screen (rotated 90deg along right edge) */
+@media (max-width: 900px) and (orientation: portrait) {
+  .gameplay-control-btn.exit-btn.is-landscape {
+    top: max(16px, env(safe-area-inset-top, 16px));
+    right: 16px;
+    transform: rotate(90deg);
+  }
+  .gameplay-control-btn.exit-btn.is-landscape:active {
+    transform: rotate(90deg) scale(0.9);
+  }
+
+  .gameplay-control-btn.restart-btn.is-landscape {
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    right: 16px;
+    transform: rotate(90deg);
+  }
+  .gameplay-control-btn.restart-btn.is-landscape:active {
+    transform: rotate(90deg) scale(0.9);
+  }
+}
+
+/* Landscape screen orientation (phone sideways or desktop) */
+@media (orientation: landscape), (min-width: 901px) {
+  .gameplay-control-btn.exit-btn.is-landscape {
+    top: max(14px, env(safe-area-inset-top, 14px));
+    left: 16px;
+    transform: none;
+  }
+  .gameplay-control-btn.restart-btn.is-landscape {
+    top: max(14px, env(safe-area-inset-top, 14px));
+    right: 16px;
+    transform: none;
+  }
 }
 
 .thumbnail-backdrop {
@@ -309,8 +431,8 @@ textarea {
 .feed-actions {
   position: absolute;
   z-index: 12;
-  right: 8px;
-  bottom: 64px;
+  right: 10px;
+  bottom: calc(76px + max(14px, env(safe-area-inset-bottom, 14px)));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -360,12 +482,16 @@ textarea {
 .game-info {
   position: absolute;
   left: 14px;
-  bottom: 100px;
+  bottom: calc(76px + max(14px, env(safe-area-inset-bottom, 14px)));
   right: 80px;
   z-index: 10;
-  pointer-events: box-none;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
+}
+
+.game-info * {
+  pointer-events: auto;
 }
 
 .game-title-row {
