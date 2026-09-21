@@ -679,7 +679,7 @@ async function request(endpoint: string, timeoutMs = 9000) {
   }
 }
 
-function useGameTokData() {
+function useGameTokData(targetGameId?: string | null) {
   const [games, setGames] = useState<Game[]>([]);
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -696,8 +696,19 @@ function useGameTokData() {
         if (!mounted) return;
         if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
           setGames((prev) => {
-            const incoming = gamesRes.value.games;
-            if (prev.length > 0) {
+            const incoming: Game[] = gamesRes.value.games;
+            if (targetGameId) {
+              const matchedFromPrev = prev.find(
+                (g) => g.id === targetGameId || g.id?.toLowerCase() === targetGameId.toLowerCase()
+              );
+              const matchedFromIncoming = incoming.find(
+                (g) => g.id === targetGameId || g.id?.toLowerCase() === targetGameId.toLowerCase()
+              );
+              const target = matchedFromPrev || matchedFromIncoming;
+              if (target) {
+                return [target, ...incoming.filter((g) => g.id !== target.id)];
+              }
+            } else if (prev.length > 0) {
               const active = prev[0];
               const exists = incoming.some((g: any) => g.id === active.id);
               if (!exists) {
@@ -723,7 +734,7 @@ function useGameTokData() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [targetGameId]);
 
   return { games, setGames, creators, loading, offline };
 }
@@ -778,7 +789,6 @@ function useIsMobile() {
 
 function App() {
   const isMobile = useIsMobile();
-  const { games, setGames, creators, loading, offline } = useGameTokData();
   const location = useLocation();
   const navigate = useNavigate();
   // Navigation state comes from the URL — see parseRoute. Home hosts the
@@ -786,6 +796,7 @@ function App() {
   // /play, or /game/:id when a specific game was opened.
   const route = useMemo(() => parseRoute(location.pathname, location.search), [location.pathname, location.search]);
   const { tab: activeTab, marketingPage, deck: gameDeckMode, gameId: routeGameId, postSlug } = route;
+  const { games, setGames, creators, loading, offline } = useGameTokData(routeGameId);
   // Which frame the info pages wear. Arriving from More inside the app gives the
   // in-product layout; arriving from the public home gives the marketing site.
   const [marketingFrame, setMarketingFrame] = useState<MarketingFrame>('site');
@@ -1029,17 +1040,27 @@ function App() {
     window.setTimeout(() => setFeedMotion(null), 360);
   };
 
+  const handleFeedIndexChange = useCallback((idx: number) => {
+    setGameIndex(idx);
+    const target = games[idx];
+    if (gameDeckMode && target?.id) {
+      navigate(`/game/${target.id}`, { replace: true });
+    }
+  }, [gameDeckMode, games, navigate]);
+
   const nextGame = () => {
     if (games.length === 0) return;
     animateFeed('next');
     setGamePaused(false);
-    setGameIndex((value) => (value + 1) % games.length);
+    const nextIdx = (gameIndex + 1) % games.length;
+    handleFeedIndexChange(nextIdx);
   };
   const previousGame = () => {
     if (games.length === 0) return;
     animateFeed('previous');
     setGamePaused(false);
-    setGameIndex((value) => (value - 1 + games.length) % games.length);
+    const prevIdx = (gameIndex - 1 + games.length) % games.length;
+    handleFeedIndexChange(prevIdx);
   };
 
   // Enter the full-screen player (center Play button on the mobile nav).
@@ -1055,20 +1076,18 @@ function App() {
     navigate(TAB_PATHS.home);
   };
 
-
-  const routeResolvedGameIdRef = useRef<string | null>(null);
   const fetchingGameIdRef = useRef<string | null>(null);
 
   // A /game/:id deep link decides which game is showing.
   useEffect(() => {
     if (!routeGameId) return;
-    if (routeResolvedGameIdRef.current === routeGameId) return;
 
     if (games.length > 0) {
       const routeIndex = games.findIndex((game) => game.id === routeGameId || game.id?.toLowerCase() === routeGameId.toLowerCase());
       if (routeIndex >= 0) {
-        setGameIndex(routeIndex);
-        routeResolvedGameIdRef.current = routeGameId;
+        if (gameIndex !== routeIndex) {
+          setGameIndex(routeIndex);
+        }
         return;
       }
     }
@@ -1081,7 +1100,6 @@ function App() {
         if (game && game.id) {
           setGames((prev) => [game, ...prev.filter((g) => g.id !== game.id)]);
           setGameIndex(0);
-          routeResolvedGameIdRef.current = routeGameId;
         }
       }).catch((e) => {
         console.warn('[WebPlayer] Failed to fetch shared game by ID:', e);
@@ -1089,7 +1107,7 @@ function App() {
         fetchingGameIdRef.current = null;
       });
     }
-  }, [routeGameId, games]);
+  }, [routeGameId, games, gameIndex]);
 
   // Restore the last-played game only when the URL isn't already naming one, or
   // the stored id would fight the deep link and win.
@@ -1104,17 +1122,6 @@ function App() {
   useEffect(() => {
     if (activeGame?.id) localStorage.setItem(STORAGE_KEYS.activeGame, activeGame.id);
   }, [activeGame?.id]);
-
-  // Paging inside the player keeps the address bar honest. `replace` so swiping
-  // through twenty games doesn't leave twenty entries to back out through.
-  // Only update address bar after route has resolved to prevent clobbering deep link on load.
-  useEffect(() => {
-    if (!gameDeckMode || !routeGameId || !activeGame?.id) return;
-    if (routeResolvedGameIdRef.current !== routeGameId) return;
-    if (activeGame.id === routeGameId) return;
-    routeResolvedGameIdRef.current = activeGame.id;
-    navigate(`/game/${activeGame.id}`, { replace: true });
-  }, [gameDeckMode, routeGameId, activeGame?.id, navigate]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1181,7 +1188,7 @@ function App() {
                 restartKey={restartKey}
                 getCommentCount={getCommentCount}
                 onRemix={handleRemix}
-                onIndex={setGameIndex}
+                onIndex={handleFeedIndexChange}
                 onOpenModal={setModal}
                 onToggleLike={toggleActiveLike}
                 onToggleSave={toggleActiveSave}
