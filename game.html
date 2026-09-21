@@ -2,169 +2,320 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Play on GameTOK</title>
     
-    <!-- App Store Smart Banner -->
-    <meta name="apple-itunes-app" content="app-id=6757498584">
+    <!-- iOS Smart App Banner -->
+    <meta name="apple-itunes-app" content="app-id=6757498584" id="smartBannerMeta">
     
     <!-- Open Graph for link previews -->
-    <meta property="og:title" content="Play this game on GameTOK! 🎮">
-    <meta property="og:description" content="Swipe. Play. Compete. Join me on GameTOK!">
+    <meta property="og:title" content="Play on GameTOK! 🎮" id="ogTitle">
+    <meta property="og:description" content="Discover and play instant games. Swipe. Play. Compete." id="ogDesc">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://gametok.co/game-cards-hero-sm.png">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:url" content="https://gametok.app">
-    <link rel="canonical" href="https://gametok.co/" />
+    <meta property="og:image" content="https://gametok.co/about/game-cards-hero-sm.png" id="ogImage">
+    <meta property="og:url" content="https://gametok.co" id="ogUrl">
     
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Play this game on GameTOK! 🎮">
-    <meta name="twitter:description" content="Swipe. Play. Compete. Join me on GameTOK!">
-    <meta name="twitter:image" content="https://gametok.co/game-cards-hero-sm.png">
+    <link rel="icon" type="image/png" href="/about/icon.png">
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            min-height: 100vh;
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            background: #000;
             color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .header-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: calc(48px + env(safe-area-inset-top, 0px));
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-left: 14px;
+            padding-right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 100;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #fff;
+            min-width: 0;
+        }
+
+        .logo-pill {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 800;
+            font-size: 16px;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(255, 107, 107, 0.35);
         }
-        .container {
-            text-align: center;
-            padding: 40px 24px;
-            max-width: 400px;
+
+        .game-meta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
         }
-        .logo {
+
+        .game-title {
+            font-size: 14px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #fff;
+        }
+
+        .game-subtitle {
+            font-size: 11px;
+            color: #8E8E93;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-open-app {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 7px 14px;
+            border-radius: 20px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 110, 80, 0.35);
+            transition: transform 0.15s, opacity 0.15s;
+        }
+        .btn-open-app:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+
+        .btn-explore {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 7px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .btn-explore:hover {
+            background: rgba(255, 255, 255, 0.16);
+        }
+
+        .stage-container {
+            position: absolute;
+            top: calc(48px + env(safe-area-inset-top, 0px));
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 520px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        iframe.game-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+            background: #000;
+        }
+
+        .poster-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0d0d12;
+            z-index: 10;
+            transition: opacity 0.35s ease;
+            pointer-events: none;
+        }
+
+        .poster-thumb {
             width: 100px;
             height: 100px;
-            background: linear-gradient(135deg, #FF6B6B, #FF8E53, #FFC107);
-            border-radius: 24px;
-            margin: 0 auto 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            font-weight: 800;
-            box-shadow: 0 20px 60px rgba(255, 142, 83, 0.3);
+            border-radius: 22px;
+            object-fit: cover;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+            margin-bottom: 20px;
+            background: #1e1e24;
         }
-        h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-        .game-name {
-            font-size: 22px;
-            color: #FF8E53;
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            color: #888;
-            font-size: 16px;
-            margin-bottom: 32px;
-        }
-        .loading {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
+
         .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid #333;
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(255,255,255,0.15);
             border-top-color: #FF8E53;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 16px;
+            animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .btn {
-            display: inline-block;
-            background: #fff;
-            color: #000;
-            padding: 16px 40px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 16px;
-            transition: transform 0.2s;
-        }
-        .btn:hover { transform: scale(1.05); }
-        .btn-secondary {
-            display: block;
-            color: #888;
-            font-size: 14px;
-            margin-top: 16px;
-            text-decoration: none;
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-size: 13px;
+            color: #8E8E93;
+            margin-top: 14px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">G</div>
-        <p class="game-name" id="gameName">Loading...</p>
-        <h1>Play on GameTOK</h1>
-        <p class="subtitle">Swipe. Play. Compete.</p>
-        
-        <div id="loading">
-            <div class="spinner"></div>
-            <p class="loading">Opening game...</p>
+    <header class="header-bar">
+        <a href="https://gametok.co" class="brand-group">
+            <div class="logo-pill">G</div>
+            <div class="game-meta">
+                <span class="game-title" id="gameTitle">GameTOK</span>
+                <span class="game-subtitle" id="gameSubtitle">Instant Game</span>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="btn-open-app" id="openAppBtn" onclick="openGameInApp()">
+                Open in App
+            </button>
+            <a href="https://gametok.co" class="btn-explore">Explore</a>
         </div>
-    </div>
+    </header>
+
+    <main class="stage-container">
+        <div class="player-wrapper" id="playerWrapper">
+            <div class="poster-overlay" id="posterOverlay">
+                <img id="posterThumb" src="/about/icon.png" alt="" class="poster-thumb">
+                <div class="spinner"></div>
+                <p class="loading-text">Loading game...</p>
+            </div>
+            <iframe 
+                id="gameIframe"
+                class="game-frame"
+                src="about:blank"
+                allow="autoplay; fullscreen; clipboard-write; gamepad; accelerometer; gyroscope"
+                loading="eager"
+                onload="onGameReady()"
+            ></iframe>
+        </div>
+    </main>
 
     <script>
-        // Get game ID from URL: /game.html?id=flappy-bird or /game/flappy-bird
         const params = new URLSearchParams(window.location.search);
         let gameId = params.get('id') || params.get('game');
         
-        // Also check path like /game/flappy-bird
         const pathMatch = window.location.pathname.match(/\/game\/([^\/]+)/);
         if (pathMatch) gameId = pathMatch[1];
-        
-        // Update game name display
-        if (gameId) {
-            const gameName = gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-            document.getElementById('gameName').textContent = gameName;
-            document.title = `Play ${gameName} on GameTOK`;
-        } else {
-            document.getElementById('gameName').textContent = 'A game';
-        }
-        
-        // Try to open the app with deep link
-        const deepLink = gameId 
-            ? `gametok://game/${gameId}`
-            : 'gametok://';
-        
-        const webPlayUrl = gameId
-            ? `/game/${encodeURIComponent(gameId)}`
-            : '/';
 
-        // Method 1: Try custom URL scheme via hidden iframe
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = deepLink;
-        document.body.appendChild(iframe);
+        if (!gameId) {
+            gameId = 'flappy-bird';
+        }
+
+        const gameNameParam = params.get('name');
+        const imgParam = params.get('img');
+
+        let displayName = gameNameParam || gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        let thumb = imgParam || `https://games.gametok.co/thumbnails/${encodeURIComponent(gameId)}.png`;
+        let deepLink = `gametok://game/${encodeURIComponent(gameId)}`;
+
+        document.getElementById('gameTitle').textContent = displayName;
+        document.title = `Play ${displayName} on GameTOK`;
+        document.getElementById('posterThumb').src = thumb;
+        document.getElementById('smartBannerMeta').setAttribute('content', `app-id=6757498584, app-argument=${deepLink}`);
+
+        const iframe = document.getElementById('gameIframe');
         
-        // If app isn't installed or hasn't opened, transition to the web game (no app store!)
-        setTimeout(() => {
-            if (!document.hidden) {
-                window.location.replace(webPlayUrl);
+        // Fetch real game details from backend for embedUrl & orientation
+        fetch(`https://gametok-backend.onrender.com/api/games/${encodeURIComponent(gameId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.game) {
+                    if (data.game.name) {
+                        displayName = data.game.name;
+                        document.getElementById('gameTitle').textContent = displayName;
+                        document.title = `Play ${displayName} on GameTOK`;
+                    }
+                    if (data.game.creatorDisplayName || data.game.creatorUsername) {
+                        document.getElementById('gameSubtitle').textContent = 'by ' + (data.game.creatorDisplayName || data.game.creatorUsername);
+                    }
+                    if (data.game.thumbnail) {
+                        document.getElementById('posterThumb').src = data.game.thumbnail;
+                    }
+                    if (data.game.orientation === 'landscape') {
+                        document.getElementById('playerWrapper').style.maxWidth = '100%';
+                    }
+                    if (data.game.embedUrl) {
+                        iframe.src = data.game.embedUrl;
+                        return;
+                    }
+                }
+                iframe.src = `https://games.gametok.co/${encodeURIComponent(gameId)}/`;
+            })
+            .catch(() => {
+                iframe.src = `https://games.gametok.co/${encodeURIComponent(gameId)}/`;
+            });
+
+        function onGameReady() {
+            if (iframe.src === 'about:blank') return;
+            const overlay = document.getElementById('posterOverlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => { overlay.style.display = 'none'; }, 400);
             }
-        }, 350);
-        
-        // Track if user leaves the page (app opened)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                appOpened = true;
-            }
-        });
+        }
+
+        setTimeout(onGameReady, 4000);
+
+        function openGameInApp() {
+            window.location.href = deepLink;
+        }
     </script>
 </body>
 </html>

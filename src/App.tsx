@@ -1037,23 +1037,33 @@ function App() {
   };
 
 
+  const routeResolvedGameIdRef = useRef<string | null>(null);
+  const fetchingGameIdRef = useRef<string | null>(null);
+
   // A /game/:id deep link decides which game is showing. This runs once the feed
   // has loaded, since the index can only be resolved against a populated list.
   useEffect(() => {
     if (!routeGameId || games.length === 0) return;
+    if (routeResolvedGameIdRef.current === routeGameId) return;
+
     const routeIndex = games.findIndex((game) => game.id === routeGameId || game.id?.toLowerCase() === routeGameId.toLowerCase());
     if (routeIndex >= 0) {
       setGameIndex(routeIndex);
-    } else {
+      routeResolvedGameIdRef.current = routeGameId;
+    } else if (fetchingGameIdRef.current !== routeGameId) {
+      fetchingGameIdRef.current = routeGameId;
       // Game not in initial trending feed — fetch directly by ID and prepend to games
       request('/games/' + routeGameId).then((res: any) => {
         const game = res?.game;
         if (game && game.id) {
           setGames((prev) => [game, ...prev.filter((g) => g.id !== game.id)]);
           setGameIndex(0);
+          routeResolvedGameIdRef.current = routeGameId;
         }
       }).catch((e) => {
         console.warn('[WebPlayer] Failed to fetch shared game by ID:', e);
+      }).finally(() => {
+        fetchingGameIdRef.current = null;
       });
     }
   }, [routeGameId, games]);
@@ -1074,9 +1084,12 @@ function App() {
 
   // Paging inside the player keeps the address bar honest. `replace` so swiping
   // through twenty games doesn't leave twenty entries to back out through.
+  // Only update address bar after route has resolved to prevent clobbering deep link on load.
   useEffect(() => {
     if (!gameDeckMode || !routeGameId || !activeGame?.id) return;
+    if (routeResolvedGameIdRef.current !== routeGameId) return;
     if (activeGame.id === routeGameId) return;
+    routeResolvedGameIdRef.current = activeGame.id;
     navigate(`/game/${activeGame.id}`, { replace: true });
   }, [gameDeckMode, routeGameId, activeGame?.id, navigate]);
 
@@ -4294,7 +4307,7 @@ function LeaderboardSheet({ game }: { game: Game; creators: Creator[] }) {
 
 function ShareSheet({ game }: { game: Game }) {
   const [copied, setCopied] = useState(false);
-  const url = `https://games.gametok.co/${game.id}`;
+  const url = `https://gametok.co/game.html?id=${encodeURIComponent(game.id)}&name=${encodeURIComponent(game.name)}`;
   const copy = async () => {
     try {
       if (navigator.share) {
