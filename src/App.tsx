@@ -432,6 +432,8 @@ const STORAGE_KEYS = {
   savedGames: 'gametok-web-saved-games',
   followedCreators: 'gametok-web-followed-creators',
   recentGames: 'gametok-web-recent-games',
+  authUser: 'gametok-web-auth-user',
+  cachedGames: 'gametok-web-cached-games',
 };
 
 // A brief typed into the home hero's composer, held across the hop to /create
@@ -678,9 +680,23 @@ async function request(endpoint: string, timeoutMs = 9000) {
 }
 
 function useGameTokData(targetGameId?: string | null) {
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<Game[]>(() => {
+    try {
+      const cached = localStorage.getItem(STORAGE_KEYS.cachedGames);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem(STORAGE_KEYS.cachedGames);
+      return !cached || JSON.parse(cached).length === 0;
+    } catch {
+      return true;
+    }
+  });
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -693,6 +709,9 @@ function useGameTokData(targetGameId?: string | null) {
         ]);
         if (!mounted) return;
         if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
+          try {
+            localStorage.setItem(STORAGE_KEYS.cachedGames, JSON.stringify(gamesRes.value.games.slice(0, 48)));
+          } catch {}
           setGames((prev) => {
             const incoming: Game[] = gamesRes.value.games;
             if (targetGameId) {
@@ -809,7 +828,18 @@ function App() {
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
   const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
+    try {
+      const token = getToken();
+      if (!token) return null;
+      const cached = localStorage.getItem(STORAGE_KEYS.authUser);
+      if (cached) return JSON.parse(cached);
+      return { id: 'restoring', username: 'Player', displayName: 'Player' };
+    } catch {
+      return null;
+    }
+  });
+  const hasSession = Boolean(authUser || getToken());
   const [restartKey, setRestartKey] = useState(0);
   const [commentsStore, setCommentsStore] = useState<Record<string, Array<{ id: string; username: string; text: string; likes: number; createdAt?: string }>>>(() => {
     try {
@@ -861,7 +891,12 @@ function App() {
     auth
       .me()
       .then((data: any) => {
-        if (mounted && data?.user) setAuthUser(data.user);
+        if (mounted && data?.user) {
+          setAuthUser(data.user);
+          try {
+            localStorage.setItem(STORAGE_KEYS.authUser, JSON.stringify(data.user));
+          } catch {}
+        }
       })
       .catch((err: any) => {
         // Only sign the user out when the token is actually rejected (401/403).
@@ -869,6 +904,10 @@ function App() {
         // logged-in user gets bounced back to the login wall on reload.
         if (err?.status === 401 || err?.status === 403) {
           setToken(null);
+          setAuthUser(null);
+          try {
+            localStorage.removeItem(STORAGE_KEYS.authUser);
+          } catch {}
         }
       });
     return () => {
@@ -878,6 +917,9 @@ function App() {
 
   const handleAuthed = useCallback((user: AuthUser) => {
     setAuthUser(user);
+    try {
+      localStorage.setItem(STORAGE_KEYS.authUser, JSON.stringify(user));
+    } catch {}
     setModal(null);
     // Signing in mid-create must not throw away the work in progress.
     if (activeTab !== 'create') {
@@ -888,7 +930,11 @@ function App() {
 
   const handleLogout = useCallback(() => {
     void auth.logout();
+    setToken(null);
     setAuthUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.authUser);
+    } catch {}
     setLikedGames(new Set());
     setSavedGames(new Set());
     setFollowedCreators(new Set());
@@ -1302,7 +1348,7 @@ function App() {
       )}
 
       {/* Signed-out landing: the hero, plus real games to play before any login. */}
-      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && !authUser && (
+      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && !hasSession && (
         <DesktopHomeHero
           games={games}
           loading={loading}
@@ -1316,28 +1362,40 @@ function App() {
         />
       )}
 
-      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && authUser && activeGame && (
-        <DesktopPlayHome
-          user={authUser}
-          game={activeGame}
-          games={games}
-          index={gameIndex}
-          liked={likedGames.has(activeGame.id)}
-          saved={savedGames.has(activeGame.id)}
-          following={followedCreators.has(activeCreatorId)}
-          feedMotion={feedMotion}
-          getCommentCount={getCommentCount}
-          onRemix={handleRemix}
-          onTab={goTab}
-          onNext={nextGame}
-          onPrevious={previousGame}
-          onOpenModal={setModal}
-          onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
-          onToggleLike={toggleActiveLike}
-          onToggleSave={toggleActiveSave}
-          onToggleFollow={toggleActiveFollow}
-          onPage={(page) => goMarketingPage(page, 'app')}
-        />
+      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && hasSession && (
+        activeGame ? (
+          <DesktopPlayHome
+            user={authUser}
+            game={activeGame}
+            games={games}
+            index={gameIndex}
+            liked={likedGames.has(activeGame.id)}
+            saved={savedGames.has(activeGame.id)}
+            following={followedCreators.has(activeCreatorId)}
+            feedMotion={feedMotion}
+            getCommentCount={getCommentCount}
+            onRemix={handleRemix}
+            onTab={goTab}
+            onNext={nextGame}
+            onPrevious={previousGame}
+            onOpenModal={setModal}
+            onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
+            onToggleLike={toggleActiveLike}
+            onToggleSave={toggleActiveSave}
+            onToggleFollow={toggleActiveFollow}
+            onPage={(page) => goMarketingPage(page, 'app')}
+          />
+        ) : (
+          <section className="desktop-app-main desktop-play-home">
+            <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
+            <main className="desktop-feed-stage" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="game-loading">
+                <RefreshCw className="spin" size={34} />
+                <p>Loading games...</p>
+              </div>
+            </main>
+          </section>
+        )
       )}
 
       {/* Desktop runs the same Dream Forge surface as mobile web, laid out as a
