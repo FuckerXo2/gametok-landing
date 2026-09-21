@@ -1,4 +1,4 @@
-// Cloudflare Pages Function to serve the GameTOK website SPA with dynamic OG tags for /game.html?id=:id
+// Cloudflare Pages Function to serve the GameTOK website SPA with dynamic OG tags for /game/:id
 const API_URL = 'https://gametok-backend.onrender.com';
 
 function escapeHtml(str) {
@@ -12,8 +12,8 @@ function escapeHtml(str) {
 }
 
 export async function onRequest(context) {
+  const gameId = context.params.id;
   const url = new URL(context.request.url);
-  const gameId = url.searchParams.get('id') || url.searchParams.get('game');
 
   // Fetch index.html from Cloudflare Pages static assets
   let html = '';
@@ -22,7 +22,9 @@ export async function onRequest(context) {
     if (assetRes.ok) {
       html = await assetRes.text();
     }
-  } catch (e) {}
+  } catch (e) {
+    // Fallback
+  }
 
   if (!html) {
     return context.next();
@@ -34,10 +36,12 @@ export async function onRequest(context) {
     });
   }
 
+  // Fallback defaults
   let gameName = gameId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   let thumbnailUrl = `https://games.gametok.co/thumbnails/${encodeURIComponent(gameId)}.png`;
   let gameDesc = `Play ${gameName} on GameTOK! Swipe, play, and compete with friends.`;
 
+  // Fetch real game metadata for rich social previews (iMessage, WhatsApp, Twitter, etc.)
   try {
     const res = await fetch(`${API_URL}/api/games/${encodeURIComponent(gameId)}`);
     if (res.ok) {
@@ -53,6 +57,7 @@ export async function onRequest(context) {
   const pageUrl = `https://gametok.co/game/${encodeURIComponent(gameId)}`;
   const deepLink = `gametok://game/${encodeURIComponent(gameId)}`;
 
+  // Inject game-specific title and meta tags into index.html
   const ogTags = `
     <title>Play ${escapeHtml(gameName)} on GameTOK</title>
     <meta name="apple-itunes-app" content="app-id=6757498584, app-argument=${escapeHtml(deepLink)}">
@@ -66,16 +71,9 @@ export async function onRequest(context) {
     <meta name="twitter:title" content="Play ${escapeHtml(gameName)} on GameTOK 🎮">
     <meta name="twitter:description" content="${escapeHtml(gameDesc)}">
     <meta name="twitter:image" content="${escapeHtml(thumbnailUrl)}">
-    <script>
-      // Seamlessly set the route so React SPA boots directly into the game feed
-      try {
-        if (window.location.pathname !== '/game/${encodeURIComponent(gameId)}') {
-          window.history.replaceState(null, '', '/game/${encodeURIComponent(gameId)}');
-        }
-      } catch(e) {}
-    </script>
   `;
 
+  // Replace default title and insert tags
   if (html.includes('<title>')) {
     html = html.replace(/<title>.*?<\/title>/, ogTags);
   } else {

@@ -686,7 +686,17 @@ function useGameTokData() {
         ]);
         if (!mounted) return;
         if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
-          setGames(gamesRes.value.games);
+          setGames((prev) => {
+            const incoming = gamesRes.value.games;
+            if (prev.length > 0) {
+              const active = prev[0];
+              const exists = incoming.some((g: any) => g.id === active.id);
+              if (!exists) {
+                return [active, ...incoming];
+              }
+            }
+            return incoming;
+          });
           setOffline(false);
         } else {
           setOffline(true);
@@ -1040,17 +1050,21 @@ function App() {
   const routeResolvedGameIdRef = useRef<string | null>(null);
   const fetchingGameIdRef = useRef<string | null>(null);
 
-  // A /game/:id deep link decides which game is showing. This runs once the feed
-  // has loaded, since the index can only be resolved against a populated list.
+  // A /game/:id deep link decides which game is showing.
   useEffect(() => {
-    if (!routeGameId || games.length === 0) return;
+    if (!routeGameId) return;
     if (routeResolvedGameIdRef.current === routeGameId) return;
 
-    const routeIndex = games.findIndex((game) => game.id === routeGameId || game.id?.toLowerCase() === routeGameId.toLowerCase());
-    if (routeIndex >= 0) {
-      setGameIndex(routeIndex);
-      routeResolvedGameIdRef.current = routeGameId;
-    } else if (fetchingGameIdRef.current !== routeGameId) {
+    if (games.length > 0) {
+      const routeIndex = games.findIndex((game) => game.id === routeGameId || game.id?.toLowerCase() === routeGameId.toLowerCase());
+      if (routeIndex >= 0) {
+        setGameIndex(routeIndex);
+        routeResolvedGameIdRef.current = routeGameId;
+        return;
+      }
+    }
+
+    if (fetchingGameIdRef.current !== routeGameId) {
       fetchingGameIdRef.current = routeGameId;
       // Game not in initial trending feed — fetch directly by ID and prepend to games
       request('/games/' + routeGameId).then((res: any) => {
@@ -4307,7 +4321,7 @@ function LeaderboardSheet({ game }: { game: Game; creators: Creator[] }) {
 
 function ShareSheet({ game }: { game: Game }) {
   const [copied, setCopied] = useState(false);
-  const url = `https://gametok.co/game.html?id=${encodeURIComponent(game.id)}&name=${encodeURIComponent(game.name)}`;
+  const url = `https://gametok.co/game/${encodeURIComponent(game.id)}`;
   const copy = async () => {
     try {
       if (navigator.share) {
