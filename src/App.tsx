@@ -31,6 +31,8 @@ import {
   Pause,
   Play,
   RotateCcw,
+  SkipBack,
+  SkipForward,
   Volume2,
   Plus,
   RefreshCw,
@@ -830,10 +832,8 @@ function App() {
   // in-product layout; arriving from the public home gives the marketing site.
   const [marketingFrame, setMarketingFrame] = useState<MarketingFrame>('site');
   const [gameIndex, setGameIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [hudHidden, setHudHidden] = useState(false);
-  const [_gamePaused, setGamePaused] = useState(false);
-  void _gamePaused;
+  const [gamePaused, setGamePaused] = useState(false);
   const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
@@ -1056,7 +1056,6 @@ function App() {
     setGameIndex(index >= 0 ? index : 0);
     setGamePaused(false);
     setHudHidden(false);
-    setIsPlaying(false);
     setModal(null);
     pushRecentGame(game.id);
     navigate(`/game/${game.id}`);
@@ -1065,8 +1064,6 @@ function App() {
   const goTab = (tab: Tab) => {
     // Creating a game requires an account; browsing/exploring does not.
     if (tab === 'create' && requireAuth('signup')) return;
-    // Tabs never auto-enter the player — that's the center Play button's job.
-    setIsPlaying(false);
     setHudHidden(false);
     navigate(TAB_PATHS[tab]);
   };
@@ -1074,7 +1071,6 @@ function App() {
   const goMarketingPage = (page: MarketingPage, frame: MarketingFrame = 'site') => {
     setMarketingFrame(frame);
     setHudHidden(false);
-    setIsPlaying(false);
     setModal(null);
     navigate(MARKETING_PATHS[page]);
   };
@@ -1087,7 +1083,6 @@ function App() {
     const trimmed = brief?.trim();
     if (trimmed) stashPendingBrief(trimmed);
     if (requireAuth('signup')) return;
-    setIsPlaying(false);
     setHudHidden(false);
     navigate(TAB_PATHS.create);
   };
@@ -1104,7 +1099,6 @@ function App() {
 
   const handleFeedIndexChange = useCallback((idx: number) => {
     setGameIndex(idx);
-    setIsPlaying(false);
     const target = games[idx];
     if (gameDeckMode && target?.id) {
       navigate(`/game/${target.id}`, { replace: true });
@@ -1130,14 +1124,12 @@ function App() {
   const openPlayer = () => {
     setHudHidden(false);
     setGamePaused(false);
-    setIsPlaying(true);
     navigate('/play');
   };
 
   // Leave the player and go back to browsing.
   const closePlayer = () => {
     setHudHidden(false);
-    setIsPlaying(false);
     navigate(TAB_PATHS.home);
   };
 
@@ -1225,7 +1217,19 @@ function App() {
               />
             </div>
           )}
-          {!marketingPage && activeTab === 'home' && (
+          {isMobile && !marketingPage && activeTab === 'home' && !gameDeckMode && (
+            <DesktopExploreScreen
+              variant="mobile"
+              surface="home"
+              user={authUser}
+              games={games}
+              onTab={goTab}
+              onOpenGame={openGame}
+              onCreate={() => goTab('create')}
+              onPlay={openPlayer}
+            />
+          )}
+          {!marketingPage && activeTab === 'home' && (!isMobile || gameDeckMode) && (
             activeGame ? (
               <HomeFeed
                 games={games}
@@ -1234,9 +1238,7 @@ function App() {
                 loading={loading}
                 offline={offline}
                 hudHidden={hudHidden}
-                isPlaying={isPlaying}
-                onPlayingChange={setIsPlaying}
-                onRestart={() => setRestartKey((k) => k + 1)}
+                gameDeckMode={gameDeckMode}
                 liked={likedGames.has(activeGame.id)}
                 saved={savedGames.has(activeGame.id)}
                 following={followedCreators.has(activeCreatorId)}
@@ -1249,7 +1251,7 @@ function App() {
                 onToggleLike={toggleActiveLike}
                 onToggleSave={toggleActiveSave}
                 onToggleFollow={toggleActiveFollow}
-                onOpenExplore={() => goTab('explore')}
+                onOpenExplore={closePlayer}
               />
             ) : (
               <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
@@ -1292,10 +1294,18 @@ function App() {
 
         <BottomNav
           activeTab={activeTab}
-          isPlaying={isPlaying}
+          gameDeckMode={gameDeckMode && activeTab === 'home'}
+          hudHidden={hudHidden}
+          paused={gamePaused}
           onTab={(tab) => {
             goTab(tab);
           }}
+          onPlay={openPlayer}
+          onTogglePlay={() => setRestartKey((k) => k + 1)}
+          onNext={nextGame}
+          onPrevious={previousGame}
+          onToggleHud={() => setHudHidden((value) => !value)}
+          onHomeDeckExit={closePlayer}
         />
       </div>}
 
@@ -1503,9 +1513,7 @@ function HomeFeed({
   loading,
   offline,
   hudHidden,
-  isPlaying = false,
-  onPlayingChange,
-  onRestart,
+  gameDeckMode,
   liked,
   saved: _saved,
   following,
@@ -1526,9 +1534,7 @@ function HomeFeed({
   loading: boolean;
   offline: boolean;
   hudHidden: boolean;
-  isPlaying?: boolean;
-  onPlayingChange: (playing: boolean) => void;
-  onRestart?: () => void;
+  gameDeckMode: boolean;
   liked: boolean;
   saved: boolean;
   following: boolean;
@@ -1544,6 +1550,8 @@ function HomeFeed({
   onOpenExplore: () => void;
 }) {
   const containerRef = useRef<HTMLElement | null>(null);
+  const [showPreviewArt, setShowPreviewArt] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   // ─── Drag state for TikTok-style vertical swipe ───
   const [dragOffset, setDragOffset] = useState(0);
@@ -1552,13 +1560,20 @@ function HomeFeed({
   const isDragging = useRef(false);
   const SWIPE_THRESHOLD = 60;
 
+  useEffect(() => {
+    setGameStarted(true);
+    setShowPreviewArt(true);
+    const timer = window.setTimeout(() => setShowPreviewArt(false), 3500);
+    return () => window.clearTimeout(timer);
+  }, [game.id]);
+
   // ─── Touch / pointer handlers ───
   const onDragStart = useCallback((clientY: number) => {
-    if (isAnimating || isPlaying) return;
+    if (isAnimating) return;
     dragStartY.current = clientY;
     isDragging.current = true;
     setDragOffset(0);
-  }, [isAnimating, isPlaying]);
+  }, [isAnimating]);
 
   const onDragMove = useCallback((clientY: number) => {
     if (!isDragging.current || isAnimating) return;
@@ -1585,7 +1600,6 @@ function HomeFeed({
       const h = el?.clientHeight || window.innerHeight;
       setDragOffset(-h);
       window.setTimeout(() => {
-        onPlayingChange(false);
         onIndex(index + 1);
         setDragOffset(0);
         setIsAnimating(false);
@@ -1597,7 +1611,6 @@ function HomeFeed({
       const h = el?.clientHeight || window.innerHeight;
       setDragOffset(h);
       window.setTimeout(() => {
-        onPlayingChange(false);
         onIndex(index - 1);
         setDragOffset(0);
         setIsAnimating(false);
@@ -1606,7 +1619,7 @@ function HomeFeed({
       // Snap back
       setDragOffset(0);
     }
-  }, [dragOffset, index, games.length, onIndex, onPlayingChange]);
+  }, [dragOffset, index, games.length, onIndex]);
 
   // ─── Wheel scroll (desktop) ───
   const wheelLock = useRef(0);
@@ -1614,7 +1627,7 @@ function HomeFeed({
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      if (isAnimating || isPlaying) return;
+      if (isAnimating) return;
       if (Math.abs(e.deltaY) < 30) return;
       const now = Date.now();
       if (now - wheelLock.current < 600) return;
@@ -1625,7 +1638,6 @@ function HomeFeed({
         const h = el.clientHeight || window.innerHeight;
         setDragOffset(-h);
         window.setTimeout(() => {
-          onPlayingChange(false);
           onIndex(index + 1);
           setDragOffset(0);
           setIsAnimating(false);
@@ -1635,7 +1647,6 @@ function HomeFeed({
         const h = el.clientHeight || window.innerHeight;
         setDragOffset(h);
         window.setTimeout(() => {
-          onPlayingChange(false);
           onIndex(index - 1);
           setDragOffset(0);
           setIsAnimating(false);
@@ -1644,7 +1655,7 @@ function HomeFeed({
     };
     el.addEventListener('wheel', onWheel, { passive: true });
     return () => el.removeEventListener('wheel', onWheel);
-  }, [index, games.length, onIndex, isAnimating, isPlaying, onPlayingChange]);
+  }, [index, games.length, onIndex, isAnimating]);
 
   // Build the 3-card window: [prev, current, next]
   const slots: Array<{ game: Game; position: number; realIndex: number }> = [];
@@ -1663,13 +1674,13 @@ function HomeFeed({
       onPointerMove={(e) => { if (e.pointerType === 'mouse' && isDragging.current) onDragMove(e.clientY); }}
       onPointerUp={(e) => { if (e.pointerType === 'mouse') onDragEnd(); }}
     >
-      {!isPlaying && (
+      {(!gameStarted || showPreviewArt) && (
         <div className="feed-topbar">
           <div className="for-you-pill">
             <span>For You</span>
             <i className="pink-dot" />
           </div>
-          <button className="icon-button" onClick={onOpenExplore} aria-label="Search">
+          <button className="icon-button" onClick={onOpenExplore} aria-label="Back to Home">
             <Search size={20} />
           </button>
         </div>
@@ -1687,7 +1698,6 @@ function HomeFeed({
             const baseY = position * h + dragOffset;
             const transitioning = isAnimating || (isDragging.current && dragOffset !== 0);
             const cardIsLandscape = isLandscape(g.orientation);
-            const isCardPlaying = ri === index && isPlaying;
             return (
               <div
                 className={`feed-card ${cardIsLandscape ? 'is-landscape' : 'is-portrait'}`}
@@ -1700,8 +1710,8 @@ function HomeFeed({
                   zIndex: position === 0 ? 2 : 1,
                 }}
               >
-                <div className={`game-frame ${isCardPlaying ? 'is-playing' : ''}`}>
-                  {isCardPlaying && (
+                <div className={`game-frame ${ri === index && gameStarted ? 'is-playing' : ''}`}>
+                  {ri === index && gameStarted && (
                     <iframe
                       key={`${g.id}-${restartKey}`}
                       className="game-iframe"
@@ -1709,15 +1719,14 @@ function HomeFeed({
                       src={getGameUrl(g)}
                       allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated"
                       style={{ pointerEvents: transitioning ? 'none' : 'auto' }}
+                      onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
                     />
                   )}
                   <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
-                  {!isCardPlaying && (
+                  {ri === index && (!gameStarted || showPreviewArt) && (
                     <div
                       className={`game-preview-card ${cardIsLandscape ? 'is-landscape' : 'is-portrait'}`}
-                      onClick={() => {
-                        if (ri === index) onPlayingChange(true);
-                      }}
+                      onClick={() => setGameStarted(true)}
                     >
                       <img className="card-poster" src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
                       <div className="card-play-pill">
@@ -1734,27 +1743,7 @@ function HomeFeed({
         </div>
       )}
 
-      {/* Floating active gameplay controls (Exit X at top-left, Restart reload at top-right, rotated on landscape) */}
-      {isPlaying && (
-        <>
-          <button
-            className={`gameplay-control-btn exit-btn ${isLandscape(game.orientation) ? 'is-landscape' : 'is-portrait'}`}
-            onClick={() => onPlayingChange(false)}
-            aria-label="Exit game"
-          >
-            <X size={24} color="#fff" />
-          </button>
-          <button
-            className={`gameplay-control-btn restart-btn ${isLandscape(game.orientation) ? 'is-landscape' : 'is-portrait'}`}
-            onClick={() => onRestart?.()}
-            aria-label="Restart game"
-          >
-            <RotateCcw size={22} color="#fff" />
-          </button>
-        </>
-      )}
-
-      {!isPlaying && !hudHidden && (
+      {!hudHidden && (
         <>
           <div className="feed-actions">
             <ActionButton active={liked} tone="like" icon={<Heart size={35} fill={liked ? '#ec2c7a' : 'none'} color={liked ? '#ec2c7a' : '#ffffff'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
@@ -1763,52 +1752,54 @@ function HomeFeed({
             <ActionButton icon={<GitBranch size={30} color="#ffffff" />} label="Remix" onClick={() => onRemix ? onRemix(game) : onOpenModal('share')} />
           </div>
 
-          <div className="game-info">
-            <div className="game-title-row">
-              <h1 className="game-name">{game.name}</h1>
-              <div className="game-title-pill">
-                <Gamepad2 size={13} fill="currentColor" />
+          {(!gameStarted || showPreviewArt) && (
+            <div className="game-info">
+              <div className="game-title-row">
+                <h1 className="game-name">{game.name}</h1>
+                <div className="game-title-pill">
+                  <Gamepad2 size={13} fill="currentColor" />
+                </div>
               </div>
-            </div>
-            <div className="creator-row">
-              <div className="creator-avatar-wrap">
-                <img
-                  src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)}
-                  alt=""
+              <div className="creator-row">
+                <div className="creator-avatar-wrap">
+                  <img
+                    src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)}
+                    alt=""
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenCreator?.();
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <button
+                    className={`creator-follow-badge ${following ? 'following' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFollow();
+                    }}
+                    aria-label="Follow"
+                  >
+                    {following ? '✓' : '+'}
+                  </button>
+                </div>
+                <span
+                  className="creator-display-name"
                   onClick={(e) => {
                     e.stopPropagation();
                     onOpenCreator?.();
                   }}
                   style={{ cursor: 'pointer' }}
-                />
-                <button
-                  className={`creator-follow-badge ${following ? 'following' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFollow();
-                  }}
-                  aria-label="Follow"
                 >
-                  {following ? '✓' : '+'}
-                </button>
+                  {game.creatorDisplayName || game.creatorUsername || 'anonymous'}
+                  {game.creatorVerified && <span className="verified-dot">✓</span>}
+                </span>
               </div>
-              <span
-                className="creator-display-name"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenCreator?.();
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                {game.creatorDisplayName || game.creatorUsername || 'anonymous'}
-                {game.creatorVerified && <span className="verified-dot">✓</span>}
-              </span>
             </div>
-          </div>
+          )}
         </>
       )}
 
-      {!isPlaying && <div className="deck-shadow" />}
+      {!gameDeckMode && <div className="deck-shadow" />}
     </section>
   );
 }
@@ -2893,17 +2884,46 @@ function MoreScreen({ onPage }: { onPage: (page: MarketingPage) => void }) {
 
 function BottomNav({
   activeTab,
-  isPlaying,
+  gameDeckMode,
+  hudHidden,
+  paused: _paused,
   onTab,
+  onPlay: _onPlay,
+  onTogglePlay,
+  onNext,
+  onPrevious,
+  onToggleHud,
+  onHomeDeckExit,
 }: {
   activeTab: Tab;
-  isPlaying?: boolean;
+  gameDeckMode: boolean;
+  hudHidden: boolean;
+  paused: boolean;
   onTab: (tab: Tab) => void;
+  onPlay: () => void;
+  onTogglePlay: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  onToggleHud: () => void;
+  onHomeDeckExit: () => void;
 }) {
-  // When playing a game in Home, completely hide the bottom nav for uninterrupted full-screen gameplay.
-  // The player can tap the Exit (X) button to return to the browse feed.
-  if (activeTab === 'home' && isPlaying) {
-    return null;
+  if (gameDeckMode) {
+    return (
+      <nav className="bottom-nav deck-nav">
+        <button onClick={onHomeDeckExit}><Home size={23} /><span>Home</span></button>
+        <i />
+        <div className="deck-controls">
+          <button onClick={onPrevious} aria-label="Previous game"><SkipBack size={22} fill="currentColor" /></button>
+          <button className="replay" onClick={onTogglePlay} aria-label="Replay game">
+            <RotateCcw size={24} strokeWidth={2.5} />
+          </button>
+          <button onClick={onNext} aria-label="Next game"><SkipForward size={22} fill="currentColor" /></button>
+        </div>
+        <button className="deck-collapse" onClick={onToggleHud} aria-label="Toggle HUD">
+          {hudHidden ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
+        </button>
+      </nav>
+    );
   }
 
   return (
@@ -2911,17 +2931,17 @@ function BottomNav({
       <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onTab('home')}>
         <Home size={23} /><span>Home</span>
       </button>
-      <button className={activeTab === 'explore' ? 'active' : ''} onClick={() => onTab('explore')}>
-        <Compass size={23} /><span>Explore</span>
+      <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
+        <Users size={23} /><span>Connect</span>
       </button>
       <button className="create-tab" onClick={() => onTab('create')} aria-label="Create">
         <span className="create-tab-box"><Plus size={22} strokeWidth={2.5} /></span>
       </button>
-      <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
-        <Users size={23} /><span>Connect</span>
-      </button>
       <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => onTab('profile')}>
         <User size={23} /><span>Profile</span>
+      </button>
+      <button className={activeTab === 'more' ? 'active' : ''} onClick={() => onTab('more')}>
+        <Menu size={23} /><span>More</span>
       </button>
     </nav>
   );
