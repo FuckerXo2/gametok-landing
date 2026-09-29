@@ -19,6 +19,8 @@ function isMobileViewport(): boolean {
   if (typeof window === 'undefined') return false;
   if (new URLSearchParams(window.location.search).get('mobileGate') === '1') return true;
   const ua = navigator.userAgent || '';
+  // Never show mobile gate to search engine crawlers or preview bots
+  if (/bot|googlebot|crawler|spider|robot|crawling/i.test(ua)) return false;
   const uaMobile = /iPhone|iPad|iPod|Android/i.test(ua);
   return uaMobile && window.innerWidth < 900;
 }
