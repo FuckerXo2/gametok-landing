@@ -38,8 +38,8 @@ const HOW_IT_WORKS = [
     body: 'It designs the game, writes it, and tests that it actually plays before handing it back. You get something playable, not a project to finish.',
   },
   {
-    title: 'Publish and remix',
-    body: 'Post it to the feed where anyone can play it instantly, with nothing to install. Anyone can remix it into something of their own.',
+    title: 'Publish instantly',
+    body: 'Post it to the feed where anyone can play it instantly, with nothing to install.',
   },
 ];
 

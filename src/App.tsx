@@ -18,7 +18,6 @@ import {
   Compass,
   FileText,
   Gamepad2,
-  GitBranch,
   Grid3X3,
   Heart,
   HelpCircle,
@@ -370,7 +369,7 @@ const CURRENT_ANNOUNCEMENT: Announcement = {
     {
       icon: Zap,
       title: 'Publish to the feed',
-      body: 'Post it to GameTok when it is ready, and let anyone play or remix it.',
+      body: 'Post it to GameTok when it is ready, and let anyone play it.',
     },
   ],
   primaryLabel: 'Try Dream Forge',
@@ -1570,7 +1569,7 @@ function HomeFeed({
   following,
   restartKey = 0,
   getCommentCount,
-  onRemix,
+  onRemix: _onRemix,
   onIndex,
   onOpenModal,
   onOpenCreator,
@@ -1789,7 +1788,6 @@ function HomeFeed({
             <ActionButton active={liked} tone="like" icon={<Heart size={35} fill={liked ? '#ec2c7a' : 'none'} color={liked ? '#ec2c7a' : '#ffffff'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
             <ActionButton icon={<MessageCircle size={32} color="#ffffff" />} label={formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))} onClick={() => onOpenModal('comments')} />
             <ActionButton icon={<Share2 size={32} color="#ffffff" />} label="0" onClick={() => onOpenModal('share')} />
-            <ActionButton icon={<GitBranch size={30} color="#ffffff" />} label="Remix" onClick={() => onRemix ? onRemix(game) : onOpenModal('share')} />
           </div>
 
           {(!gameStarted || showPreviewArt) && (
@@ -3301,7 +3299,7 @@ function DesktopPlayHome({
   following,
   feedMotion,
   getCommentCount,
-  onRemix,
+  onRemix: _onRemix,
   onTab,
   onNext,
   onPrevious,
@@ -3458,7 +3456,6 @@ function DesktopPlayHome({
               <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
               <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))}</span></button>
               <button onClick={() => onOpenModal('share')}><Share2 size={25} /><span>Share</span></button>
-              <button onClick={() => onRemix ? onRemix(game) : onOpenModal('share')}><GitBranch size={25} /><span>Remix</span></button>
               <button onClick={() => onOpenModal('leaderboard')}><Trophy size={25} /><span>Scores</span></button>
               <button className="desktop-feed-avatar-action" onClick={onOpenCreator}>
                 <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
@@ -4804,7 +4801,7 @@ function AuthSheet({
 
       <div className="auth-idea-card">
         <span>{mode === 'signup' ? 'Start with:' : 'Last session:'}</span>
-        <strong>{mode === 'signup' ? '"A boss-rush arena that remixes every round"' : 'Your playable feed is waiting'}</strong>
+        <strong>{mode === 'signup' ? '"A boss-rush arena that evolves every round"' : 'Your playable feed is waiting'}</strong>
       </div>
 
       <div className="auth-email-fields">

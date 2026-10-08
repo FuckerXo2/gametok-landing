@@ -6,12 +6,11 @@
 // required name, privacy choice, terms line.
 
 import { useState } from 'react';
-import { Check, Eye, Globe, Lock, X } from 'lucide-react';
+import { Check, Globe, Lock, X } from 'lucide-react';
 import { ai } from '../services/api';
 
 const PRIVACY_OPTIONS = [
-  { key: 'public', label: 'Public', sub: 'Anyone can play and remix', icon: Globe },
-  { key: 'play_only', label: 'Public for play only', sub: 'Anyone can play but not remix', icon: Eye },
+  { key: 'public', label: 'Public', sub: 'Anyone can play', icon: Globe },
   { key: 'private', label: 'Only me', sub: 'Only visible to you', icon: Lock },
 ] as const;
 
@@ -51,7 +50,7 @@ export default function PublishSheet({ draftId, defaultTitle, html, onClose, onP
     } catch (e: any) {
       // A remix that was never edited is a rule, not a crash — say what to do about it.
       if (e?.code === 'REMIX_UNCHANGED') {
-        setError('Change something about this remix before publishing it.');
+        setError('Make changes before publishing.');
       } else {
         setError(e?.message || 'Could not publish. Try again.');
       }
