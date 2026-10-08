@@ -25,14 +25,13 @@ import {
   Home,
   Image as ImageIcon,
   Info,
+  Maximize2,
   Menu,
   MessageCircle,
   Mic,
   Pause,
   Play,
   RotateCcw,
-  SkipBack,
-  SkipForward,
   Volume2,
   Plus,
   RefreshCw,
@@ -1346,27 +1345,38 @@ function App() {
       )}
 
       {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && activeGame && (
-        <DesktopPlayHome
-          user={authUser}
-          game={activeGame}
-          games={games}
-          index={gameIndex}
-          liked={likedGames.has(activeGame.id)}
-          saved={savedGames.has(activeGame.id)}
-          following={followedCreators.has(activeCreatorId)}
-          feedMotion={feedMotion}
-          getCommentCount={getCommentCount}
-          onRemix={handleRemix}
-          onTab={goTab}
-          onNext={nextGame}
-          onPrevious={previousGame}
-          onOpenModal={setModal}
-          onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
-          onToggleLike={toggleActiveLike}
-          onToggleSave={toggleActiveSave}
-          onToggleFollow={toggleActiveFollow}
-          onPage={(page) => goMarketingPage(page, 'app')}
-        />
+        routeGameId ? (
+          <DesktopDirectGamePlayer
+            game={activeGame}
+            onGoHome={() => goTab('home')}
+            onExplore={() => goTab('explore')}
+            liked={likedGames.has(activeGame.id)}
+            onToggleLike={toggleActiveLike}
+            onOpenModal={setModal}
+          />
+        ) : (
+          <DesktopPlayHome
+            user={authUser}
+            game={activeGame}
+            games={games}
+            index={gameIndex}
+            liked={likedGames.has(activeGame.id)}
+            saved={savedGames.has(activeGame.id)}
+            following={followedCreators.has(activeCreatorId)}
+            feedMotion={feedMotion}
+            getCommentCount={getCommentCount}
+            onRemix={handleRemix}
+            onTab={goTab}
+            onNext={nextGame}
+            onPrevious={previousGame}
+            onOpenModal={setModal}
+            onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
+            onToggleLike={toggleActiveLike}
+            onToggleSave={toggleActiveSave}
+            onToggleFollow={toggleActiveFollow}
+            onPage={(page) => goMarketingPage(page, 'app')}
+          />
+        )
       )}
 
       {/* Signed-out landing: the hero, plus real games to play before any login. */}
@@ -1506,12 +1516,53 @@ function EmptyListState({ title, text }: { title: string; text: string }) {
   );
 }
 
+function MobileSmartAppBanner() {
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem('gt_smart_banner_dismissed') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  if (dismissed) return null;
+
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+  const isIos = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  const storeUrl = isIos ? IOS_STORE_URL : ANDROID_STORE_URL;
+  const storeSubtitle = isIos ? 'Free on the App Store' : isAndroid ? 'Free on Google Play' : 'Play in the App';
+
+  return (
+    <div className="mobile-smart-banner">
+      <button
+        className="mobile-smart-banner-close"
+        onClick={() => {
+          setDismissed(true);
+          try { sessionStorage.setItem('gt_smart_banner_dismissed', '1'); } catch {}
+        }}
+        aria-label="Dismiss banner"
+      >
+        <X size={15} />
+      </button>
+      <img src="/about/icon.png" alt="GameTOK" className="mobile-smart-banner-icon" />
+      <div className="mobile-smart-banner-info">
+        <strong>GameTOK</strong>
+        <span>{storeSubtitle}</span>
+      </div>
+      <a href={storeUrl} className="mobile-smart-banner-btn" target="_blank" rel="noopener noreferrer">
+        GET
+      </a>
+    </div>
+  );
+}
+
 function HomeFeed({
   game,
   index,
   games,
   loading,
-  offline,
+  offline: _offline,
   hudHidden,
   gameDeckMode,
   liked,
@@ -1526,7 +1577,7 @@ function HomeFeed({
   onToggleLike,
   onToggleSave: _onToggleSave,
   onToggleFollow,
-  onOpenExplore,
+  onOpenExplore: _onOpenExplore,
 }: {
   game: Game;
   index: number;
@@ -1674,17 +1725,7 @@ function HomeFeed({
       onPointerMove={(e) => { if (e.pointerType === 'mouse' && isDragging.current) onDragMove(e.clientY); }}
       onPointerUp={(e) => { if (e.pointerType === 'mouse') onDragEnd(); }}
     >
-      {(!gameStarted || showPreviewArt) && (
-        <div className="feed-topbar">
-          <div className="for-you-pill">
-            <span>For You</span>
-            <i className="pink-dot" />
-          </div>
-          <button className="icon-button" onClick={onOpenExplore} aria-label="Back to Home">
-            <Search size={20} />
-          </button>
-        </div>
-      )}
+      <MobileSmartAppBanner />
 
       {loading ? (
         <div className="game-loading">
@@ -1735,7 +1776,6 @@ function HomeFeed({
                       </div>
                     </div>
                   )}
-                  {ri === index && offline && <div className="offline-pill">Offline</div>}
                 </div>
               </div>
             );
@@ -2885,14 +2925,14 @@ function MoreScreen({ onPage }: { onPage: (page: MarketingPage) => void }) {
 function BottomNav({
   activeTab,
   gameDeckMode,
-  hudHidden,
+  hudHidden: _hudHidden,
   paused: _paused,
   onTab,
   onPlay: _onPlay,
   onTogglePlay,
-  onNext,
-  onPrevious,
-  onToggleHud,
+  onNext: _onNext,
+  onPrevious: _onPrevious,
+  onToggleHud: _onToggleHud,
   onHomeDeckExit,
 }: {
   activeTab: Tab;
@@ -2909,19 +2949,13 @@ function BottomNav({
 }) {
   if (gameDeckMode) {
     return (
-      <nav className="bottom-nav deck-nav">
+      <nav className="bottom-nav deck-nav deck-nav-simplified">
         <button onClick={onHomeDeckExit}><Home size={23} /><span>Home</span></button>
-        <i />
         <div className="deck-controls">
-          <button onClick={onPrevious} aria-label="Previous game"><SkipBack size={22} fill="currentColor" /></button>
           <button className="replay" onClick={onTogglePlay} aria-label="Replay game">
             <RotateCcw size={24} strokeWidth={2.5} />
           </button>
-          <button onClick={onNext} aria-label="Next game"><SkipForward size={22} fill="currentColor" /></button>
         </div>
-        <button className="deck-collapse" onClick={onToggleHud} aria-label="Toggle HUD">
-          {hudHidden ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
-        </button>
       </nav>
     );
   }
@@ -3163,6 +3197,97 @@ function DesktopHomeHero({
         />
       )}
     </section>
+  );
+}
+
+function DesktopDirectGamePlayer({
+  game,
+  onGoHome,
+  onExplore,
+  liked,
+  onToggleLike,
+  onOpenModal,
+}: {
+  game: Game;
+  onGoHome: () => void;
+  onExplore: () => void;
+  liked?: boolean;
+  onToggleLike?: () => void;
+  onOpenModal?: (modal: Modal) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  };
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } else {
+      onOpenModal?.('share');
+    }
+  };
+
+  return (
+    <div className="desktop-direct-player" ref={containerRef}>
+      <header className="direct-player-topbar">
+        <div className="direct-player-left">
+          <button className="direct-player-logo" onClick={onGoHome} title="Go to GameTOK Home">
+            <img src="/about/icon.png" alt="GameTOK" />
+            <strong>GameTok</strong>
+          </button>
+          <button className="direct-player-nav-btn" onClick={onExplore}>
+            <Compass size={17} />
+            <span>Explore More Games</span>
+          </button>
+        </div>
+
+        <div className="direct-player-center">
+          <h1 className="direct-player-title">{game.name || game.title}</h1>
+          <span className="direct-player-author">
+            by @{game.creatorDisplayName || game.creatorUsername || 'creator'}
+          </span>
+        </div>
+
+        <div className="direct-player-right">
+          <button
+            className={`direct-player-action-btn ${liked ? 'active' : ''}`}
+            onClick={onToggleLike}
+            title="Like"
+          >
+            <Heart size={18} fill={liked ? '#ec2c7a' : 'none'} color={liked ? '#ec2c7a' : '#fff'} />
+            <span>{game.likes || 0}</span>
+          </button>
+          <button className="direct-player-action-btn" onClick={handleShare} title="Share Game">
+            <Share2 size={18} />
+            <span>{copied ? 'Copied!' : 'Share'}</span>
+          </button>
+          <button className="direct-player-action-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
+            <Maximize2 size={18} />
+          </button>
+          <button className="direct-player-website-cta" onClick={onGoHome}>
+            Main Website →
+          </button>
+        </div>
+      </header>
+
+      <main className="direct-player-body">
+        <iframe
+          className="direct-player-iframe"
+          title={game.name}
+          src={getGameUrl(game)}
+          allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated"
+        />
+      </main>
+    </div>
   );
 }
 
