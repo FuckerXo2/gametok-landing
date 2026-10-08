@@ -4101,7 +4101,6 @@ function DesktopAppSidebar({
     { tab: 'home', label: 'Home', icon: <Home size={22} /> },
     { tab: 'explore', label: 'Explore', icon: <Compass size={22} /> },
     { tab: 'create', label: 'Create', icon: <Wand2 size={22} /> },
-    { tab: 'connect', label: 'Connect', icon: <Users size={22} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={22} /> },
   ];
   const username = user?.displayName || user?.username || 'Player';
