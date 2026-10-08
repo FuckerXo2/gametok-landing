@@ -128,7 +128,7 @@ async function fetchFreesoundTracks(type: 'bgm' | 'sfx', query = ''): Promise<Fr
   }).filter((track: FreesoundTrack) => Boolean(track.url));
 }
 
-const API_URL = 'https://gametok-backend.onrender.com/api';
+const API_URL = 'https://gametok-backend-267787411422.us-central1.run.app/api';
 const API_ORIGIN = API_URL.replace(/\/api$/, '');
 const GAMES_HOST = 'https://games.gametok.co';
 

@@ -3,7 +3,7 @@
 
 import { normalizeOrientation, type Orientation } from '../constants/orientation';
 
-export const API_URL = 'https://gametok-backend-580726430039.us-central1.run.app/api';
+export const API_URL = 'https://gametok-backend-267787411422.us-central1.run.app/api';
 const GAMES_HOST = 'https://games.gametok.co';
 const API_ORIGIN = API_URL.replace(/\/api$/, '');
 
