@@ -3274,13 +3274,6 @@ function DesktopPlayHome({
       <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
 
       <main className={`desktop-feed-stage ${gameStarted ? 'is-playing' : ''}`}>
-        {!gameStarted && (
-          <div className="desktop-feed-topline">
-            <span>{index + 1}/{games.length}</span>
-            <strong>For You</strong>
-            <button onClick={() => onOpenModal('notifications')}><Bell size={18} /></button>
-          </div>
-        )}
 
         <article
           key={game.id}
