@@ -120,16 +120,34 @@
     }
   }
 
+  var sessionStartTime = Date.now();
+  var sessionSent = false;
+
+  function reportSession(score) {
+    if (sessionSent) return;
+    sessionSent = true;
+    var duration = Math.round((Date.now() - sessionStartTime) / 1000);
+    postToParent({
+      type: 'GAMETOK_SESSION_END',
+      durationSeconds: duration,
+      score: typeof score === 'number' ? score : 0
+    });
+  }
+
+  window.addEventListener('beforeunload', function () {
+    reportSession();
+  });
+
   // The public GameTok SDK API
   var GameTok = {
     isGameTok: isGameTok,
-    version: '1.0.0',
+    version: '1.1.0',
 
     // Notify GameTok that the game has finished loading and is ready
     ready: function () {
       postToParent({
         type: 'GAMETOK_READY',
-        version: '1.0.0',
+        version: '1.1.0',
         creatorName: creatorName,
         creatorHandle: creatorHandle,
         title: gameTitle || document.title
@@ -154,7 +172,17 @@
       if (typeof finalScore === 'number') {
         payload.score = finalScore;
       }
+      reportSession(finalScore);
       postToParent(payload);
+    },
+
+    // Record custom analytics events
+    recordEvent: function (eventName, eventData) {
+      postToParent({
+        type: 'GAMETOK_EVENT',
+        event: eventName,
+        data: eventData || {}
+      });
     },
 
     // Register callback listeners (pause, resume, mute, unmute, restart)

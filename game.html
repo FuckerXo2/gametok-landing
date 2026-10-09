@@ -271,9 +271,32 @@
         document.getElementById('smartBannerMeta').setAttribute('content', `app-id=6757498584, app-argument=${deepLink}`);
 
         const iframe = document.getElementById('gameIframe');
+        const API_URL = 'https://gametok-backend-267787411422.us-central1.run.app/api';
         
+        // Listen to GameTok Bridge events from child iframe
+        window.addEventListener('message', function (event) {
+            if (!event.data) return;
+            const data = event.data;
+            if (data.type === 'GAMETOK_READY') {
+                onGameReady();
+            } else if (data.type === 'GAMETOK_SCORE') {
+                console.log('[GameTok Bridge] Score submitted:', data.score);
+            } else if (data.type === 'GAMETOK_SESSION_END') {
+                // Record session analytics to backend
+                navigator.sendBeacon(`${API_URL}/developer/analytics/session`, JSON.stringify({
+                    gameId: gameId,
+                    durationSeconds: data.durationSeconds || 0,
+                    score: data.score || 0,
+                    platform: 'web'
+                }));
+            }
+        });
+
+        // Record play launch
+        fetch(`${API_URL}/games/${encodeURIComponent(gameId)}/play`, { method: 'POST' }).catch(() => {});
+
         // Fetch real game details from backend for embedUrl & orientation
-        fetch(`https://gametok-backend.onrender.com/api/games/${encodeURIComponent(gameId)}`)
+        fetch(`${API_URL}/games/${encodeURIComponent(gameId)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.game) {
