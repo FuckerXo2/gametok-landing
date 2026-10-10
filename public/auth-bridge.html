@@ -46,18 +46,18 @@
       window.google.accounts.id.initialize({
         client_id: CLIENT_ID,
         callback: handleCredential,
-        auto_select: true
+        auto_select: false
       });
 
       window.google.accounts.id.renderButton(
         document.getElementById('googleBtn'),
-        { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with' }
+        { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with', width: 280 }
       );
 
-      // Prompt One-Tap automatically
+      // Prompt account selection
       window.google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          document.getElementById('statusText').textContent = 'Please click below to continue:';
+          document.getElementById('statusText').textContent = 'Please choose your Google account below:';
         }
       });
     }
