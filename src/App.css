@@ -9406,3 +9406,13 @@ kbd {
   display: block;
 }
 
+@media (orientation: landscape) and (max-height: 600px) {
+  .direct-player-topbar {
+    display: none !important;
+  }
+  .direct-player-body {
+    height: 100vh !important;
+    height: 100dvh !important;
+  }
+}
+

@@ -30,7 +30,6 @@ import {
   Mic,
   Pause,
   Play,
-  RotateCcw,
   Volume2,
   Plus,
   RefreshCw,
@@ -2927,11 +2926,11 @@ function BottomNav({
   paused: _paused,
   onTab,
   onPlay: _onPlay,
-  onTogglePlay,
+  onTogglePlay: _onTogglePlay,
   onNext: _onNext,
   onPrevious: _onPrevious,
   onToggleHud: _onToggleHud,
-  onHomeDeckExit,
+  onHomeDeckExit: _onHomeDeckExit,
 }: {
   activeTab: Tab;
   gameDeckMode: boolean;
@@ -2945,17 +2944,9 @@ function BottomNav({
   onToggleHud: () => void;
   onHomeDeckExit: () => void;
 }) {
+  // Hide bottom navigation completely while playing a game
   if (gameDeckMode) {
-    return (
-      <nav className="bottom-nav deck-nav deck-nav-simplified">
-        <button onClick={onHomeDeckExit}><Home size={23} /><span>Home</span></button>
-        <div className="deck-controls">
-          <button className="replay" onClick={onTogglePlay} aria-label="Replay game">
-            <RotateCcw size={24} strokeWidth={2.5} />
-          </button>
-        </div>
-      </nav>
-    );
+    return null;
   }
 
   return (
