@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GameTok Authentication Bridge</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      background: #030508;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p id="statusText">Connecting with Google...</p>
+  <div id="googleBtn" style="margin-top: 20px;"></div>
+
+  <script>
+    const CLIENT_ID = '516560435127-l6db4akjqei5q57j764kgu3aoaedu45l.apps.googleusercontent.com';
+
+    function init() {
+      if (!window.google?.accounts?.id) {
+        setTimeout(init, 100);
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredential,
+        auto_select: true
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('googleBtn'),
+        { theme: 'filled_black', size: 'large', shape: 'pill', text: 'continue_with' }
+      );
+
+      // Prompt One-Tap automatically
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          document.getElementById('statusText').textContent = 'Please click below to continue:';
+        }
+      });
+    }
+
+    function handleCredential(response) {
+      document.getElementById('statusText').textContent = 'Authenticating...';
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'GAMETOK_GOOGLE_CREDENTIAL',
+          credential: response.credential
+        }, '*');
+        setTimeout(() => window.close(), 500);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
