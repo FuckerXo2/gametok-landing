@@ -65,10 +65,12 @@
     function handleCredential(response) {
       document.getElementById('statusText').textContent = 'Authenticating...';
       if (window.opener) {
+        // Only games.gametok.co may receive the credential. With '*', any site that opened
+        // this page could capture a Google ID token and trade it for a GameTok session.
         window.opener.postMessage({
           type: 'GAMETOK_GOOGLE_CREDENTIAL',
           credential: response.credential
-        }, '*');
+        }, 'https://games.gametok.co');
         setTimeout(() => window.close(), 500);
       }
     }

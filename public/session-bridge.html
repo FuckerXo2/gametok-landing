@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GameTok session bridge</title>
+</head>
+<body>
+  <script>
+    // Shares the gametok.co sign-in with games.gametok.co. That site embeds this page in a
+    // hidden iframe (same site, so the browser gives it gametok.co's real localStorage) and
+    // asks for / stores / clears the session over postMessage. Only ALLOWED_ORIGINS get an
+    // answer, and every reply targets the asker's exact origin — never '*'.
+    (function () {
+      var ALLOWED_ORIGINS = ['https://games.gametok.co'];
+      // Same keys the gametok.co app uses (src/services/api.ts, STORAGE_KEYS.authUser).
+      var TOKEN_KEY = 'authToken';
+      var USER_KEY = 'gametok-web-auth-user';
+
+      function read(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+      }
+
+      window.addEventListener('message', function (event) {
+        if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) return;
+        var msg = event.data;
+        if (!msg || typeof msg !== 'object' || !event.source) return;
+        var reply = function (payload) {
+          payload.requestId = msg.requestId;
+          event.source.postMessage(payload, event.origin);
+        };
+
+        if (msg.type === 'GAMETOK_SESSION_GET') {
+          var user = null;
+          try { user = JSON.parse(read(USER_KEY) || 'null'); } catch (e) {}
+          reply({ type: 'GAMETOK_SESSION', token: read(TOKEN_KEY), user: user });
+        } else if (msg.type === 'GAMETOK_SESSION_SET') {
+          // Don't replace a different account already signed in on gametok.co.
+          if (typeof msg.token === 'string' && msg.token && !read(TOKEN_KEY)) {
+            try {
+              localStorage.setItem(TOKEN_KEY, msg.token);
+              if (msg.user) localStorage.setItem(USER_KEY, JSON.stringify(msg.user));
+            } catch (e) {}
+          }
+          reply({ type: 'GAMETOK_SESSION_DONE' });
+        } else if (msg.type === 'GAMETOK_SESSION_CLEAR') {
+          // Only sign out the session the caller actually holds.
+          if (typeof msg.token === 'string' && msg.token && read(TOKEN_KEY) === msg.token) {
+            try {
+              localStorage.removeItem(TOKEN_KEY);
+              localStorage.removeItem(USER_KEY);
+            } catch (e) {}
+          }
+          reply({ type: 'GAMETOK_SESSION_DONE' });
+        }
+      });
+
+      // Nothing sensitive in the ready signal; it just tells the embedder it can ask now.
+      if (window.parent !== window) window.parent.postMessage({ type: 'GAMETOK_SESSION_BRIDGE_READY' }, '*');
+    })();
+  </script>
+</body>
+</html>
