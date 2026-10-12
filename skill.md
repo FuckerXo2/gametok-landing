@@ -91,14 +91,13 @@ curl -s -X POST https://gametok-backend-267787411422.us-central1.run.app/api/pub
 ```
 
 #### Option B: Standalone Single-File HTML Upload
-If the game is contained in a single `index.html`:
+If the game is contained in a single self-contained `index.html` (send it as the JSON `html` field; multipart uploads are not supported):
 ```bash
-curl -s -X POST https://gametok-backend-267787411422.us-central1.run.app/api/publish \
-  -F "file=@index.html" \
-  -F "title=<GAME_TITLE>" \
-  -F "creatorName=<CREATOR_NAME>" \
-  -F "creatorHandle=<CREATOR_HANDLE>" \
-  -F "orientation=portrait"
+jq -n --rawfile html index.html \
+  --arg title "<GAME_TITLE>" --arg creatorName "<CREATOR_NAME>" --arg creatorHandle "<CREATOR_HANDLE>" \
+  '{html: $html, title: $title, creatorName: $creatorName, creatorHandle: $creatorHandle, orientation: "portrait"}' \
+| curl -s -X POST https://gametok-backend-267787411422.us-central1.run.app/api/publish \
+  -H "Content-Type: application/json" --data-binary @-
 ```
 
 ---
@@ -117,7 +116,7 @@ The GameTok API returns:
     "displayName": "Sarah Connor",
     "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=sconnor"
   },
-  "dashboardUrl": "https://games.gametok.co?creator=sconnor"
+  "dashboardUrl": "https://games.gametok.co/dashboard?creator=sconnor"
 }
 ```
 
@@ -126,5 +125,5 @@ The GameTok API returns:
 ## 5. Completing the Task
 Once published:
 1. Provide the user with their live link: `https://gametok.co/game/<gameId>`.
-2. Inform them that their creator profile has been auto-generated at `https://games.gametok.co?creator=<creatorHandle>`.
+2. Inform them that their creator profile has been auto-generated and their dashboard is at the `dashboardUrl` from the response (`https://games.gametok.co/dashboard?creator=<creatorHandle>`).
 3. Remind them that whenever they push updates to their hosted URL, their GameTok game updates automatically in real time!
