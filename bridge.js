@@ -1,5 +1,5 @@
 /**
- * GameTok Bridge (v1.2.0)
+ * GameTok Bridge (v1.3.0)
  * https://gametok.co/bridge.js
  * 
  * Lightweight drop-in bridge for indie web games on GameTok.
@@ -9,6 +9,8 @@
  * - Provides bidirectional postMessage communication (score, pause, resume)
  * - Player identity: GameTok.init() / GameTok.session() give your game the player and a
  *   short-lived signed session your server verifies with the GameTok API
+ * - Multiplayer lobby: GameTok.match.* pairs players; your own server runs the gameplay
+ *   and reports the result
  */
 (function () {
   'use strict';
@@ -99,6 +101,8 @@
   var pendingSessions = {};
   var SESSION_TIMEOUT_MS = 6000;
   var currentPlayer = null;
+  var API_BASE = 'https://gametok-backend-267787411422.us-central1.run.app/api';
+  var cachedSession = null; // { session, expiresAt }
 
   // Listen to incoming messages from the parent GameTok player
   window.addEventListener('message', function (event) {
@@ -115,6 +119,7 @@
       clearTimeout(pending.timer);
       if (data.ok) {
         currentPlayer = data.player || null;
+        cachedSession = { session: data.session, expiresAt: Date.now() + (data.expiresIn || 0) * 1000 };
         pending.resolve({ player: data.player, session: data.session, mode: data.mode, expiresIn: data.expiresIn });
       } else {
         pending.reject(bridgeError(data.code || 'SESSION_FAILED', data.error || 'GameTok could not create a player session'));
@@ -164,6 +169,31 @@
     });
   }
 
+  // A session good for at least another minute (reused for lobby calls).
+  function sessionToken() {
+    if (cachedSession && cachedSession.expiresAt - Date.now() > 60000) return Promise.resolve(cachedSession.session);
+    return requestPlayerSession().then(function (r) { return r.session; });
+  }
+
+  function lobby(method, path, body) {
+    return sessionToken().then(function (token) {
+      return fetch(API_BASE + path, {
+        method: method,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: body ? JSON.stringify(body) : undefined
+      });
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) {
+          var err = bridgeError(data.code || ('HTTP_' + res.status), data.error || 'Match request failed');
+          if (data.match) err.match = data.match;
+          throw err;
+        }
+        return data.match || null;
+      });
+    });
+  }
+
   var sessionStartTime = Date.now();
   var sessionSent = false;
 
@@ -185,7 +215,7 @@
   // The public GameTok SDK API
   var GameTok = {
     isGameTok: isGameTok,
-    version: '1.2.0',
+    version: '1.3.0',
 
     // Who's playing? Resolves { player: { id, name, avatar, guest }, session, mode, expiresIn }.
     // player.id is unique to this player in your game only. Send `session` to your server and
@@ -207,11 +237,43 @@
       return currentPlayer;
     },
 
+    // Multiplayer lobby. GameTok pairs players (by code or quick match) and starts the match
+    // when every seat is filled; your server runs the round and reports the winner. No stakes.
+    // A match: { id, code, status: open|playing|done|cancelled|void, seats, players: [{ id, name }],
+    //            me, winner, result, createdAt, startedAt, endsAt, mode }
+    match: {
+      create: function (opts) { return lobby('POST', '/matches', { seats: (opts && opts.seats) || 2 }); },
+      join: function (code) { return lobby('POST', '/matches/join', { code: code }); },
+      quick: function (opts) { return lobby('POST', '/matches/quick', { seats: (opts && opts.seats) || 2 }); },
+      current: function () { return lobby('GET', '/matches/current'); },
+      leave: function () {
+        return lobby('GET', '/matches/current').then(function (m) {
+          return m ? lobby('POST', '/matches/' + encodeURIComponent(m.id) + '/leave') : null;
+        });
+      },
+      // Calls fn(match) whenever your current match changes (polls every 2 s). Returns unsubscribe().
+      onUpdate: function (fn) {
+        var stopped = false, lastJson = '', lastId = null, timer = null;
+        function tick() {
+          if (stopped) return;
+          var req = lastId ? lobby('GET', '/matches/' + encodeURIComponent(lastId)) : lobby('GET', '/matches/current');
+          req.then(function (m) {
+            var json = JSON.stringify(m);
+            if (json !== lastJson) { lastJson = json; try { fn(m); } catch (e) { console.error(e); } }
+            // Follow a match until it finishes, then go back to watching for the next one.
+            lastId = m && (m.status === 'open' || m.status === 'playing') ? m.id : null;
+          }).catch(function () {}).then(function () { if (!stopped) timer = setTimeout(tick, 2000); });
+        }
+        tick();
+        return function () { stopped = true; clearTimeout(timer); };
+      }
+    },
+
     // Notify GameTok that the game has finished loading and is ready
     ready: function () {
       postToParent({
         type: 'GAMETOK_READY',
-        version: '1.2.0',
+        version: '1.3.0',
         creatorName: creatorName,
         creatorHandle: creatorHandle,
         title: gameTitle || document.title
