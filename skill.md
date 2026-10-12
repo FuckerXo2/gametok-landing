@@ -37,6 +37,7 @@ Every API call sends it as:
 Authorization: Bearer $GAMETOK_API_KEY
 ```
 A `401` response means the key is missing, wrong, or revoked — ask the user to create a new one.
+A `403` asking for a username means the account hasn't finished onboarding — ask the user to sign in at `https://games.gametok.co/dashboard` and choose one, then retry.
 
 ---
 
