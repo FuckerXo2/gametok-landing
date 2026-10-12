@@ -116,14 +116,25 @@ The GameTok API returns:
     "displayName": "Sarah Connor",
     "avatar": "https://api.dicebear.com/7.x/bottts/svg?seed=sconnor"
   },
-  "dashboardUrl": "https://games.gametok.co/dashboard?creator=sconnor"
+  "dashboardUrl": "https://games.gametok.co/dashboard?creator=sconnor",
+  "manageKey": "gtk_..."
 }
 ```
+
+`manageKey` is returned **only on the first publish** of a game. Tell the user to store it somewhere private (e.g. a gitignored `.env` as `GAMETOK_MANAGE_KEY`) — never commit it. It is the only way for a zero-signup creator to delete the game.
+
+### Unpublishing (deleting) a game
+```bash
+curl -s -X DELETE https://gametok-backend-267787411422.us-central1.run.app/api/developer/games/<gameId> \
+  -H "x-manage-key: <MANAGE_KEY>"
+```
+Returns `{ "success": true, "deleted": "<gameId>" }`. Signed-in creators can use `Authorization: Bearer <token>` instead.
 
 ---
 
 ## 5. Completing the Task
 Once published:
 1. Provide the user with their live link: `https://gametok.co/game/<gameId>`.
-2. Inform them that their creator profile has been auto-generated and their dashboard is at the `dashboardUrl` from the response (`https://games.gametok.co/dashboard?creator=<creatorHandle>`).
-3. Remind them that whenever they push updates to their hosted URL, their GameTok game updates automatically in real time!
+2. Give them the `manageKey` (if returned) and tell them to save it privately; it is needed to delete the game.
+3. Inform them that their creator profile has been auto-generated and their dashboard is at the `dashboardUrl` from the response (`https://games.gametok.co/dashboard?creator=<creatorHandle>`).
+4. Remind them that whenever they push updates to their hosted URL, their GameTok game updates automatically in real time!
