@@ -9,6 +9,8 @@ version: 2.0.0
 
 This skill enables any AI coding assistant (Cursor, Claude Code, Windsurf, Devin, GitHub Copilot) to adapt, package, and publish any HTML5 / WebGL / Canvas / Three.js game to **GameTok** (`https://gametok.co`).
 
+Full human-readable docs (bridge reference, player identity, test mode, multiplayer, error codes): `https://games.gametok.co/docs/`. A complete sample game: `https://games.gametok.co/sample/`.
+
 ---
 
 ## 1. What is GameTok?
@@ -29,7 +31,7 @@ This skill enables any AI coding assistant (Cursor, Claude Code, Windsurf, Devin
 Publishing requires a **GameTok API key** that belongs to the developer. The game is always published to the account that owns the key.
 
 1. The developer signs in at `https://games.gametok.co` and opens **Dashboard → Settings → API Keys → Create key**.
-2. They give you the key (it starts with `gtk_live_`). **Ask the user for it — never invent one, and never publish without it.**
+2. They give you the key. It starts with `gtk_live_` (publishes live games) or `gtk_test_` (test key: everything it publishes is a private draft the developer plays in the test player at the `testUrl` in the response, then clicks **Go live**). If unsure, suggest a test key first. **Ask the user for it — never invent one, and never publish without it.**
 3. Keep it out of the repository: read it from an environment variable such as `GAMETOK_API_KEY` (e.g. a gitignored `.env`). Never commit it, print it in full, or put it in game code.
 
 Every API call sends it as:
@@ -50,6 +52,9 @@ To ensure responsive fitting and score synchronization on GameTok, inject the br
 ```
 
 Optional attribute: `data-game-title="Your Game Title"` overrides `<title>` as the game's name on GameTok.
+
+### Optional: Player identity
+Players are already signed in to GameTok. `GameTok.init()` resolves `{ player: { id, name, avatar, guest }, session, mode }`; `player.id` is unique to this player in this game. If the game has a backend, send `session` to it and verify it there with `POST /api/developer/sessions/verify` (the developer's key) before trusting the player — see the docs. Don't add this unless the game needs accounts or saved progress.
 
 ### Optional: Submitting Scores & Game Over
 If the game has a score or game-over state:
