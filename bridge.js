@@ -1,5 +1,5 @@
 /**
- * GameTok Bridge (v1.0.0)
+ * GameTok Bridge (v1.2.0)
  * https://gametok.co/bridge.js
  * 
  * Lightweight drop-in bridge for indie web games on GameTok.
@@ -7,7 +7,8 @@
  * - Stays completely dormant when running standalone on your own site
  * - Automatically harmonizes viewport, touch actions, and margins inside GameTok
  * - Provides bidirectional postMessage communication (score, pause, resume)
- * - Auto-associates your creator profile via script data attributes
+ * - Player identity: GameTok.init() / GameTok.session() give your game the player and a
+ *   short-lived signed session your server verifies with the GameTok API
  */
 (function () {
   'use strict';
@@ -94,11 +95,32 @@
     restart: []
   };
 
+  // Pending player-session requests, answered by the parent GameTok player.
+  var pendingSessions = {};
+  var SESSION_TIMEOUT_MS = 6000;
+  var currentPlayer = null;
+
   // Listen to incoming messages from the parent GameTok player
   window.addEventListener('message', function (event) {
     if (!event.data) return;
     var data = event.data;
     var type = data.type || data.action || '';
+
+    if (type === 'GAMETOK_PLAYER_SESSION') {
+      // Only the frame that embeds us may answer (not another window or iframe).
+      if (event.source !== window.parent) return;
+      var pending = pendingSessions[data.requestId];
+      if (!pending) return;
+      delete pendingSessions[data.requestId];
+      clearTimeout(pending.timer);
+      if (data.ok) {
+        currentPlayer = data.player || null;
+        pending.resolve({ player: data.player, session: data.session, mode: data.mode, expiresIn: data.expiresIn });
+      } else {
+        pending.reject(bridgeError(data.code || 'SESSION_FAILED', data.error || 'GameTok could not create a player session'));
+      }
+      return;
+    }
 
     if (type === 'gt-pause' || type === 'GAMETOK_PAUSE') {
       listeners.pause.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
@@ -118,6 +140,28 @@
     if (window.parent && window.parent !== window) {
       window.parent.postMessage(message, '*');
     }
+  }
+
+  function bridgeError(code, message) {
+    var err = new Error(message);
+    err.code = code;
+    return err;
+  }
+
+  function requestPlayerSession() {
+    return new Promise(function (resolve, reject) {
+      if (!isInIframe) {
+        reject(bridgeError('NOT_IN_GAMETOK', 'Not running inside GameTok. Test your game in the dashboard test player.'));
+        return;
+      }
+      var requestId = 'gts_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
+      var timer = setTimeout(function () {
+        delete pendingSessions[requestId];
+        reject(bridgeError('NO_RESPONSE', 'The GameTok player did not answer. Make sure the game is opened from GameTok.'));
+      }, SESSION_TIMEOUT_MS);
+      pendingSessions[requestId] = { resolve: resolve, reject: reject, timer: timer };
+      postToParent({ type: 'GAMETOK_PLAYER_SESSION_REQUEST', requestId: requestId });
+    });
   }
 
   var sessionStartTime = Date.now();
@@ -141,13 +185,33 @@
   // The public GameTok SDK API
   var GameTok = {
     isGameTok: isGameTok,
-    version: '1.1.0',
+    version: '1.2.0',
+
+    // Who's playing? Resolves { player: { id, name, avatar, guest }, session, mode, expiresIn }.
+    // player.id is unique to this player in your game only. Send `session` to your server and
+    // check it with POST https://gametok-backend-267787411422.us-central1.run.app/api/developer/sessions/verify
+    // before trusting it. mode is 'test' in the dashboard test player and 'live' in GameTok.
+    init: function () {
+      return requestPlayerSession();
+    },
+
+    // A fresh session token (they last 15 minutes). Ask for one whenever you call your server.
+    session: function () {
+      return requestPlayerSession().then(function (r) {
+        return { session: r.session, expiresIn: r.expiresIn };
+      });
+    },
+
+    // The player from the last init()/session() call, or null.
+    getPlayer: function () {
+      return currentPlayer;
+    },
 
     // Notify GameTok that the game has finished loading and is ready
     ready: function () {
       postToParent({
         type: 'GAMETOK_READY',
-        version: '1.1.0',
+        version: '1.2.0',
         creatorName: creatorName,
         creatorHandle: creatorHandle,
         title: gameTitle || document.title

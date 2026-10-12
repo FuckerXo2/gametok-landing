@@ -168,6 +168,18 @@ export const games = {
   },
   get: async (gameId: string) => request(`/games/${gameId}`),
   recordPlay: async (gameId: string) => request(`/games/${gameId}/play`, { method: 'POST' }),
+  // Signed, per-game player session handed to a game that calls GameTok.init() (bridge.js).
+  // Returns the backend body on success or { ok: false, code, error } so the game gets a reason.
+  playerSession: async (gameId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/games/${encodeURIComponent(gameId)}/player-session`, { method: 'POST', headers: headers() });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) return { ok: false, code: data.code || 'SESSION_FAILED', error: data.error || `HTTP ${response.status}` };
+      return { ok: true, ...data };
+    } catch (err: any) {
+      return { ok: false, code: 'NETWORK', error: err?.message || 'Network error' };
+    }
+  },
 };
 
 // ─── Search API ──────────────────────────────────────────────

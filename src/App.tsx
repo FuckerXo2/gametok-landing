@@ -662,6 +662,29 @@ const avatarUrl = (seed?: string | null, uri?: string | null, size = 128) => {
 
 // Count a play once per game start. The backend dedupes per client/user with a cooldown,
 // and these plays are what the developer dashboard at games.gametok.co reports.
+// Answers bridge.js GameTok.init()/session() for any game frame on the page. The frame is
+// identified by event.source (never by what the message claims), and the reply goes only to
+// that frame's origin.
+function useGamePlayerSessions() {
+  useEffect(() => {
+    const onMessage = async (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object' || data.type !== 'GAMETOK_PLAYER_SESSION_REQUEST') return;
+      const frame = Array.from(document.querySelectorAll<HTMLIFrameElement>('iframe[data-game-id]'))
+        .find((f) => f.contentWindow === event.source);
+      if (!frame || !frame.contentWindow) return;
+      const gameId = frame.dataset.gameId || '';
+      const result: any = await gamesApi.playerSession(gameId);
+      const reply = result.ok
+        ? { type: 'GAMETOK_PLAYER_SESSION', requestId: data.requestId, ok: true, player: result.player, session: result.session, mode: result.mode, expiresIn: result.expiresIn }
+        : { type: 'GAMETOK_PLAYER_SESSION', requestId: data.requestId, ok: false, code: result.code, error: result.error };
+      frame.contentWindow.postMessage(reply, event.origin && event.origin !== 'null' ? event.origin : '*');
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+}
+
 function useRecordPlay(gameId: string | undefined, started: boolean) {
   useEffect(() => {
     if (!started || !gameId) return;
@@ -825,6 +848,7 @@ function useIsMobile() {
 }
 
 function App() {
+  useGamePlayerSessions();
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
@@ -1766,6 +1790,7 @@ function HomeFeed({
                       className="game-iframe"
                       title={g.name}
                       src={getGameUrl(g)}
+                      data-game-id={g.id}
                       allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated"
                       style={{ pointerEvents: transitioning ? 'none' : 'auto' }}
                       onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
@@ -3284,6 +3309,7 @@ function DesktopDirectGamePlayer({
           className="direct-player-iframe"
           title={game.name}
           src={getGameUrl(game)}
+          data-game-id={game.id}
           allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated"
         />
       </main>
@@ -3411,6 +3437,7 @@ function DesktopPlayHome({
             className="desktop-feed-iframe"
             title={game.name}
             src={getGameUrl(game)}
+            data-game-id={game.id}
             allow="autoplay; fullscreen; clipboard-write"
             onLoad={pauseGame}
           />
