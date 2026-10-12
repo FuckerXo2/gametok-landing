@@ -9,7 +9,7 @@ version: 2.0.0
 
 This skill enables any AI coding assistant (Cursor, Claude Code, Windsurf, Devin, GitHub Copilot) to adapt, package, and publish any HTML5 / WebGL / Canvas / Three.js game to **GameTok** (`https://gametok.co`).
 
-Full human-readable docs (bridge reference, player identity, test mode, multiplayer, error codes): `https://games.gametok.co/docs/`. A complete sample game: `https://games.gametok.co/sample/`.
+Full human-readable docs (bridge reference, player identity, test mode, error codes): `https://games.gametok.co/docs/`. A complete sample game: `https://games.gametok.co/sample/`.
 
 ---
 
