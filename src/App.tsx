@@ -48,7 +48,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ai, auth, users, messages, likes as likesApi, savedGames as savedGamesApi, comments as commentsApi, getToken, setToken, resolveGameThumbnail } from './services/api';
+import { ai, auth, users, messages, games as gamesApi, likes as likesApi, savedGames as savedGamesApi, comments as commentsApi, getToken, setToken, resolveGameThumbnail } from './services/api';
 import { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
@@ -659,6 +659,15 @@ const avatarUrl = (seed?: string | null, uri?: string | null, size = 128) => {
   const svg = createAvatar(ADVENTURER_STYLE, buildAdventurerOptions(config, Math.min(256, Math.max(48, size)))).toString();
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
+
+// Count a play once per game start. The backend dedupes per client/user with a cooldown,
+// and these plays are what the developer dashboard at games.gametok.co reports.
+function useRecordPlay(gameId: string | undefined, started: boolean) {
+  useEffect(() => {
+    if (!started || !gameId) return;
+    gamesApi.recordPlay(gameId).catch(() => {});
+  }, [gameId, started]);
+}
 
 async function request(endpoint: string, timeoutMs = 9000) {
   const controller = new AbortController();
@@ -1601,6 +1610,7 @@ function HomeFeed({
   const containerRef = useRef<HTMLElement | null>(null);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
+  useRecordPlay(game?.id, gameStarted);
 
   // ─── Drag state for TikTok-style vertical swipe ───
   const [dragOffset, setDragOffset] = useState(0);
@@ -3206,6 +3216,7 @@ function DesktopDirectGamePlayer({
 }) {
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  useRecordPlay(game.id, true);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -3324,6 +3335,7 @@ function DesktopPlayHome({
 }) {
   const creator = game.creatorDisplayName || game.creatorUsername || 'GameTok player';
   const [gameStarted, setGameStarted] = useState(false);
+  useRecordPlay(game?.id, gameStarted);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
