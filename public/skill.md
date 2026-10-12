@@ -110,6 +110,17 @@ jq -n --rawfile html index.html --arg title "<GAME_TITLE>" \
 
 Publishing again with the same title updates the existing game instead of creating a new one.
 
+### If publishing is rejected (HTTP 400)
+GameTok checks the hosted URL before accepting it, because the game is shown inside an iframe on `https://gametok.co`. The response has `error` (what to fix) and `code`:
+
+| `code` | Meaning | Fix |
+|---|---|---|
+| `GAME_NOT_EMBEDDABLE` | The host sends `X-Frame-Options: DENY/SAMEORIGIN` or a `Content-Security-Policy: frame-ancestors` that excludes gametok.co. | Remove `X-Frame-Options` and send `Content-Security-Policy: frame-ancestors 'self' https://gametok.co` (e.g. `vercel.json` / `netlify.toml` / `_headers`). For itch.io, publish the `html-classic.itch.zone` game URL, not the store page. Redeploy, then publish again. |
+| `GAME_URL_NOT_HTTPS` | The URL (or where it redirects) is `http://`. | Serve the game over `https://`. |
+| `GAME_URL_UNREACHABLE` | The URL returned an HTTP error (e.g. 404). | Make sure the game is deployed and public. |
+
+A `200` response may include `warnings` (e.g. the URL couldn't be reached to verify it). Show them to the user and ask them to open the GameTok link to confirm the game plays.
+
 ---
 
 ## 5. Expected API Response
