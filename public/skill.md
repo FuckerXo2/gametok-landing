@@ -64,7 +64,7 @@ When a user asks you to *"Publish this game to GameTok"* or *"Make this game pla
    - Creator Name / Author (from `author` or git user)
    - Creator Handle (from git username or author)
    - Orientation: `'portrait'` (recommended) or `'landscape'`
-   - Category: `'arcade'`, `'action'`, `'puzzle'`, `'sports'`, `'racing'`, `'strategy'`, `'hypercasual'`
+   - Category (one of): `'arcade'`, `'action'`, `'adventure'`, `'puzzle'`, `'sports'`, `'racing'`, `'rpg'`, `'horror'`, `'visual-novel'`
 2. Check if the project is already hosted online (e.g., `https://mygame.vercel.app`, `https://user.github.io/mygame`, or custom domain).
 
 ### Step 2: Inject the Bridge Script
