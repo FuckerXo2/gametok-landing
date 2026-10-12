@@ -37,7 +37,7 @@ Every API call sends it as:
 Authorization: Bearer $GAMETOK_API_KEY
 ```
 A `401` response means the key is missing, wrong, or revoked — ask the user to create a new one.
-A `403` asking for a username means the account hasn't finished onboarding — ask the user to sign in at `https://games.gametok.co/dashboard` and choose one, then retry.
+A `403` asking for a username, or with `code: "AGREEMENT_REQUIRED"`, means the account hasn't finished onboarding — ask the user to sign in at `https://games.gametok.co/dashboard`, choose a username and accept the Developer Agreement (`https://games.gametok.co/agreement.html`), then retry. You cannot accept it for them.
 
 ---
 
@@ -111,15 +111,17 @@ jq -n --rawfile html index.html --arg title "<GAME_TITLE>" \
 Publishing again with the same title updates the existing game instead of creating a new one.
 
 ### If publishing is rejected (HTTP 400)
-GameTok checks the hosted URL before accepting it, because the game is shown inside an iframe on `https://gametok.co`. The response has `error` (what to fix) and `code`:
+GameTok runs automatic checks on every publish and approves the game if the required ones pass (it is shown inside an iframe on `https://gametok.co`). A rejection has `error` (what to fix), `code`, and `checks` (every check with `ok` and `detail`):
 
 | `code` | Meaning | Fix |
 |---|---|---|
 | `GAME_NOT_EMBEDDABLE` | The host sends `X-Frame-Options: DENY/SAMEORIGIN` or a `Content-Security-Policy: frame-ancestors` that excludes gametok.co. | Remove `X-Frame-Options` and send `Content-Security-Policy: frame-ancestors 'self' https://gametok.co` (e.g. `vercel.json` / `netlify.toml` / `_headers`). For itch.io, publish the `html-classic.itch.zone` game URL, not the store page. Redeploy, then publish again. |
 | `GAME_URL_NOT_HTTPS` | The URL (or where it redirects) is `http://`. | Serve the game over `https://`. |
 | `GAME_URL_UNREACHABLE` | The URL returned an HTTP error (e.g. 404). | Make sure the game is deployed and public. |
+| `GAME_URL_NOT_HTML` | The URL isn't a web page (e.g. a .zip or .js file). | Publish the URL of the page that runs the game, usually its `index.html`. |
+| `GAME_HTML_INVALID` | An uploaded `html` file has no `<html>`, `<body>`, `<script>` or `<canvas>`. | Upload the game's real `index.html`. |
 
-A `200` response may include `warnings` (e.g. the URL couldn't be reached to verify it). Show them to the user and ask them to open the GameTok link to confirm the game plays.
+Successful responses list the same `checks`; recommended ones (mobile viewport tag, bridge script) never block — suggest fixing any that failed. A `200` response may also include `warnings` (e.g. the URL couldn't be reached to verify it). Show them to the user and ask them to open the GameTok link to confirm the game plays.
 
 ---
 
