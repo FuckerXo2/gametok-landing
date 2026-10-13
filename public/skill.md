@@ -77,7 +77,7 @@ Check for `GAMETOK_API_KEY` in the environment. If it is not set, ask the user f
 ### Step 2: Detect Metadata & Project Type
 1. Inspect `package.json` or `index.html` for:
    - Game Title (from `<title>` or package name)
-   - Orientation: `'portrait'` (recommended) or `'landscape'`
+   - Orientation: leave `orientation` out and GameTok detects it from the game (manifest, `screen-orientation` meta tag, `screen.orientation.lock(...)`, or how its canvas is drawn). Send `'portrait'` or `'landscape'` only if you know for sure.
    - Category (one of): `'arcade'`, `'action'`, `'adventure'`, `'puzzle'`, `'sports'`, `'racing'`, `'rpg'`, `'horror'`, `'visual-novel'`
 2. Check if the project is already hosted online (e.g., `https://mygame.vercel.app`, `https://user.github.io/mygame`, or custom domain).
 
@@ -98,7 +98,6 @@ curl -s -X POST https://gametok-backend-267787411422.us-central1.run.app/api/pub
     "url": "<HOSTED_GAME_URL>",
     "title": "<GAME_TITLE>",
     "description": "<ONE_LINE_DESCRIPTION>",
-    "orientation": "portrait",
     "category": "arcade"
   }'
 ```
@@ -107,7 +106,7 @@ curl -s -X POST https://gametok-backend-267787411422.us-central1.run.app/api/pub
 If the game is contained in a single self-contained `index.html` (send it as the JSON `html` field; multipart uploads are not supported):
 ```bash
 jq -n --rawfile html index.html --arg title "<GAME_TITLE>" \
-  '{html: $html, title: $title, orientation: "portrait", category: "arcade"}' \
+  '{html: $html, title: $title, category: "arcade"}' \
 | curl -s -X POST https://gametok-backend-267787411422.us-central1.run.app/api/publish \
   -H "Authorization: Bearer $GAMETOK_API_KEY" \
   -H "Content-Type: application/json" --data-binary @-
