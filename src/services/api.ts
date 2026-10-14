@@ -167,6 +167,22 @@ export const games = {
     return request(`/games/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   },
   get: async (gameId: string) => request(`/games/${gameId}`),
+  // A signed-in player's saved data for a game (cloud save). {} when signed out or nothing saved.
+  loadProgress: async (gameId: string): Promise<Record<string, string>> => {
+    if (!getToken()) return {};
+    try {
+      const res = await fetch(`${API_URL}/games/${encodeURIComponent(gameId)}/progress`, { headers: headers() });
+      if (!res.ok) return {};
+      const data = await res.json();
+      return data.storageData || {};
+    } catch { return {}; }
+  },
+  saveProgress: (gameId: string, storageData: Record<string, string>) => {
+    if (!getToken()) return;
+    fetch(`${API_URL}/games/${encodeURIComponent(gameId)}/progress`, {
+      method: 'POST', headers: headers(), body: JSON.stringify({ storageData }), keepalive: true,
+    }).catch(() => {});
+  },
   // A play: returns { counted, sessionId }. Report time played to the session with sessionTime.
   recordPlay: async (gameId: string) => request(`/games/${gameId}/play`, { method: 'POST' }),
   // The game was shown (became the card on screen).

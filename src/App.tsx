@@ -660,6 +660,30 @@ const avatarUrl = (seed?: string | null, uri?: string | null, size = 128) => {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 };
 
+// Cloud save for games GameTok hosts (they load /cloud-save.js): a game asks for its save on start
+// and reports its saved data as it changes; both go to the signed-in player's account. Like the
+// player sessions below, the game is identified by its frame, never by what the message claims.
+function useGameCloudSave() {
+  useEffect(() => {
+    const onMessage = async (event: MessageEvent) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object' || (data.type !== 'GAMETOK_SAVE_REQUEST' && data.type !== 'GAMETOK_SAVE')) return;
+      const frame = Array.from(document.querySelectorAll<HTMLIFrameElement>('iframe[data-game-id]'))
+        .find((f) => f.contentWindow === event.source);
+      const gameId = frame?.dataset.gameId;
+      if (!frame || !gameId || !frame.contentWindow) return;
+      if (data.type === 'GAMETOK_SAVE') {
+        if (data.storageData && typeof data.storageData === 'object') gamesApi.saveProgress(gameId, data.storageData);
+        return;
+      }
+      const storageData = await gamesApi.loadProgress(gameId);
+      frame.contentWindow.postMessage({ type: 'GAMETOK_SAVE_DATA', storageData }, event.origin && event.origin !== 'null' ? event.origin : '*');
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+}
+
 // Count a play once per game start. The backend dedupes per client/user with a cooldown,
 // and these plays are what the developer dashboard at games.gametok.co reports.
 // Answers bridge.js GameTok.init()/session() for any game frame on the page. The frame is
@@ -889,6 +913,7 @@ function useIsMobile() {
 
 function App() {
   useGamePlayerSessions();
+  useGameCloudSave();
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
