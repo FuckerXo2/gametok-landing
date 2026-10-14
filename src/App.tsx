@@ -685,11 +685,51 @@ function useGamePlayerSessions() {
   }, []);
 }
 
-function useRecordPlay(gameId: string | undefined, started: boolean) {
+// Views, plays and time played, the same way as the app: a view when the game is shown, a play
+// once it has been on screen and running for PLAY_AFTER_MS, then the seconds played reported
+// every HEARTBEAT_MS and once more when it leaves (tab closed or hidden included).
+const PLAY_AFTER_MS = 1800;
+const HEARTBEAT_MS = 15000;
+// The feed remounts on route changes (/play → /game/:id), so the same game showing again
+// within VIEW_REPEAT_MS is the same view.
+const VIEW_REPEAT_MS = 30000;
+const lastViewAt = new Map<string, number>();
+function useGameTracking(gameId: string | undefined, shown: boolean, playing: boolean) {
   useEffect(() => {
-    if (!started || !gameId) return;
-    gamesApi.recordPlay(gameId).catch(() => {});
-  }, [gameId, started]);
+    if (!shown || !gameId) return;
+    const now = Date.now();
+    if (now - (lastViewAt.get(gameId) || 0) < VIEW_REPEAT_MS) return;
+    lastViewAt.set(gameId, now);
+    gamesApi.recordView(gameId);
+  }, [gameId, shown]);
+
+  useEffect(() => {
+    if (!playing || !gameId) return;
+    const startedAt = Date.now();
+    let sessionId: string | null = null;
+    let heartbeat: number | undefined;
+    const seconds = () => Math.round((Date.now() - startedAt) / 1000);
+    const report = (keepalive = false) => {
+      if (sessionId) gamesApi.sessionTime(gameId, sessionId, seconds(), keepalive);
+    };
+    const onHide = () => { if (document.visibilityState === 'hidden') report(true); };
+    const startTimer = window.setTimeout(() => {
+      gamesApi.recordPlay(gameId)
+        .then((result: any) => {
+          sessionId = result?.sessionId || null;
+          if (!sessionId) return;
+          heartbeat = window.setInterval(() => report(), HEARTBEAT_MS);
+        })
+        .catch(() => {});
+    }, PLAY_AFTER_MS);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.clearTimeout(startTimer);
+      window.clearInterval(heartbeat);
+      document.removeEventListener('visibilitychange', onHide);
+      report(true);
+    };
+  }, [gameId, playing]);
 }
 
 async function request(endpoint: string, timeoutMs = 9000) {
@@ -1634,7 +1674,7 @@ function HomeFeed({
   const containerRef = useRef<HTMLElement | null>(null);
   const [showPreviewArt, setShowPreviewArt] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  useRecordPlay(game?.id, gameStarted);
+  useGameTracking(game?.id, true, gameStarted);
 
   // ─── Drag state for TikTok-style vertical swipe ───
   const [dragOffset, setDragOffset] = useState(0);
@@ -3241,7 +3281,7 @@ function DesktopDirectGamePlayer({
 }) {
   const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  useRecordPlay(game.id, true);
+  useGameTracking(game.id, true, true);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -3361,11 +3401,15 @@ function DesktopPlayHome({
 }) {
   const creator = game.creatorDisplayName || game.creatorUsername || 'GameTok player';
   const [gameStarted, setGameStarted] = useState(false);
-  useRecordPlay(game?.id, gameStarted);
+  useGameTracking(game?.id, true, gameStarted);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  // Once the game has loaded it shows live behind the play button (like a feed video) instead
+  // of a still cover; clicking hands it the keyboard and mouse.
+  const [gameLoaded, setGameLoaded] = useState(false);
 
   useEffect(() => {
     setGameStarted(false);
+    setGameLoaded(false);
   }, [game.id]);
 
   // Preload adjacent game thumbnails so clicking down/up immediately displays the next thumbnail
@@ -3439,12 +3483,12 @@ function DesktopPlayHome({
             src={getGameUrl(game)}
             data-game-id={game.id}
             allow="autoplay; fullscreen; clipboard-write"
-            onLoad={pauseGame}
+            onLoad={() => setGameLoaded(true)}
           />
           {!gameStarted && (
             <>
-              <div className="desktop-feed-card-shade" />
-              <div className="desktop-feed-poster" key={game.id} onClick={startGame}>
+              <div className={`desktop-feed-card-shade ${gameLoaded ? 'is-live' : ''}`} onClick={gameLoaded ? startGame : undefined} />
+              <div className={`desktop-feed-poster ${gameLoaded ? 'is-live' : ''}`} key={game.id} onClick={startGame}>
                 <img
                   key={game.id}
                   src={getThumbnailUrl(game)}

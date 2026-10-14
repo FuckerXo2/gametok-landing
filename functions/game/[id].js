@@ -1,5 +1,5 @@
 // Cloudflare Pages Function to serve the GameTOK website SPA with dynamic OG tags for /game/:id
-const API_URL = 'https://gametok-backend.onrender.com';
+const API_URL = 'https://gametok-backend-267787411422.us-central1.run.app';
 
 function escapeHtml(str) {
   if (!str) return '';
@@ -46,41 +46,46 @@ export async function onRequest(context) {
     const res = await fetch(`${API_URL}/api/games/${encodeURIComponent(gameId)}`);
     if (res.ok) {
       const data = await res.json();
-      if (data.game) {
-        if (data.game.name) gameName = data.game.name;
-        if (data.game.description) gameDesc = data.game.description;
-        if (data.game.thumbnail) thumbnailUrl = data.game.thumbnail;
+      const game = data.game || data;
+      if (game && game.id) {
+        if (game.name) gameName = game.name;
+        if (game.description) gameDesc = game.description;
+        if (game.thumbnail) thumbnailUrl = game.thumbnail;
       }
     }
   } catch (e) {}
 
   const pageUrl = `https://gametok.co/game/${encodeURIComponent(gameId)}`;
   const deepLink = `gametok://game/${encodeURIComponent(gameId)}`;
+  const title = `Play ${gameName} on GameTok 🎮`;
+  const desc = `${gameDesc} Tap to play — no download.`;
 
-  // Inject game-specific title and meta tags into index.html
+  // Previews read the first tags they find, so the homepage's own title, description, canonical
+  // and og:/twitter: tags come out before the game's go in.
+  html = html
+    .replace(/<title>[\s\S]*?<\/title>/i, '')
+    .replace(/<link[^>]+rel=["']canonical["'][^>]*>/gi, '')
+    .replace(/<meta[^>]+(?:property|name)=["'](?:og:[^"']*|twitter:[^"']*|description|apple-itunes-app)["'][^>]*>/gi, '');
+
   const ogTags = `
-    <title>Play ${escapeHtml(gameName)} on GameTOK</title>
+    <title>${escapeHtml(title)}</title>
+    <link rel="canonical" href="${escapeHtml(pageUrl)}">
+    <meta name="description" content="${escapeHtml(desc)}">
     <meta name="apple-itunes-app" content="app-id=6757498584, app-argument=${escapeHtml(deepLink)}">
-    <meta property="og:title" content="Play ${escapeHtml(gameName)} on GameTOK 🎮">
-    <meta property="og:description" content="${escapeHtml(gameDesc)}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="GameTok">
+    <meta property="og:title" content="${escapeHtml(title)}">
+    <meta property="og:description" content="${escapeHtml(desc)}">
     <meta property="og:image" content="${escapeHtml(thumbnailUrl)}">
-    <meta property="og:image:width" content="512">
-    <meta property="og:image:height" content="512">
     <meta property="og:url" content="${escapeHtml(pageUrl)}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Play ${escapeHtml(gameName)} on GameTOK 🎮">
-    <meta name="twitter:description" content="${escapeHtml(gameDesc)}">
+    <meta name="twitter:title" content="${escapeHtml(title)}">
+    <meta name="twitter:description" content="${escapeHtml(desc)}">
     <meta name="twitter:image" content="${escapeHtml(thumbnailUrl)}">
   `;
-
-  // Replace default title and insert tags
-  if (html.includes('<title>')) {
-    html = html.replace(/<title>.*?<\/title>/, ogTags);
-  } else {
-    html = html.replace('</head>', `${ogTags}\n</head>`);
-  }
+  html = html.replace('</head>', `${ogTags}\n</head>`);
 
   return new Response(html, {
-    headers: { 'Content-Type': 'text/html;charset=UTF-8' },
+    headers: { 'Content-Type': 'text/html;charset=UTF-8', 'Cache-Control': 'public, max-age=300' },
   });
 }

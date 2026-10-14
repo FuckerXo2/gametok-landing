@@ -167,7 +167,16 @@ export const games = {
     return request(`/games/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   },
   get: async (gameId: string) => request(`/games/${gameId}`),
+  // A play: returns { counted, sessionId }. Report time played to the session with sessionTime.
   recordPlay: async (gameId: string) => request(`/games/${gameId}/play`, { method: 'POST' }),
+  // The game was shown (became the card on screen).
+  recordView: (gameId: string) =>
+    fetch(`${API_URL}/games/${encodeURIComponent(gameId)}/view`, { method: 'POST', headers: headers() }).catch(() => {}),
+  // Seconds played so far in a session; keepalive lets the last report survive the page closing.
+  sessionTime: (gameId: string, sessionId: string, seconds: number, keepalive = false) =>
+    fetch(`${API_URL}/games/${encodeURIComponent(gameId)}/sessions/${encodeURIComponent(sessionId)}`, {
+      method: 'POST', headers: headers(), body: JSON.stringify({ seconds }), keepalive,
+    }).catch(() => {}),
   // Signed, per-game player session handed to a game that calls GameTok.init() (bridge.js).
   // Returns the backend body on success or { ok: false, code, error } so the game gets a reason.
   playerSession: async (gameId: string) => {

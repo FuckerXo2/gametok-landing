@@ -1,5 +1,5 @@
 // Cloudflare Pages Function for /game.html?id=:id
-const API_URL = 'https://gametok-backend.onrender.com';
+const API_URL = 'https://gametok-backend-267787411422.us-central1.run.app';
 
 function escapeHtml(str) {
   if (!str) return '';
