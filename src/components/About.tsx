@@ -39,7 +39,7 @@ const HOW_IT_WORKS = [
   },
   {
     title: 'Publish instantly',
-    body: 'Post it to the feed where anyone can play it instantly, with nothing to install.',
+    body: 'Publish your game where anyone can play it instantly, with nothing to install.',
   },
 ];
 
@@ -70,7 +70,7 @@ export default function About({
         <h1>Everyone has a game in them.</h1>
         <p>
           GameTok lets anyone make a game by describing it, and lets anyone play what other
-          people made — instantly, in a feed, with nothing to install.
+          people made — instantly, with nothing to install.
         </p>
         <div className="about-hero-actions">
           <button className="primary" onClick={onCreate}><Wand2 size={17} /> Start creating</button>

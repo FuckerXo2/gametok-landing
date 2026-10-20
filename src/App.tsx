@@ -8,13 +8,12 @@ import {
 import type { Options as AdventurerOptions } from '@dicebear/adventurer';
 import type { Options as CoreOptions } from '@dicebear/core';
 import {
+  ArrowLeft,
   ArrowUp,
   Bell,
   BookOpen,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   Compass,
   FileText,
   Gamepad2,
@@ -27,7 +26,6 @@ import {
   Maximize2,
   Menu,
   MessageCircle,
-  Mic,
   Pause,
   Play,
   Volume2,
@@ -37,7 +35,6 @@ import {
   Send,
   Share2,
   Shield,
-  Smartphone,
   Sparkles,
   Trophy,
   User,
@@ -52,9 +49,8 @@ import { ai, auth, users, messages, games as gamesApi, likes as likesApi, savedG
 import { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
-import { BlogIndex, BlogPost, useLatestAnnouncement } from './components/Blog';
+import { BlogIndex, BlogPost } from './components/Blog';
 import About from './components/About';
-import AnnouncementModal, { type Announcement } from './components/AnnouncementModal';
 import { useDreamForge, FORGE_STEPS, forgePhaseLabel } from './hooks/useDreamForge';
 import { isLandscape, type Orientation } from './constants/orientation';
 // Still used by the search sheet and the feed caption — the backend no longer
@@ -205,7 +201,7 @@ type Tab = 'home' | 'explore' | 'create' | 'connect' | 'profile' | 'more';
 
 const TAB_PATHS: Record<Tab, string> = {
   home: '/',
-  explore: '/explore',
+  explore: '/',
   create: '/create',
   connect: '/connect',
   profile: '/profile',
@@ -236,7 +232,7 @@ type ParsedRoute = {
 };
 
 function parseRoute(pathname: string, search: string = ''): ParsedRoute {
-  const base: ParsedRoute = { tab: 'home', marketingPage: null, deck: false, gameId: null, postSlug: null };
+  const base: ParsedRoute = { tab: 'explore', marketingPage: null, deck: false, gameId: null, postSlug: null };
   // Tolerate a trailing slash so /explore/ and /explore are the same place.
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
   const segments = path.split('/').filter(Boolean);
@@ -254,7 +250,7 @@ function parseRoute(pathname: string, search: string = ''): ParsedRoute {
     return { ...base, deck: true, gameId: queryGameId };
   }
 
-  if (head === 'play') return { ...base, deck: true };
+  if (head === 'play') return { ...base, deck: true, gameId: second || null };
   if (head === 'blog') return { ...base, marketingPage: 'blog', postSlug: second || null };
 
   const marketingEntry = (Object.keys(MARKETING_PATHS) as MarketingPage[]).find(
@@ -265,7 +261,7 @@ function parseRoute(pathname: string, search: string = ''): ParsedRoute {
   const tabEntry = (Object.keys(TAB_PATHS) as Tab[]).find((tab) => TAB_PATHS[tab] === `/${head}`);
   if (tabEntry) return { ...base, tab: tabEntry };
 
-  // Unknown path — fall back to home rather than rendering a blank shell.
+  // Unknown path or root — explore games
   return base;
 }
 type CreatePhase = 'idle' | 'refining' | 'generating' | 'preview';
@@ -320,9 +316,9 @@ const FAQ_GROUPS = [
   {
     title: 'General',
     items: [
-      ['What is GameTok?', 'GameTok is a playable social feed where creators can generate, share, and discover games.'],
+      ['What is GameTok?', 'GameTok is an instant gaming platform where you can play games like GTA Lagos, create, and share with friends.'],
       ['Do I need to code?', 'No. The goal is to describe the game and let the system build a playable draft.'],
-      ['Is the web app replacing mobile?', 'No. Desktop is for bigger creation and browsing, while mobile keeps the feed-first app feel.'],
+      ['Is the web app replacing mobile?', 'No. You can play directly on web and mobile in your browser or through the app.'],
     ],
   },
   {
@@ -341,39 +337,6 @@ const CHANGELOG_ITEMS = [
   { date: 'June 2026', title: 'Google Sign-In web shell', text: 'Google Identity Services are wired on the frontend and ready for end-to-end OAuth verification.' },
 ];
 
-/**
- * What the live pill on the home hero opens. Copy lives here so it can be edited in
- * one place; when the announcements feed exists this becomes its most recent entry.
- */
-const CURRENT_ANNOUNCEMENT: Announcement = {
-  image: '/app-assets/dream-forge-hero.png',
-  title: 'Meet Dream Forge',
-  subtitle: 'Describe the game you want and get something playable back — no engine, no setup, no code.',
-  highlights: [
-    {
-      icon: Sparkles,
-      title: 'One prompt, one game',
-      body: 'Write a brief and the forge builds a complete, playable game around it.',
-    },
-    {
-      icon: Smartphone,
-      title: 'Tall or wide',
-      body: 'Pick the screen shape up front and the game is built and tested for it.',
-    },
-    {
-      icon: ImageIcon,
-      title: 'Bring your own assets',
-      body: 'Attach images, clips, sound effects and music, and tell the forge how to use them.',
-    },
-    {
-      icon: Zap,
-      title: 'Publish to the feed',
-      body: 'Post it to GameTok when it is ready, and let anyone play it.',
-    },
-  ],
-  primaryLabel: 'Try Dream Forge',
-  primaryIcon: Wand2,
-};
 
 /** Real accounts, lifted from the legacy about/ and more/ pages. */
 const SOCIAL_LINKS: Array<{ label: string; url: string }> = [
@@ -393,13 +356,6 @@ const MORE_PAGES: Array<{ page: MarketingPage; label: string }> = [
   { page: 'terms', label: 'Terms of Service' },
 ];
 
-const HOME_VIDEOS = [
-  '/home-videos/hero-1.mp4',
-  '/home-videos/hero-2.mp4',
-  '/home-videos/hero-3.mp4',
-  '/home-videos/hero-4.mp4',
-  '/home-videos/hero-5.mp4',
-];
 
 const GENRE_CHIPS = [
   'Platformer',
@@ -439,9 +395,6 @@ const STORAGE_KEYS = {
 // (and across the auth wall a signed-out visitor meets on the way).
 const PENDING_BRIEF_KEY = 'gametok-web-pending-brief';
 
-const stashPendingBrief = (brief: string) => {
-  try { sessionStorage.setItem(PENDING_BRIEF_KEY, brief); } catch { /* private mode */ }
-};
 
 /** Reads and clears in one go, so the brief seeds the composer exactly once. */
 const takePendingBrief = (): string => {
@@ -480,9 +433,27 @@ const formatCount = (value?: number) => {
   return `${n}`;
 };
 
+export const GTA_LAGOS_GAME: Game = {
+  id: 'gta-lagos',
+  name: 'GTA Lagos',
+  description: 'Open-world Lagos, from Ojota to Lekki. Hustle, drive, run missions with your crew, and play with everyone online.',
+  color: '#1a1206',
+  thumbnail: 'https://games.gametok.co/gta-lagos/thumb.jpg',
+  embedUrl: 'https://games.gametok.co/gta-lagos/84fd1309389f/index.html',
+  orientation: 'landscape',
+  plays: 0,
+  likes: 0,
+  saves: 0,
+  status: 'published',
+  version: '1.0.0',
+} as Game;
+
 const getThumbnailUrl = (game: Game) => {
-  const value = game.thumbnail?.trim();
+  let value = game.thumbnail?.trim();
   if (value) {
+    if (value.includes('r2.dev/web-games/')) {
+      value = value.replace(/https?:\/\/[^/]+\.r2\.dev\/web-games\//, `${GAMES_HOST}/`);
+    }
     if (value.startsWith('http') || value.startsWith('data:')) return value;
     if (value.startsWith('/uploads/covers/') || value.startsWith('uploads/covers/')) {
       return `${API_ORIGIN}/${value.replace(/^\/+/, '')}`;
@@ -501,8 +472,12 @@ const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, _game: Game
 
 
 const getGameUrl = (game: Game) => {
-  if (game.embedUrl) {
-    const raw = game.embedUrl.startsWith('/') ? `${API_ORIGIN}${game.embedUrl}` : game.embedUrl;
+  let raw = game.embedUrl;
+  if (raw) {
+    if (raw.includes('r2.dev/web-games/')) {
+      raw = raw.replace(/https?:\/\/[^/]+\.r2\.dev\/web-games\//, `${GAMES_HOST}/`);
+    }
+    raw = raw.startsWith('/') ? `${API_ORIGIN}${raw}` : raw;
     const sep = raw.includes('?') ? '&' : '?';
     return `${raw}${sep}gd_sdk_referrer_url=${encodeURIComponent(GAMES_HOST)}`;
   }
@@ -775,23 +750,9 @@ async function request(endpoint: string, timeoutMs = 9000) {
 }
 
 function useGameTokData(targetGameId?: string | null) {
-  const [games, setGames] = useState<Game[]>(() => {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEYS.cachedGames);
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [games, setGames] = useState<Game[]>([GTA_LAGOS_GAME]);
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [loading, setLoading] = useState(() => {
-    try {
-      const cached = localStorage.getItem(STORAGE_KEYS.cachedGames);
-      return !cached || JSON.parse(cached).length === 0;
-    } catch {
-      return true;
-    }
-  });
+  const [loading, setLoading] = useState(false);
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -804,40 +765,30 @@ function useGameTokData(targetGameId?: string | null) {
         ]);
         if (!mounted) return;
         if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
+          const incoming: Game[] = gamesRes.value.games;
+          const gta = incoming.find((g) => g.id === 'gta-lagos' || g.name?.toLowerCase().includes('lagos'));
+          const finalGta: Game = gta ? {
+            ...gta,
+            thumbnail: gta.thumbnail?.includes('r2.dev') ? 'https://games.gametok.co/gta-lagos/thumb.jpg' : (gta.thumbnail || GTA_LAGOS_GAME.thumbnail),
+            embedUrl: gta.embedUrl?.includes('r2.dev') ? 'https://games.gametok.co/gta-lagos/84fd1309389f/index.html' : (gta.embedUrl || GTA_LAGOS_GAME.embedUrl),
+          } : GTA_LAGOS_GAME;
+          setGames([finalGta]);
           try {
-            localStorage.setItem(STORAGE_KEYS.cachedGames, JSON.stringify(gamesRes.value.games.slice(0, 48)));
+            localStorage.setItem(STORAGE_KEYS.cachedGames, JSON.stringify([finalGta]));
           } catch {}
-          setGames((prev) => {
-            const incoming: Game[] = gamesRes.value.games;
-            if (targetGameId) {
-              const matchedFromPrev = prev.find(
-                (g) => g.id === targetGameId || g.id?.toLowerCase() === targetGameId.toLowerCase()
-              );
-              const matchedFromIncoming = incoming.find(
-                (g) => g.id === targetGameId || g.id?.toLowerCase() === targetGameId.toLowerCase()
-              );
-              const target = matchedFromPrev || matchedFromIncoming;
-              if (target) {
-                return [target, ...incoming.filter((g) => g.id !== target.id)];
-              }
-            } else if (prev.length > 0) {
-              const active = prev[0];
-              const exists = incoming.some((g: any) => g.id === active.id);
-              if (!exists) {
-                return [active, ...incoming];
-              }
-            }
-            return incoming;
-          });
           setOffline(false);
         } else {
+          setGames([GTA_LAGOS_GAME]);
           setOffline(true);
         }
         if (creatorsRes.status === 'fulfilled' && Array.isArray(creatorsRes.value?.users)) {
           setCreators(creatorsRes.value.users);
         }
       } catch {
-        if (mounted) setOffline(true);
+        if (mounted) {
+          setGames([GTA_LAGOS_GAME]);
+          setOffline(true);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -883,18 +834,7 @@ function creatorIdFrom(creator: Creator | null) {
   return creator?.id || creator?.username || '';
 }
 
-function creatorFromGame(game: Game | null): Creator | null {
-  if (!game) return null;
-  const id = game.creatorId || game.userId || game.createdBy || game.creatorUsername || '';
-  if (!id && !game.creatorUsername && !game.creatorDisplayName) return null;
-  return {
-    id: String(id || game.creatorUsername || game.creatorDisplayName),
-    username: game.creatorUsername || game.creatorDisplayName || 'creator',
-    displayName: game.creatorDisplayName || game.creatorUsername || 'GameTok creator',
-    avatar: game.creatorAvatar || undefined,
-    verified: game.creatorVerified,
-  };
-}
+
 
 function useIsMobile() {
   const query = '(max-width: 900px)';
@@ -922,18 +862,15 @@ function App() {
   // /play, or /game/:id when a specific game was opened.
   const route = useMemo(() => parseRoute(location.pathname, location.search), [location.pathname, location.search]);
   const { tab: activeTab, marketingPage, deck: gameDeckMode, gameId: routeGameId, postSlug } = route;
-  const { games, setGames, creators, loading, offline } = useGameTokData(routeGameId);
+  const { games, setGames, creators, loading } = useGameTokData(routeGameId);
   // Which frame the info pages wear. Arriving from More inside the app gives the
   // in-product layout; arriving from the public home gives the marketing site.
   const [marketingFrame, setMarketingFrame] = useState<MarketingFrame>('site');
   const [gameIndex, setGameIndex] = useState(0);
-  const [hudHidden, setHudHidden] = useState(false);
-  const [gamePaused, setGamePaused] = useState(false);
-  const [feedMotion, setFeedMotion] = useState<'next' | 'previous' | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [likedGames, setLikedGames] = useState(() => readStoredSet(STORAGE_KEYS.likedGames));
-  const [savedGames, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
+  const [, setSavedGames] = useState(() => readStoredSet(STORAGE_KEYS.savedGames));
   const [followedCreators, setFollowedCreators] = useState(() => readStoredSet(STORAGE_KEYS.followedCreators));
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => {
     try {
@@ -946,8 +883,6 @@ function App() {
       return null;
     }
   });
-  const hasSession = Boolean(authUser || getToken());
-  const [restartKey, setRestartKey] = useState(0);
   const [commentsStore, setCommentsStore] = useState<Record<string, Array<{ id: string; username: string; text: string; likes: number; createdAt?: string }>>>(() => {
     try {
       return JSON.parse(localStorage.getItem('gametok_web_comments') || '{}');
@@ -955,11 +890,6 @@ function App() {
       return {};
     }
   });
-
-  const getCommentCount = useCallback((gameId: string, baseCount: number = 0) => {
-    const localList = commentsStore[gameId] || [];
-    return baseCount + localList.length;
-  }, [commentsStore]);
 
   const addComment = useCallback((gameId: string, text: string, username: string) => {
     const newComment = {
@@ -977,17 +907,6 @@ function App() {
       return updated;
     });
   }, []);
-
-  const handleRemix = useCallback((game: Game) => {
-    const g = game as any;
-    if (g?.remixCode || g?.prompt || g?.code) {
-      const code = g.remixCode || g.code || '';
-      const prompt = g.prompt || `Remix of ${game.name}`;
-      sessionStorage.setItem('gametok_remix_prompt', prompt);
-      sessionStorage.setItem('gametok_remix_code', code);
-    }
-    navigate(TAB_PATHS.create);
-  }, [navigate]);
 
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
 
@@ -1030,7 +949,6 @@ function App() {
     setModal(null);
     // Signing in mid-create must not throw away the work in progress.
     if (activeTab !== 'create') {
-      setHudHidden(false);
       navigate(TAB_PATHS.profile);
     }
   }, [activeTab, navigate]);
@@ -1116,18 +1034,9 @@ function App() {
     });
   };
 
-  const activeCreatorId = activeGame?.creatorId || activeGame?.userId || activeGame?.createdBy || activeGame?.creatorUsername || activeGame?.creatorDisplayName || '';
   const toggleActiveLike = () => {
     if (!activeGame) return;
     toggleBackendSet(setLikedGames, activeGame.id, () => likesApi.toggle(activeGame.id));
-  };
-  const toggleActiveSave = () => {
-    if (!activeGame) return;
-    toggleBackendSet(setSavedGames, activeGame.id, () => savedGamesApi.toggle(activeGame.id));
-  };
-  const toggleActiveFollow = () => {
-    if (!activeCreatorId) return;
-    toggleBackendSet(setFollowedCreators, activeCreatorId, () => users.follow(activeCreatorId));
   };
   const toggleCreatorFollow = (creator: Creator | null) => {
     const id = creatorIdFrom(creator);
@@ -1149,8 +1058,6 @@ function App() {
   const openGame = (game: Game) => {
     const index = games.findIndex((item) => item.id === game.id);
     setGameIndex(index >= 0 ? index : 0);
-    setGamePaused(false);
-    setHudHidden(false);
     setModal(null);
     pushRecentGame(game.id);
     navigate(`/game/${game.id}`);
@@ -1159,27 +1066,13 @@ function App() {
   const goTab = (tab: Tab) => {
     // Creating a game requires an account; browsing/exploring does not.
     if (tab === 'create' && requireAuth('signup')) return;
-    setHudHidden(false);
     navigate(TAB_PATHS[tab]);
   };
 
   const goMarketingPage = (page: MarketingPage, frame: MarketingFrame = 'site') => {
     setMarketingFrame(frame);
-    setHudHidden(false);
     setModal(null);
     navigate(MARKETING_PATHS[page]);
-  };
-
-  // The home hero has a composer; whatever was typed there has to survive the hop
-  // into /create rather than being thrown away, which is what used to happen.
-  // Stashed rather than passed as route state because a signed-out visitor gets
-  // the auth wall first — the brief has to still be there on the far side of it.
-  const goCreateWithBrief = (brief?: string) => {
-    const trimmed = brief?.trim();
-    if (trimmed) stashPendingBrief(trimmed);
-    if (requireAuth('signup')) return;
-    setHudHidden(false);
-    navigate(TAB_PATHS.create);
   };
 
   const openAuth = (mode: AuthMode = 'signup') => {
@@ -1204,45 +1097,9 @@ function App() {
     document.querySelectorAll<HTMLIFrameElement>('iframe[data-game-id]').forEach((f) => { try { f.contentWindow?.postMessage({ type: 'GAMETOK_PLAYER_CHANGED' }, '*'); } catch (e) { /* the frame is gone */ } });
   }, [authUser?.id]);
 
-  const animateFeed = (direction: 'next' | 'previous') => {
-    setFeedMotion(direction);
-    window.setTimeout(() => setFeedMotion(null), 360);
-  };
-
-  const handleFeedIndexChange = useCallback((idx: number) => {
-    setGameIndex(idx);
-    const target = games[idx];
-    if (gameDeckMode && target?.id) {
-      navigate(`/game/${target.id}`, { replace: true });
-    }
-  }, [gameDeckMode, games, navigate]);
-
-  const nextGame = () => {
-    if (games.length === 0) return;
-    animateFeed('next');
-    setGamePaused(false);
-    const nextIdx = (gameIndex + 1) % games.length;
-    handleFeedIndexChange(nextIdx);
-  };
-  const previousGame = () => {
-    if (games.length === 0) return;
-    animateFeed('previous');
-    setGamePaused(false);
-    const prevIdx = (gameIndex - 1 + games.length) % games.length;
-    handleFeedIndexChange(prevIdx);
-  };
-
-  // Enter the full-screen player (center Play button on the mobile nav).
-  const openPlayer = () => {
-    setHudHidden(false);
-    setGamePaused(false);
-    navigate('/play');
-  };
-
   // Leave the player and go back to browsing.
   const closePlayer = () => {
-    setHudHidden(false);
-    navigate(TAB_PATHS.home);
+    navigate(TAB_PATHS.explore);
   };
 
   const fetchingGameIdRef = useRef<string | null>(null);
@@ -1292,139 +1149,91 @@ function App() {
     if (activeGame?.id) localStorage.setItem(STORAGE_KEYS.activeGame, activeGame.id);
   }, [activeGame?.id]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTyping = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable;
-      if (isTyping || modal) return;
-      if (activeTab !== 'home' || marketingPage) return;
-      if (event.key === 'ArrowDown' || event.key.toLowerCase() === 'j') {
-        event.preventDefault();
-        nextGame();
-      }
-      if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        previousGame();
-      }
-      if (event.key.toLowerCase() === 'h') setHudHidden((value) => !value);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, games.length, marketingPage, modal]);
 
   return (
-    <div className={`gametok-shell ${activeTab === 'home' && !marketingPage ? 'home-mode' : ''} ${marketingPage && !isMobile ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : ''} ${activeTab === 'explore' && !marketingPage && !isMobile ? 'explore-mode' : ''}`}>
-      {(!marketingPage || isMobile) && <div className="phone-stage">
-        <main className="app-screen">
-          {isMobile && marketingPage && (
-            <div className="mobile-info-page page-scroll">
-              <MarketingPageBody
-                page={marketingPage}
-                postSlug={postSlug}
+    <div className={`gametok-shell ${marketingPage && !isMobile ? 'marketing-mode' : ''} ${activeTab === 'create' && !marketingPage ? 'create-mode' : 'explore-mode'}`}>
+      {/* Direct Game Player (Mobile & Desktop) */}
+      {gameDeckMode && (
+        activeGame ? (
+          <DesktopDirectGamePlayer
+            game={activeGame}
+            onGoHome={closePlayer}
+            onExplore={closePlayer}
+            liked={likedGames.has(activeGame.id)}
+            onToggleLike={toggleActiveLike}
+            onOpenModal={setModal}
+          />
+        ) : (
+          <section className="desktop-deck-pending">
+            <DesktopAppSidebar activeTab="explore" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
+            <EmptyAppState
+              loading={loading}
+              title="Game not found"
+              text="That game may have been removed. Try exploring other games."
+            />
+          </section>
+        )
+      )}
+
+      {/* Mobile Shell */}
+      {isMobile && !gameDeckMode && (
+        <div className="phone-stage">
+          <main className="app-screen">
+            {marketingPage && (
+              <div className="mobile-info-page page-scroll">
+                <MarketingPageBody
+                  page={marketingPage}
+                  postSlug={postSlug}
+                  games={games}
+                  onCreate={() => goTab('create')}
+                  onExplore={() => goTab('explore')}
+                  onOpenGame={openGame}
+                  onOpenPost={(slug) => navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog)}
+                />
+              </div>
+            )}
+            {!marketingPage && (activeTab === 'explore' || activeTab === 'home') && (
+              <DesktopExploreScreen
+                variant="mobile"
+                user={authUser}
                 games={games}
-                onCreate={() => goTab('create')}
-                onExplore={() => goTab('explore')}
+                onTab={goTab}
                 onOpenGame={openGame}
-                onOpenPost={(slug) => navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog)}
+                onCreate={() => goTab('create')}
               />
-            </div>
-          )}
-          {isMobile && !marketingPage && activeTab === 'home' && !gameDeckMode && (
-            <DesktopExploreScreen
-              variant="mobile"
-              surface="home"
-              user={authUser}
-              games={games}
-              onTab={goTab}
-              onOpenGame={openGame}
-              onCreate={() => goTab('create')}
-              onPlay={openPlayer}
-            />
-          )}
-          {!marketingPage && activeTab === 'home' && (!isMobile || gameDeckMode) && (
-            activeGame ? (
-              <HomeFeed
+            )}
+            {!marketingPage && activeTab === 'create' && (
+              <CreateScreen
+                onOpenGame={openGame}
+                user={authUser}
+                onAuthRequired={() => openAuth('signup')}
+              />
+            )}
+            {activeTab === 'connect' && (
+              <ConnectScreen
+                creators={creators}
+                onOpenCreator={openCreatorProfile}
+                onOpenChat={openCreatorMessage}
+                onOpenGame={openGame}
+                variant="mobile"
+                user={authUser}
                 games={games}
-                game={activeGame}
-                index={gameIndex}
-                loading={loading}
-                offline={offline}
-                hudHidden={hudHidden}
-                gameDeckMode={gameDeckMode}
-                liked={likedGames.has(activeGame.id)}
-                saved={savedGames.has(activeGame.id)}
-                following={followedCreators.has(activeCreatorId)}
-                restartKey={restartKey}
-                getCommentCount={getCommentCount}
-                onRemix={handleRemix}
-                onIndex={handleFeedIndexChange}
-                onOpenModal={setModal}
-                onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
-                onToggleLike={toggleActiveLike}
-                onToggleSave={toggleActiveSave}
-                onToggleFollow={toggleActiveFollow}
-                onOpenExplore={closePlayer}
               />
-            ) : (
-              <EmptyAppState loading={loading} title="No games yet" text="The backend did not return any games for the feed." />
-            )
-          )}
-          {isMobile && !marketingPage && activeTab === 'explore' && (
-            <DesktopExploreScreen
-              variant="mobile"
-              user={authUser}
-              games={games}
-              onTab={goTab}
-              onOpenGame={openGame}
-              onCreate={() => goTab('create')}
-            />
-          )}
-          {/* Mobile only: desktop has DesktopCreateWorkspace as a sibling below, and
-              mounting both would run two useDreamForge instances — two pollers
-              resuming the same job after a reload. */}
-          {isMobile && !marketingPage && activeTab === 'create' && (
-            <CreateScreen
-              onOpenGame={openGame}
-              user={authUser}
-              onAuthRequired={() => openAuth('signup')}
-            />
-          )}
-          {activeTab === 'connect' && (
-            <ConnectScreen
-              creators={creators}
-              onOpenCreator={openCreatorProfile}
-              onOpenChat={openCreatorMessage}
-              onOpenGame={openGame}
-              variant={isMobile ? 'mobile' : 'desktop'}
-              user={authUser}
-              games={games}
-            />
-          )}
-          {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
-          {activeTab === 'more' && <MoreScreen onPage={goMarketingPage} />}
-        </main>
+            )}
+            {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
+            {activeTab === 'more' && <MoreScreen onPage={goMarketingPage} />}
+          </main>
 
-        <BottomNav
-          activeTab={activeTab}
-          gameDeckMode={gameDeckMode && activeTab === 'home'}
-          hudHidden={hudHidden}
-          paused={gamePaused}
-          onTab={(tab) => {
-            goTab(tab);
-          }}
-          onPlay={openPlayer}
-          onTogglePlay={() => setRestartKey((k) => k + 1)}
-          onNext={nextGame}
-          onPrevious={previousGame}
-          onToggleHud={() => setHudHidden((value) => !value)}
-          onHomeDeckExit={closePlayer}
-        />
-      </div>}
+          <BottomNav
+            activeTab={activeTab}
+            gameDeckMode={gameDeckMode}
+            onTab={goTab}
+          />
+        </div>
+      )}
 
-      {/* More takes you out to the marketing site, the same way Astrocade's More
-          opens /about-us with its own top nav. Signed in or not, desktop gets
-          this frame. */}
-      {!isMobile && marketingPage && (
+      {/* Desktop Static Marketing Page */}
+      {!isMobile && !gameDeckMode && marketingPage && (
         <StaticMarketingPage
           frame={marketingFrame}
           page={marketingPage}
@@ -1440,138 +1249,36 @@ function App() {
         />
       )}
 
-      {/* The player serves /play and /game/:id for everyone, signed in or not.
-          Without this a logged-out visitor who opened a game landed on the
-          marketing hero instead, because the feed that carries the player is
-          hidden on desktop in home-mode. */}
-      {/* A cold /game/:id or /play load has no feed yet, so the player has nothing
-          to show for a beat. Say so instead of flashing an empty screen. */}
-      {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && !activeGame && (
-        <section className="desktop-deck-pending">
-          <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
-          <EmptyAppState
-            loading={loading}
-            title="Game not found"
-            text="That game may have been removed. Try the feed instead."
-          />
-        </section>
-      )}
+      {/* Desktop App Surfaces */}
+      {!isMobile && !gameDeckMode && !marketingPage && (
+        <>
+          {(activeTab === 'explore' || activeTab === 'home') && (
+            <DesktopExploreScreen
+              user={authUser}
+              games={games}
+              onTab={goTab}
+              onOpenGame={openGame}
+              onCreate={() => goTab('create')}
+              onPage={(page) => goMarketingPage(page, 'app')}
+            />
+          )}
 
-      {!isMobile && activeTab === 'home' && !marketingPage && gameDeckMode && activeGame && (
-        routeGameId ? (
-          <DesktopDirectGamePlayer
-            game={activeGame}
-            onGoHome={() => goTab('home')}
-            onExplore={() => goTab('explore')}
-            liked={likedGames.has(activeGame.id)}
-            onToggleLike={toggleActiveLike}
-            onOpenModal={setModal}
-          />
-        ) : (
-          <DesktopPlayHome
-            user={authUser}
-            game={activeGame}
-            games={games}
-            index={gameIndex}
-            liked={likedGames.has(activeGame.id)}
-            saved={savedGames.has(activeGame.id)}
-            following={followedCreators.has(activeCreatorId)}
-            feedMotion={feedMotion}
-            getCommentCount={getCommentCount}
-            onRemix={handleRemix}
-            onTab={goTab}
-            onNext={nextGame}
-            onPrevious={previousGame}
-            onOpenModal={setModal}
-            onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
-            onToggleLike={toggleActiveLike}
-            onToggleSave={toggleActiveSave}
-            onToggleFollow={toggleActiveFollow}
-            onPage={(page) => goMarketingPage(page, 'app')}
-          />
-        )
-      )}
+          {activeTab === 'create' && (
+            <section className="desktop-create-shell">
+              <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
+              <CreateScreen
+                variant="desktop"
+                onOpenGame={openGame}
+                user={authUser}
+                onAuthRequired={() => openAuth('signup')}
+              />
+            </section>
+          )}
 
-      {/* Signed-out landing: the hero, plus real games to play before any login. */}
-      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && !hasSession && (
-        <DesktopHomeHero
-          games={games}
-          loading={loading}
-          onCreate={goCreateWithBrief}
-          onExplore={() => goTab('explore')}
-          onAuth={openAuth}
-          onPage={(page) => goMarketingPage(page, 'site')}
-          onOpenPost={(slug) => { setMarketingFrame('app'); navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog); }}
-          onOpenGame={openGame}
-          onPlay={openPlayer}
-        />
-      )}
-
-      {!isMobile && activeTab === 'home' && !marketingPage && !gameDeckMode && hasSession && (
-        activeGame ? (
-          <DesktopPlayHome
-            user={authUser}
-            game={activeGame}
-            games={games}
-            index={gameIndex}
-            liked={likedGames.has(activeGame.id)}
-            saved={savedGames.has(activeGame.id)}
-            following={followedCreators.has(activeCreatorId)}
-            feedMotion={feedMotion}
-            getCommentCount={getCommentCount}
-            onRemix={handleRemix}
-            onTab={goTab}
-            onNext={nextGame}
-            onPrevious={previousGame}
-            onOpenModal={setModal}
-            onOpenCreator={() => openCreatorProfile(creatorFromGame(activeGame))}
-            onToggleLike={toggleActiveLike}
-            onToggleSave={toggleActiveSave}
-            onToggleFollow={toggleActiveFollow}
-            onPage={(page) => goMarketingPage(page, 'app')}
-          />
-        ) : (
-          <section className="desktop-app-main desktop-play-home">
-            <DesktopAppSidebar activeTab="home" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
-            <main className="desktop-feed-stage" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div className="game-loading">
-                <RefreshCw className="spin" size={34} />
-                <p>Loading games...</p>
-              </div>
-            </main>
-          </section>
-        )
-      )}
-
-      {/* Desktop runs the same Dream Forge surface as mobile web, laid out as a
-          centered column. It replaced DesktopCreateWorkspace, which was a second,
-          weaker create experience maintained in parallel. */}
-      {!isMobile && activeTab === 'create' && !marketingPage && (
-        <section className="desktop-create-shell">
-          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
-          <CreateScreen
-            variant="desktop"
-            onOpenGame={openGame}
-            user={authUser}
-            onAuthRequired={() => openAuth('signup')}
-          />
-        </section>
-      )}
-
-      {/* Browsing is open to everyone; only creating asks for an account. */}
-      {!isMobile && activeTab === 'explore' && !marketingPage && (
-        <DesktopExploreScreen
-          user={authUser}
-          games={games}
-          onTab={goTab}
-          onOpenGame={openGame}
-          onCreate={() => goTab('create')}
-          onPage={(page) => goMarketingPage(page, 'app')}
-        />
-      )}
-
-      {!isMobile && activeTab !== 'home' && activeTab !== 'create' && activeTab !== 'explore' && !marketingPage && (
-        <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
+          {activeTab !== 'home' && activeTab !== 'create' && activeTab !== 'explore' && (
+            <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
+          )}
+        </>
       )}
 
       {modal && (
@@ -1629,343 +1336,8 @@ function EmptyListState({ title, text }: { title: string; text: string }) {
   );
 }
 
-function MobileSmartAppBanner() {
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return sessionStorage.getItem('gt_smart_banner_dismissed') === '1';
-    } catch {
-      return false;
-    }
-  });
 
-  if (dismissed) return null;
 
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-  const isIos = /iPhone|iPad|iPod/i.test(ua);
-  const isAndroid = /Android/i.test(ua);
-  const storeUrl = isIos ? IOS_STORE_URL : ANDROID_STORE_URL;
-  const storeSubtitle = isIos ? 'Free on the App Store' : isAndroid ? 'Free on Google Play' : 'Play in the App';
-
-  return (
-    <div className="mobile-smart-banner">
-      <button
-        className="mobile-smart-banner-close"
-        onClick={() => {
-          setDismissed(true);
-          try { sessionStorage.setItem('gt_smart_banner_dismissed', '1'); } catch {}
-        }}
-        aria-label="Dismiss banner"
-      >
-        <X size={15} />
-      </button>
-      <img src="/about/icon.png" alt="GameTOK" className="mobile-smart-banner-icon" />
-      <div className="mobile-smart-banner-info">
-        <strong>GameTOK</strong>
-        <span>{storeSubtitle}</span>
-      </div>
-      <a href={storeUrl} className="mobile-smart-banner-btn" target="_blank" rel="noopener noreferrer">
-        GET
-      </a>
-    </div>
-  );
-}
-
-function HomeFeed({
-  game,
-  index,
-  games,
-  loading,
-  offline: _offline,
-  hudHidden,
-  gameDeckMode,
-  liked,
-  saved: _saved,
-  following,
-  restartKey = 0,
-  getCommentCount,
-  onRemix: _onRemix,
-  onIndex,
-  onOpenModal,
-  onOpenCreator,
-  onToggleLike,
-  onToggleSave: _onToggleSave,
-  onToggleFollow,
-  onOpenExplore: _onOpenExplore,
-}: {
-  game: Game;
-  index: number;
-  games: Game[];
-  loading: boolean;
-  offline: boolean;
-  hudHidden: boolean;
-  gameDeckMode: boolean;
-  liked: boolean;
-  saved: boolean;
-  following: boolean;
-  restartKey?: number;
-  getCommentCount?: (gameId: string, base: number) => number;
-  onRemix?: (game: Game) => void;
-  onIndex: (idx: number) => void;
-  onOpenModal: (modal: Modal) => void;
-  onOpenCreator?: () => void;
-  onToggleLike: () => void;
-  onToggleSave: () => void;
-  onToggleFollow: () => void;
-  onOpenExplore: () => void;
-}) {
-  const containerRef = useRef<HTMLElement | null>(null);
-  const [showPreviewArt, setShowPreviewArt] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-  useGameTracking(game?.id, true, gameStarted);
-
-  // ─── Drag state for TikTok-style vertical swipe ───
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const dragStartY = useRef(0);
-  const isDragging = useRef(false);
-  const SWIPE_THRESHOLD = 60;
-
-  useEffect(() => {
-    setGameStarted(true);
-    setShowPreviewArt(true);
-    const timer = window.setTimeout(() => setShowPreviewArt(false), 3500);
-    return () => window.clearTimeout(timer);
-  }, [game.id]);
-
-  // ─── Touch / pointer handlers ───
-  const onDragStart = useCallback((clientY: number) => {
-    if (isAnimating) return;
-    dragStartY.current = clientY;
-    isDragging.current = true;
-    setDragOffset(0);
-  }, [isAnimating]);
-
-  const onDragMove = useCallback((clientY: number) => {
-    if (!isDragging.current || isAnimating) return;
-    const dy = clientY - dragStartY.current;
-    // Clamp at edges
-    if (index === 0 && dy > 0) {
-      setDragOffset(dy * 0.3); // rubber-band at top
-    } else if (index >= games.length - 1 && dy < 0) {
-      setDragOffset(dy * 0.3); // rubber-band at bottom
-    } else {
-      setDragOffset(dy);
-    }
-  }, [isAnimating, index, games.length]);
-
-  const onDragEnd = useCallback(() => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-
-    const dy = dragOffset;
-    if (dy < -SWIPE_THRESHOLD && index < games.length - 1) {
-      // Swipe up → next game
-      setIsAnimating(true);
-      const el = containerRef.current;
-      const h = el?.clientHeight || window.innerHeight;
-      setDragOffset(-h);
-      window.setTimeout(() => {
-        onIndex(index + 1);
-        setDragOffset(0);
-        setIsAnimating(false);
-      }, 220);
-    } else if (dy > SWIPE_THRESHOLD && index > 0) {
-      // Swipe down → previous game
-      setIsAnimating(true);
-      const el = containerRef.current;
-      const h = el?.clientHeight || window.innerHeight;
-      setDragOffset(h);
-      window.setTimeout(() => {
-        onIndex(index - 1);
-        setDragOffset(0);
-        setIsAnimating(false);
-      }, 220);
-    } else {
-      // Snap back
-      setDragOffset(0);
-    }
-  }, [dragOffset, index, games.length, onIndex]);
-
-  // ─── Wheel scroll (desktop) ───
-  const wheelLock = useRef(0);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (isAnimating) return;
-      if (Math.abs(e.deltaY) < 30) return;
-      const now = Date.now();
-      if (now - wheelLock.current < 600) return;
-      wheelLock.current = now;
-
-      if (e.deltaY > 0 && index < games.length - 1) {
-        setIsAnimating(true);
-        const h = el.clientHeight || window.innerHeight;
-        setDragOffset(-h);
-        window.setTimeout(() => {
-          onIndex(index + 1);
-          setDragOffset(0);
-          setIsAnimating(false);
-        }, 220);
-      } else if (e.deltaY < 0 && index > 0) {
-        setIsAnimating(true);
-        const h = el.clientHeight || window.innerHeight;
-        setDragOffset(h);
-        window.setTimeout(() => {
-          onIndex(index - 1);
-          setDragOffset(0);
-          setIsAnimating(false);
-        }, 220);
-      }
-    };
-    el.addEventListener('wheel', onWheel, { passive: true });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [index, games.length, onIndex, isAnimating]);
-
-  // Build the 3-card window: [prev, current, next]
-  const slots: Array<{ game: Game; position: number; realIndex: number }> = [];
-  if (index > 0) slots.push({ game: games[index - 1], position: -1, realIndex: index - 1 });
-  if (games[index]) slots.push({ game: games[index], position: 0, realIndex: index });
-  if (index < games.length - 1) slots.push({ game: games[index + 1], position: 1, realIndex: index + 1 });
-
-  return (
-    <section
-      className="home-feed"
-      ref={containerRef}
-      onTouchStart={(e) => onDragStart(e.touches[0].clientY)}
-      onTouchMove={(e) => onDragMove(e.touches[0].clientY)}
-      onTouchEnd={onDragEnd}
-      onPointerDown={(e) => { if (e.pointerType === 'mouse') onDragStart(e.clientY); }}
-      onPointerMove={(e) => { if (e.pointerType === 'mouse' && isDragging.current) onDragMove(e.clientY); }}
-      onPointerUp={(e) => { if (e.pointerType === 'mouse') onDragEnd(); }}
-    >
-      <MobileSmartAppBanner />
-
-      {loading ? (
-        <div className="game-loading">
-          <RefreshCw className="spin" size={34} />
-          <p>Loading games...</p>
-        </div>
-      ) : (
-        <div className="feed-card-stack">
-          {slots.map(({ game: g, position, realIndex: ri }) => {
-            const h = containerRef.current?.clientHeight || window.innerHeight;
-            const baseY = position * h + dragOffset;
-            const transitioning = isAnimating || (isDragging.current && dragOffset !== 0);
-            const cardIsLandscape = isLandscape(g.orientation);
-            return (
-              <div
-                className={`feed-card ${cardIsLandscape ? 'is-landscape' : 'is-portrait'}`}
-                key={g.id}
-                style={{
-                  transform: `translateY(${baseY}px)`,
-                  transition: (isAnimating || (!isDragging.current && dragOffset === 0))
-                    ? 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                    : 'none',
-                  zIndex: position === 0 ? 2 : 1,
-                }}
-              >
-                <div className={`game-frame ${ri === index && gameStarted ? 'is-playing' : ''}`}>
-                  {ri === index && gameStarted && (
-                    <iframe
-                      key={`${g.id}-${restartKey}`}
-                      className="game-iframe"
-                      title={g.name}
-                      src={getGameUrl(g)}
-                      data-game-id={g.id}
-                      allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated"
-                      style={{ pointerEvents: transitioning ? 'none' : 'auto' }}
-                      onLoad={() => window.setTimeout(() => setShowPreviewArt(false), 900)}
-                    />
-                  )}
-                  <div className="thumbnail-backdrop" style={{ backgroundImage: `url(${getThumbnailUrl(g)})` }} />
-                  {ri === index && (!gameStarted || showPreviewArt) && (
-                    <div
-                      className={`game-preview-card ${cardIsLandscape ? 'is-landscape' : 'is-portrait'}`}
-                      onClick={() => setGameStarted(true)}
-                    >
-                      <img className="card-poster" src={getThumbnailUrl(g)} alt="" onError={e => handleThumbError(e, g)} />
-                      <div className="card-play-pill">
-                        <Play size={12} fill="#fff" color="#fff" />
-                        <span>Play</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {!hudHidden && (
-        <>
-          <div className="feed-actions">
-            <ActionButton active={liked} tone="like" icon={<Heart size={35} fill={liked ? '#ec2c7a' : 'none'} color={liked ? '#ec2c7a' : '#ffffff'} />} label={formatCount((game.likes || 0) + (liked ? 1 : 0))} onClick={onToggleLike} />
-            <ActionButton icon={<MessageCircle size={32} color="#ffffff" />} label={formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))} onClick={() => onOpenModal('comments')} />
-            <ActionButton icon={<Share2 size={32} color="#ffffff" />} label="0" onClick={() => onOpenModal('share')} />
-          </div>
-
-          {(!gameStarted || showPreviewArt) && (
-            <div className="game-info">
-              <div className="game-title-row">
-                <h1 className="game-name">{game.name}</h1>
-                <div className="game-title-pill">
-                  <Gamepad2 size={13} fill="currentColor" />
-                </div>
-              </div>
-              <div className="creator-row">
-                <div className="creator-avatar-wrap">
-                  <img
-                    src={avatarUrl(game.creatorDisplayName || game.creatorUsername, game.creatorAvatar, 108)}
-                    alt=""
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenCreator?.();
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  <button
-                    className={`creator-follow-badge ${following ? 'following' : ''}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleFollow();
-                    }}
-                    aria-label="Follow"
-                  >
-                    {following ? '✓' : '+'}
-                  </button>
-                </div>
-                <span
-                  className="creator-display-name"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenCreator?.();
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {game.creatorDisplayName || game.creatorUsername || 'anonymous'}
-                  {game.creatorVerified && <span className="verified-dot">✓</span>}
-                </span>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      {!gameDeckMode && <div className="deck-shadow" />}
-    </section>
-  );
-}
-
-function ActionButton({ icon, label, active, tone, onClick }: { icon: React.ReactNode; label: string; active?: boolean; tone?: 'like'; onClick?: () => void }) {
-  return (
-    <button className={`feed-action ${active ? 'active' : ''} ${tone === 'like' ? 'like-action' : ''}`} onClick={onClick}>
-      <span>{icon}</span>
-      <small>{label}</small>
-    </button>
-  );
-}
 
 
 
@@ -3039,27 +2411,11 @@ function MoreScreen({ onPage }: { onPage: (page: MarketingPage) => void }) {
 function BottomNav({
   activeTab,
   gameDeckMode,
-  hudHidden: _hudHidden,
-  paused: _paused,
   onTab,
-  onPlay: _onPlay,
-  onTogglePlay: _onTogglePlay,
-  onNext: _onNext,
-  onPrevious: _onPrevious,
-  onToggleHud: _onToggleHud,
-  onHomeDeckExit: _onHomeDeckExit,
 }: {
   activeTab: Tab;
   gameDeckMode: boolean;
-  hudHidden: boolean;
-  paused: boolean;
   onTab: (tab: Tab) => void;
-  onPlay: () => void;
-  onTogglePlay: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  onToggleHud: () => void;
-  onHomeDeckExit: () => void;
 }) {
   // Hide bottom navigation completely while playing a game
   if (gameDeckMode) {
@@ -3068,8 +2424,8 @@ function BottomNav({
 
   return (
     <nav className="bottom-nav standard-nav">
-      <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onTab('home')}>
-        <Home size={23} /><span>Home</span>
+      <button className={activeTab === 'explore' || activeTab === 'home' ? 'active' : ''} onClick={() => onTab('explore')}>
+        <Compass size={23} /><span>Games</span>
       </button>
       <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
         <Users size={23} /><span>Connect</span>
@@ -3128,194 +2484,16 @@ function StoreButtons({ className = '' }: { className?: string }) {
   );
 }
 
-function DesktopHomeHero({
-  games,
-  loading,
-  onCreate,
-  onExplore,
-  onAuth,
-  onPage,
-  onOpenPost,
-  onOpenGame,
-  onPlay,
-}: {
-  games: Game[];
-  loading: boolean;
-  onCreate: (brief?: string) => void;
-  onExplore: () => void;
-  onAuth: (mode?: AuthMode) => void;
-  onPage: (page: MarketingPage) => void;
-  onOpenPost: (slug: string | null) => void;
-  onOpenGame: (game: Game) => void;
-  onPlay: () => void;
-}) {
-  const [videoIndex, setVideoIndex] = useState(0);
-  const [brief, setBrief] = useState('');
-  const [showAnnouncement, setShowAnnouncement] = useState(false);
-  // Read-more only appears once there is a published announcement to point at.
-  const announcementSlug = useLatestAnnouncement();
-  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-
-  // Signed-out visitors get real games to play, not just a pitch. Trending is by
-  // lifetime plays; Fresh is newest-first where the backend gave us a date.
-  const trending = useMemo(
-    () => [...games].sort((a, b) => (b.plays || 0) - (a.plays || 0)).slice(0, 18),
-    [games],
-  );
-  const fresh = useMemo(
-    () =>
-      [...games]
-        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-        .slice(0, 18),
-    [games],
-  );
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setVideoIndex((index) => (index + 1) % HOME_VIDEOS.length);
-    }, 8500);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  // All hero clips are mounted and preloaded up front; we only play the active one
-  // and crossfade via CSS opacity, so switching is instant with no re-fetch/pop-in.
-  useEffect(() => {
-    videoRefs.current.forEach((vid, i) => {
-      if (!vid) return;
-      if (i === videoIndex) vid.play().catch(() => {});
-      else vid.pause();
-    });
-  }, [videoIndex]);
-
-  return (
-    <section className="desktop-home-hero">
-      {/* The video band is its own 100vh box so the page below it can scroll
-          without the absolutely-positioned clips stretching over everything. */}
-      <div className="desktop-hero-band">
-        {HOME_VIDEOS.map((src, i) => (
-          <video
-            key={src}
-            ref={(el) => { videoRefs.current[i] = el; }}
-            className={`desktop-hero-video ${i === videoIndex ? 'is-active' : ''}`}
-            src={src}
-            preload="auto"
-            muted
-            loop
-            playsInline
-            autoPlay={i === 0}
-          />
-        ))}
-        <div className="desktop-hero-shade" />
-
-        <header className="desktop-home-topbar">
-          <div className="desktop-wordmark">
-            <img src="/app-assets/icon.png" alt="" />
-            <strong>GameTok</strong>
-          </div>
-          <nav>
-            <button onClick={() => onPage('games')}>Games</button>
-            <button onClick={() => onPage('about')}>About</button>
-            <button onClick={() => onPage('blog')}>Blog</button>
-            <button onClick={onExplore}>Explore</button>
-            <button onClick={() => onCreate()}>Create</button>
-          </nav>
-          <div className="desktop-auth-actions">
-            <button onClick={() => onAuth('login')}>Log in</button>
-            <button onClick={() => onAuth('signup')}>Sign up</button>
-          </div>
-        </header>
-
-        <div className="desktop-hero-copy">
-          <button className="desktop-live-pill" onClick={() => setShowAnnouncement(true)}>
-            <span /> New game model is live <ChevronRight size={14} />
-          </button>
-          <h1>Make any game you can imagine.</h1>
-          <p>GameTok lets you build entire games and worlds by chatting with AI.</p>
-
-          <div className="desktop-hero-composer">
-            <span className="desktop-model-badge"><span /> New game model</span>
-            <textarea
-              value={brief}
-              maxLength={500}
-              onChange={(event) => setBrief(event.target.value)}
-              placeholder="A platformer where a ninja can double jump through glass skyscrapers..."
-            />
-            <div className="desktop-composer-row">
-              <button aria-label="Upload image"><ImageIcon size={18} /></button>
-              <button aria-label="Voice prompt"><Mic size={18} /></button>
-              <span>{brief.length}/500</span>
-              <button className="primary" onClick={() => onCreate(brief)}>
-                Create game
-              </button>
-            </div>
-          </div>
-
-          <StoreButtons className="on-hero" />
-
-          <div className="desktop-proof-bar">
-            <span>Featured in <strong>PC GAMER</strong></span>
-            <span>Presented at <strong>AFRO EXPO 2026</strong></span>
-            <span><Users size={14} /> <strong>30,000+</strong> AI game builders</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Games you can play before signing up. This is the whole point of the
-          signed-out home: it should be a place to play, not only a pitch. */}
-      <div className="desktop-home-play">
-        <div className="desktop-home-play-head">
-          <div>
-            <h2>Play now</h2>
-            <p>Thousands of games made on GameTok. No account needed.</p>
-          </div>
-          <button onClick={onPlay}>
-            <Play size={16} fill="currentColor" /> Open the feed
-          </button>
-        </div>
-
-        {games.length > 0 ? (
-          <>
-            <DesktopExploreRow title="Trending" games={trending} onOpenGame={onOpenGame} />
-            <DesktopExploreRow title="New" games={fresh} onOpenGame={onOpenGame} />
-          </>
-        ) : (
-          <div className="desktop-explore-empty">
-            <p>{loading ? 'Loading games…' : 'No games to show yet.'}</p>
-          </div>
-        )}
-      </div>
-
-      <MarketingFooter onPage={onPage} onCreate={() => onCreate()} />
-
-      {showAnnouncement && (
-        <AnnouncementModal
-          announcement={{ ...CURRENT_ANNOUNCEMENT, readMoreLabel: 'Read the announcement' }}
-          onClose={() => setShowAnnouncement(false)}
-          onPrimary={() => {
-            setShowAnnouncement(false);
-            onCreate();
-          }}
-          onReadMore={() => {
-            setShowAnnouncement(false);
-            // Falls back to the blog index until the announcement post exists.
-            onOpenPost(announcementSlug);
-          }}
-        />
-      )}
-    </section>
-  );
-}
-
 function DesktopDirectGamePlayer({
   game,
-  onGoHome,
+  onGoHome: _onGoHome,
   onExplore,
   liked,
   onToggleLike,
   onOpenModal,
 }: {
   game: Game;
-  onGoHome: () => void;
+  onGoHome?: () => void;
   onExplore: () => void;
   liked?: boolean;
   onToggleLike?: () => void;
@@ -3347,13 +2525,14 @@ function DesktopDirectGamePlayer({
     <div className="desktop-direct-player" ref={containerRef}>
       <header className="direct-player-topbar">
         <div className="direct-player-left">
-          <button className="direct-player-logo" onClick={onGoHome} title="Go to GameTOK Home">
+          <button className="direct-player-logo" onClick={onExplore} title="Back to Games">
+            <ArrowLeft size={18} />
             <img src="/about/icon.png" alt="GameTOK" />
             <strong>GameTok</strong>
           </button>
           <button className="direct-player-nav-btn" onClick={onExplore}>
             <Compass size={17} />
-            <span>Explore More Games</span>
+            <span>All Games</span>
           </button>
         </div>
 
@@ -3380,8 +2559,8 @@ function DesktopDirectGamePlayer({
           <button className="direct-player-action-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
             <Maximize2 size={18} />
           </button>
-          <button className="direct-player-website-cta" onClick={onGoHome}>
-            Main Website →
+          <button className="direct-player-website-cta" onClick={onExplore}>
+            Exit Game
           </button>
         </div>
       </header>
@@ -3396,192 +2575,6 @@ function DesktopDirectGamePlayer({
         />
       </main>
     </div>
-  );
-}
-
-function DesktopPlayHome({
-  user,
-  game,
-  games,
-  index,
-  liked,
-  saved: _saved,
-  following,
-  feedMotion,
-  getCommentCount,
-  onRemix: _onRemix,
-  onTab,
-  onNext,
-  onPrevious,
-  onOpenModal,
-  onOpenCreator,
-  onToggleLike,
-  onToggleSave: _onToggleSave,
-  onToggleFollow,
-  onPage,
-}: {
-  // Null for signed-out visitors — /play and /game/:id are open to everyone.
-  user: AuthUser | null;
-  onPage?: (page: MarketingPage) => void;
-  game: Game;
-  games: Game[];
-  index: number;
-  liked: boolean;
-  saved: boolean;
-  following: boolean;
-  feedMotion: 'next' | 'previous' | null;
-  getCommentCount?: (gameId: string, base: number) => number;
-  onRemix?: (game: Game) => void;
-  onTab: (tab: Tab) => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  onOpenModal: (modal: Modal) => void;
-  onOpenCreator: () => void;
-  onToggleLike: () => void;
-  onToggleSave: () => void;
-  onToggleFollow: () => void;
-}) {
-  const creator = game.creatorDisplayName || game.creatorUsername || 'GameTok player';
-  const [gameStarted, setGameStarted] = useState(false);
-  useGameTracking(game?.id, true, gameStarted);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  // Once the game has loaded it shows live behind the play button (like a feed video) instead
-  // of a still cover; clicking hands it the keyboard and mouse.
-  const [gameLoaded, setGameLoaded] = useState(false);
-
-  useEffect(() => {
-    setGameStarted(false);
-    setGameLoaded(false);
-  }, [game.id]);
-
-  // Preload adjacent game thumbnails so clicking down/up immediately displays the next thumbnail
-  useEffect(() => {
-    if (!games || games.length === 0) return;
-    if (typeof Image === 'undefined') return;
-    const targets = [index + 1, index + 2, index + 3, index - 1];
-    targets.forEach((i) => {
-      const idx = ((i % games.length) + games.length) % games.length;
-      const targetGame = games[idx];
-      if (targetGame) {
-        const url = getThumbnailUrl(targetGame);
-        if (url) {
-          const img = new Image();
-          img.src = url;
-        }
-      }
-    });
-  }, [games, index]);
-
-  const pauseGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-pause' }, '*');
-  const resumeGame = () => iframeRef.current?.contentWindow?.postMessage({ type: 'gt-resume' }, '*');
-  const startGame = () => { resumeGame(); setGameStarted(true); };
-  const stopGame = () => { pauseGame(); setGameStarted(false); };
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && gameStarted) {
-        e.preventDefault();
-        stopGame();
-        return;
-      }
-      if (!gameStarted) {
-        if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); onNext(); }
-        if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); onPrevious(); }
-        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); startGame(); }
-      }
-    };
-    let wheelLock = 0;
-    const onWheel = (e: WheelEvent) => {
-      if (gameStarted) return;
-      if (Math.abs(e.deltaY) < 20) return;
-      const now = Date.now();
-      if (now - wheelLock < 500) return;
-      wheelLock = now;
-      e.deltaY > 0 ? onNext() : onPrevious();
-    };
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('wheel', onWheel, { passive: true });
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('wheel', onWheel);
-    };
-  }, [onNext, onPrevious, gameStarted]);
-
-  return (
-    <section className="desktop-app-main desktop-play-home">
-      <DesktopAppSidebar activeTab="home" user={user} onTab={onTab} onPage={onPage} />
-
-      <main className={`desktop-feed-stage ${gameStarted ? 'is-playing' : ''}`}>
-
-        <article
-          key={game.id}
-          className={`desktop-feed-card ${gameStarted ? 'is-playing' : ''} ${feedMotion ? `desktop-feed-motion-${feedMotion}` : ''}`}
-        >
-          <iframe
-            key={game.id}
-            ref={iframeRef}
-            className="desktop-feed-iframe"
-            title={game.name}
-            src={getGameUrl(game)}
-            data-game-id={game.id}
-            allow="autoplay; fullscreen; clipboard-write"
-            onLoad={() => setGameLoaded(true)}
-          />
-          {!gameStarted && (
-            <>
-              <div className={`desktop-feed-card-shade ${gameLoaded ? 'is-live' : ''}`} onClick={gameLoaded ? startGame : undefined} />
-              <div className={`desktop-feed-poster ${gameLoaded ? 'is-live' : ''}`} key={game.id} onClick={startGame}>
-                <img
-                  key={game.id}
-                  src={getThumbnailUrl(game)}
-                  alt=""
-                  onError={e => handleThumbError(e, game)}
-                />
-                <button className="desktop-feed-play" aria-label={`Play ${game.name}`} onClick={startGame}>
-                  <Play size={52} fill="currentColor" />
-                </button>
-                <span className="desktop-feed-plays"><Play size={12} fill="currentColor" /> {formatCount(game.plays)}</span>
-              </div>
-            </>
-          )}
-        </article>
-
-        {gameStarted ? (
-          <button className="desktop-stage-exit-btn" onClick={stopGame} aria-label="Exit game">
-            <X size={18} />
-            <span>Exit</span>
-            <kbd>Esc</kbd>
-          </button>
-        ) : (
-          <>
-            <div className="desktop-feed-creator" key={game.id} onClick={onOpenCreator} role="button" tabIndex={0}>
-              <img key={game.id} src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 70)} alt="" />
-              <span>
-                <strong>{creator}</strong>
-                <h2 className="desktop-feed-title">{game.name}</h2>
-              </span>
-              <button onClick={(event) => { event.stopPropagation(); onToggleFollow(); }}>{following ? 'Following' : 'Follow'}</button>
-            </div>
-
-            <div className="desktop-feed-controls">
-              <button onClick={onPrevious} aria-label="Previous game"><ChevronUp size={34} /></button>
-              <button onClick={onNext} aria-label="Next game"><ChevronDown size={34} /></button>
-            </div>
-
-            <aside className="desktop-feed-actions">
-              <button onClick={onToggleLike} className={liked ? 'active like-active' : ''}><Heart size={25} fill={liked ? 'currentColor' : 'none'} /><span>{formatCount((game.likes || 0) + (liked ? 1 : 0))}</span></button>
-              <button onClick={() => onOpenModal('comments')}><MessageCircle size={25} /><span>{formatCount(getCommentCount ? getCommentCount(game.id, game.commentsCount || 0) : (game.commentsCount || 0))}</span></button>
-              <button onClick={() => onOpenModal('share')}><Share2 size={25} /><span>Share</span></button>
-              <button onClick={() => onOpenModal('leaderboard')}><Trophy size={25} /><span>Scores</span></button>
-              <button className="desktop-feed-avatar-action" onClick={onOpenCreator}>
-                <img src={avatarUrl(game.creatorUsername || creator, game.creatorAvatar || null, 64)} alt="" />
-                <Plus size={18} />
-              </button>
-            </aside>
-          </>
-        )}
-      </main>
-    </section>
   );
 }
 
@@ -3899,9 +2892,9 @@ function StaticMarketingPage({
 function marketingSubtitle(page: MarketingPage, isPost: boolean) {
   if (isPost) return 'A GameTok field note for the playable social web.';
   if (page === 'about') return 'What GameTok is, who it is for, and where it is going.';
-  if (page === 'games') return 'Discover playable games, creators, and worlds built for a social feed.';
+  if (page === 'games') return 'Discover GTA Lagos and playable games built by creators.';
   if (page === 'pricing') return 'Static v1 pricing cards for product storytelling. Payments come later.';
-  if (page === 'blog') return 'Updates on AI game creation, playable feeds, and creator tools.';
+  if (page === 'blog') return 'Updates on AI game creation, releases, and creator tools.';
   if (page === 'changelog') return 'Everything changing as GameTok web grows from app replica to full product.';
   if (page === 'earn') return 'A creator-growth page for sharing playable games and bringing players back.';
   if (page === 'faq') return 'Answers for builders, players, and anyone trying to understand GameTok web.';
@@ -3914,10 +2907,8 @@ function DesktopExploreScreen({
   onTab,
   onOpenGame,
   onCreate,
-  onPlay,
   onPage,
   variant = 'desktop',
-  surface = 'explore',
 }: {
   user: AuthUser | null;
   games: Game[];
@@ -3925,16 +2916,9 @@ function DesktopExploreScreen({
   onTab: (tab: Tab) => void;
   onOpenGame: (game: Game) => void;
   onCreate: () => void;
-  onPlay?: () => void;
   variant?: 'desktop' | 'mobile';
-  /**
-   * Mobile home and mobile explore share this screen but are not the same place:
-   * home leads with playing (a big feed CTA), explore leads with searching.
-   */
-  surface?: 'home' | 'explore';
 }) {
   const isMobile = variant === 'mobile';
-  const isHome = surface === 'home';
   const [query, setQuery] = useState('');
   const [recentIds] = useState<string[]>(() => readRecentGameIds());
 
@@ -3965,46 +2949,41 @@ function DesktopExploreScreen({
   );
 
   return (
-    <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'} ${isHome ? 'is-home' : ''}`}>
-      {!isMobile && <DesktopAppSidebar activeTab={isHome ? 'home' : 'explore'} user={user} onTab={onTab} onPage={onPage} />}
+    <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'}`}>
+      {!isMobile && <DesktopAppSidebar activeTab="explore" user={user} onTab={onTab} onPage={onPage} />}
       <main className="desktop-explore-main">
         <header className="desktop-explore-header">
           <div>
             <p>GAMETOK</p>
-            <h1>{isHome ? 'Home' : 'Explore'}</h1>
+            <h1>Games</h1>
           </div>
           <button className="desktop-explore-create" onClick={onCreate}>
             <Wand2 size={16} /> Create
           </button>
         </header>
 
-        {isHome ? (
-          <button className="mobile-home-play-cta" onClick={onPlay}>
-            <span className="mobile-home-play-icon"><Play size={22} fill="currentColor" /></span>
-            <span>
-              <strong>Play the feed</strong>
-              <small>Swipe through games one after another</small>
-            </span>
-            <ChevronRight size={20} />
-          </button>
-        ) : (
-          <div className="desktop-explore-search">
-            <Search size={18} />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search games, creators, worlds"
-            />
-          </div>
-        )}
+        <div className="desktop-explore-search">
+          <Search size={18} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search games, creators, worlds"
+          />
+        </div>
 
-        {isMobile && isHome && <StoreButtons className="on-mobile-explore" />}
+        {isMobile && <StoreButtons className="on-mobile-explore" />}
 
         {continueGames.length > 0 && (
           <DesktopExploreRow title="Continue" games={continueGames} onOpenGame={onOpenGame} />
         )}
-        <DesktopExploreRow title="Trending" games={trending} onOpenGame={onOpenGame} />
-        <DesktopExploreRow title="New" games={fresh} onOpenGame={onOpenGame} />
+        {games.length > 1 ? (
+          <>
+            <DesktopExploreRow title="Trending" games={trending} onOpenGame={onOpenGame} />
+            <DesktopExploreRow title="New" games={fresh} onOpenGame={onOpenGame} />
+          </>
+        ) : (
+          <DesktopExploreRow title="Featured" games={trending} onOpenGame={onOpenGame} />
+        )}
 
         {trending.length === 0 && fresh.length === 0 && (
           <div className="desktop-explore-empty"><p>No games match that yet.</p></div>
@@ -4211,29 +3190,23 @@ function DesktopAppSidebar({
   }, [moreOpen]);
 
   const navItems: Array<{ tab: Tab; label: string; icon: React.ReactNode }> = [
-    { tab: 'home', label: 'Home', icon: <Home size={22} /> },
-    { tab: 'explore', label: 'Explore', icon: <Compass size={22} /> },
+    { tab: 'explore', label: 'Games', icon: <Compass size={22} /> },
     { tab: 'create', label: 'Create', icon: <Wand2 size={22} /> },
     { tab: 'profile', label: 'Profile', icon: <User size={22} /> },
   ];
   const username = user?.displayName || user?.username || 'Player';
   return (
     <aside className="desktop-app-sidebar">
-      <button className="desktop-sidebar-logo" onClick={() => onTab('home')}>
+      <button className="desktop-sidebar-logo" onClick={() => onTab('explore')}>
         <img src="/app-assets/icon.png" alt="" />
         <strong>GameTok</strong>
-      </button>
-
-      <button className="desktop-sidebar-play" onClick={() => onTab('home')}>
-        <Play fill="currentColor" size={20} />
-        Play
       </button>
 
       <nav className="desktop-sidebar-nav">
         {navItems.map((item) => (
           <button
             key={item.tab}
-            className={activeTab === item.tab ? 'active' : ''}
+            className={activeTab === item.tab || (item.tab === 'explore' && activeTab === 'home') ? 'active' : ''}
             onClick={() => onTab(item.tab)}
           >
             {item.icon}
@@ -4917,7 +3890,7 @@ function AuthSheet({
 
       <div className="auth-idea-card">
         <span>{mode === 'signup' ? 'Start with:' : 'Last session:'}</span>
-        <strong>{mode === 'signup' ? '"A boss-rush arena that evolves every round"' : 'Your playable feed is waiting'}</strong>
+        <strong>{mode === 'signup' ? '"A boss-rush arena that evolves every round"' : 'GTA Lagos is waiting'}</strong>
       </div>
 
       <div className="auth-email-fields">
