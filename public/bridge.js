@@ -47,7 +47,13 @@
     document.referrer.indexOf('localhost') !== -1
   );
 
-  var isGameTok = isInIframe || hasGameTokParam || hasReferrer;
+  // The GameTok app runs games at the top of its WebView (not in a frame): messages to and from the
+  // app go through window.ReactNativeWebView, and the app's replies arrive as message events with
+  // no source (a frame's would have one).
+  var inApp = !!(window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === 'function');
+  var isGameTok = isInIframe || inApp || hasGameTokParam || hasReferrer;
+  // Did this message come from GameTok (the frame that embeds us, or the app)?
+  function fromHost(event) { return inApp ? (event.source === null || event.source === window) : event.source === window.parent; }
 
   // Apply seamless responsive viewport styles inside GameTok iframe
   if (isGameTok) {
@@ -94,7 +100,8 @@
     resume: [],
     mute: [],
     unmute: [],
-    restart: []
+    restart: [],
+    player: []   // the player signed in or out on GameTok (call init() again for the new session)
   };
 
   // Pending player-session requests, answered by the parent GameTok player.
@@ -105,14 +112,16 @@
   var cachedSession = null; // { session, expiresAt }
 
   // Listen to incoming messages from the parent GameTok player
-  window.addEventListener('message', function (event) {
+  function onHostMessage(event) {
     if (!event.data) return;
     var data = event.data;
+    if (typeof data === 'string') { try { data = JSON.parse(data); } catch (e) { return; } }   // (the app sends strings)
+    if (!data || typeof data !== 'object') return;
     var type = data.type || data.action || '';
 
     if (type === 'GAMETOK_PLAYER_SESSION') {
-      // Only the frame that embeds us may answer (not another window or iframe).
-      if (event.source !== window.parent) return;
+      // Only GameTok may answer (not another window or iframe).
+      if (!fromHost(event)) return;
       var pending = pendingSessions[data.requestId];
       if (!pending) return;
       delete pendingSessions[data.requestId];
@@ -127,6 +136,13 @@
       return;
     }
 
+    if (type === 'GAMETOK_PLAYER_CHANGED') {
+      if (!fromHost(event)) return;
+      cachedSession = null; currentPlayer = null;
+      listeners.player.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
+      return;
+    }
+
     if (type === 'gt-pause' || type === 'GAMETOK_PAUSE') {
       listeners.pause.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
     } else if (type === 'gt-resume' || type === 'GAMETOK_RESUME') {
@@ -138,11 +154,14 @@
     } else if (type === 'gt-restart' || type === 'GAMETOK_RESTART') {
       listeners.restart.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
     }
-  });
+  }
+  window.addEventListener('message', onHostMessage);
+  if (inApp) document.addEventListener('message', onHostMessage);   // (Android WebView delivers here)
 
   // Post message safely to parent window
   function postToParent(message) {
-    if (window.parent && window.parent !== window) {
+    if (inApp) window.ReactNativeWebView.postMessage(JSON.stringify(message));
+    else if (window.parent && window.parent !== window) {
       window.parent.postMessage(message, '*');
     }
   }
@@ -155,7 +174,7 @@
 
   function requestPlayerSession() {
     return new Promise(function (resolve, reject) {
-      if (!isInIframe) {
+      if (!isInIframe && !inApp) {
         reject(bridgeError('NOT_IN_GAMETOK', 'Not running inside GameTok. Test your game in the dashboard test player.'));
         return;
       }
@@ -237,6 +256,12 @@
       return currentPlayer;
     },
 
+    // Ask GameTok to show its sign-in (a guest who wants to keep their progress everywhere).
+    // When they sign in, on('player') fires: call init() again for the signed-in player.
+    signIn: function () {
+      postToParent({ type: 'GAMETOK_SIGN_IN_REQUEST' });
+    },
+
     // Multiplayer lobby. GameTok pairs players (by code or quick match) and starts the match
     // when every seat is filled; your server runs the round and reports the winner. No stakes.
     // A match: { id, code, status: open|playing|done|cancelled|void, seats, players: [{ id, name }],
@@ -311,7 +336,7 @@
       });
     },
 
-    // Register callback listeners (pause, resume, mute, unmute, restart)
+    // Register callback listeners (pause, resume, mute, unmute, restart, player)
     on: function (eventName, callback) {
       if (listeners[eventName] && typeof callback === 'function') {
         listeners[eventName].push(callback);

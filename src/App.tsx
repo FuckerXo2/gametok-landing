@@ -1187,6 +1187,23 @@ function App() {
     setModal('auth');
   };
 
+  // A game asks for sign-in (GameTok.signIn() in bridge.js): open ours. Only a game frame on this
+  // page may ask (matched by event.source).
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (!event.data || event.data.type !== 'GAMETOK_SIGN_IN_REQUEST') return;
+      const frame = Array.from(document.querySelectorAll<HTMLIFrameElement>('iframe[data-game-id]')).find((f) => f.contentWindow === event.source);
+      if (!frame || authUser) return;
+      openAuth('login');
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  });
+  // Signed in or out: tell the game frames, so a game can pick up its new player
+  useEffect(() => {
+    document.querySelectorAll<HTMLIFrameElement>('iframe[data-game-id]').forEach((f) => { try { f.contentWindow?.postMessage({ type: 'GAMETOK_PLAYER_CHANGED' }, '*'); } catch (e) { /* the frame is gone */ } });
+  }, [authUser?.id]);
+
   const animateFeed = (direction: 'next' | 'previous') => {
     setFeedMotion(direction);
     window.setTimeout(() => setFeedMotion(null), 360);
