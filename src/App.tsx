@@ -10,21 +10,15 @@ import type { Options as CoreOptions } from '@dicebear/core';
 import {
   ArrowLeft,
   ArrowUp,
-  Bell,
-  BookOpen,
   ChevronLeft,
   ChevronRight,
   Compass,
-  FileText,
   Gamepad2,
   Grid3X3,
   Heart,
-  HelpCircle,
   Home,
   Image as ImageIcon,
-  Info,
   Maximize2,
-  Menu,
   MessageCircle,
   Pause,
   Play,
@@ -34,19 +28,15 @@ import {
   Search,
   Send,
   Share2,
-  Shield,
   Sparkles,
   Trophy,
   User,
-  UserPlus,
-  Users,
   Wand2,
   X,
   Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ai, auth, users, messages, games as gamesApi, likes as likesApi, savedGames as savedGamesApi, comments as commentsApi, getToken, setToken, resolveGameThumbnail } from './services/api';
-import { IOS_STORE_URL, ANDROID_STORE_URL } from './components/MobileGate';
 import OrientationPicker from './components/OrientationPicker';
 import PublishSheet from './components/PublishSheet';
 import { BlogIndex, BlogPost } from './components/Blog';
@@ -441,6 +431,10 @@ export const GTA_LAGOS_GAME: Game = {
   thumbnail: 'https://games.gametok.co/gta-lagos/thumb.jpg',
   embedUrl: 'https://games.gametok.co/gta-lagos/84fd1309389f/index.html',
   orientation: 'landscape',
+  creatorDisplayName: 'GameTok',
+  creatorUsername: 'gametok',
+  creatorVerified: true,
+  creatorAvatar: '/about/icon.png',
   plays: 0,
   likes: 0,
   saves: 0,
@@ -953,17 +947,6 @@ function App() {
     }
   }, [activeTab, navigate]);
 
-  const handleLogout = useCallback(() => {
-    void auth.logout();
-    setToken(null);
-    setAuthUser(null);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.authUser);
-    } catch {}
-    setLikedGames(new Set());
-    setSavedGames(new Set());
-    setFollowedCreators(new Set());
-  }, []);
 
   useEffect(() => {
     if (!getToken() || games.length === 0) return;
@@ -1042,11 +1025,6 @@ function App() {
     const id = creatorIdFrom(creator);
     if (!id) return;
     toggleBackendSet(setFollowedCreators, id, () => users.follow(id));
-  };
-  const openCreatorProfile = (creator: Creator | null) => {
-    if (!creator) return;
-    setSelectedCreator(creator);
-    setModal('creator-profile');
   };
   const openCreatorMessage = (creator: Creator | null) => {
     if (!creator) return;
@@ -1169,71 +1147,14 @@ function App() {
             <EmptyAppState
               loading={loading}
               title="Game not found"
-              text="That game may have been removed. Try exploring other games."
+              text="That game may have been removed."
             />
           </section>
         )
       )}
 
-      {/* Mobile Shell */}
-      {isMobile && !gameDeckMode && (
-        <div className="phone-stage">
-          <main className="app-screen">
-            {marketingPage && (
-              <div className="mobile-info-page page-scroll">
-                <MarketingPageBody
-                  page={marketingPage}
-                  postSlug={postSlug}
-                  games={games}
-                  onCreate={() => goTab('create')}
-                  onExplore={() => goTab('explore')}
-                  onOpenGame={openGame}
-                  onOpenPost={(slug) => navigate(slug ? `/blog/${slug}` : MARKETING_PATHS.blog)}
-                />
-              </div>
-            )}
-            {!marketingPage && (activeTab === 'explore' || activeTab === 'home') && (
-              <DesktopExploreScreen
-                variant="mobile"
-                user={authUser}
-                games={games}
-                onTab={goTab}
-                onOpenGame={openGame}
-                onCreate={() => goTab('create')}
-              />
-            )}
-            {!marketingPage && activeTab === 'create' && (
-              <CreateScreen
-                onOpenGame={openGame}
-                user={authUser}
-                onAuthRequired={() => openAuth('signup')}
-              />
-            )}
-            {activeTab === 'connect' && (
-              <ConnectScreen
-                creators={creators}
-                onOpenCreator={openCreatorProfile}
-                onOpenChat={openCreatorMessage}
-                onOpenGame={openGame}
-                variant="mobile"
-                user={authUser}
-                games={games}
-              />
-            )}
-            {activeTab === 'profile' && <ProfileScreen games={games} onOpenGame={openGame} onAuth={() => openAuth('login')} user={authUser} onLogout={handleLogout} />}
-            {activeTab === 'more' && <MoreScreen onPage={goMarketingPage} />}
-          </main>
-
-          <BottomNav
-            activeTab={activeTab}
-            gameDeckMode={gameDeckMode}
-            onTab={goTab}
-          />
-        </div>
-      )}
-
-      {/* Desktop Static Marketing Page */}
-      {!isMobile && !gameDeckMode && marketingPage && (
+      {/* Normal Website View (Mobile & Desktop) */}
+      {!gameDeckMode && marketingPage && (
         <StaticMarketingPage
           frame={marketingFrame}
           page={marketingPage}
@@ -1249,36 +1170,27 @@ function App() {
         />
       )}
 
-      {/* Desktop App Surfaces */}
-      {!isMobile && !gameDeckMode && !marketingPage && (
-        <>
-          {(activeTab === 'explore' || activeTab === 'home') && (
-            <DesktopExploreScreen
-              user={authUser}
-              games={games}
-              onTab={goTab}
-              onOpenGame={openGame}
-              onCreate={() => goTab('create')}
-              onPage={(page) => goMarketingPage(page, 'app')}
-            />
-          )}
+      {!gameDeckMode && !marketingPage && activeTab === 'create' && (
+        <section className="desktop-create-shell">
+          <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
+          <CreateScreen
+            variant="desktop"
+            onOpenGame={openGame}
+            user={authUser}
+            onAuthRequired={() => openAuth('signup')}
+          />
+        </section>
+      )}
 
-          {activeTab === 'create' && (
-            <section className="desktop-create-shell">
-              <DesktopAppSidebar activeTab="create" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
-              <CreateScreen
-                variant="desktop"
-                onOpenGame={openGame}
-                user={authUser}
-                onAuthRequired={() => openAuth('signup')}
-              />
-            </section>
-          )}
-
-          {activeTab !== 'home' && activeTab !== 'create' && activeTab !== 'explore' && (
-            <DesktopRail activeTab={activeTab} user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
-          )}
-        </>
+      {!gameDeckMode && !marketingPage && activeTab !== 'create' && (
+        <DesktopExploreScreen
+          user={authUser}
+          games={games}
+          onTab={goTab}
+          onOpenGame={openGame}
+          onCreate={() => goTab('create')}
+          onPage={(page) => goMarketingPage(page, 'app')}
+        />
       )}
 
       {modal && (
@@ -2024,472 +1936,12 @@ function CreateScreen({
   );
 }
 
-function ConnectScreen({
-  creators,
-  onOpenCreator,
-  onOpenChat,
-  onOpenGame,
-  variant = 'desktop',
-  user,
-  games = [],
-}: {
-  creators: Creator[];
-  onOpenCreator: (creator: Creator) => void;
-  onOpenChat?: (creator: Creator) => void;
-  onOpenGame?: (game: Game) => void;
-  variant?: 'desktop' | 'mobile';
-  user?: AuthUser | null;
-  games?: Game[];
-}) {
-  const [lane, setLane] = useState<'chats' | 'requests'>('chats');
-  const [selectedChat, setSelectedChat] = useState<Creator | null>(creators[0] || null);
-  const [chatQuery, setChatQuery] = useState('');
-
-  useEffect(() => {
-    if (!selectedChat && creators.length > 0) setSelectedChat(creators[0]);
-  }, [creators, selectedChat]);
-
-  const chatCreators = useMemo(() => {
-    const q = chatQuery.trim().toLowerCase();
-    const list = creators.slice(0, 24);
-    if (!q) return list;
-    return list.filter((creator) => `${creator.displayName || ''} ${creator.username}`.toLowerCase().includes(q));
-  }, [creators, chatQuery]);
-
-  if (variant === 'mobile') {
-    return (
-      <section className="mobile-connect-screen">
-        <header className="mobile-connect-header">
-          <div className="avatar-container">
-            <img
-              src={user ? avatarUrl(user.username, user.avatar, 96) : '/about/icon.png'}
-              alt="My Avatar"
-              className="user-avatar"
-            />
-          </div>
-          <h1>gametok</h1>
-          <button className="icon-button" aria-label="Notifications">
-            <Bell size={21} />
-          </button>
-        </header>
-
-        <div className="mobile-connect-search">
-          <Search size={18} />
-          <input
-            value={chatQuery}
-            onChange={(e) => setChatQuery(e.target.value)}
-            placeholder="Search people and chats"
-          />
-        </div>
-
-        <div className="mobile-connect-people-scroll">
-          {chatCreators.map((c) => (
-            <button key={c.id} className="mobile-connect-person" onClick={() => onOpenCreator(c)}>
-              <div className="mobile-connect-avatar">
-                <img src={avatarUrl(c.username, c.avatar, 128)} alt="" />
-              </div>
-              <span>{c.displayName || c.username}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="mobile-connect-live-banner">
-          <span className="live-dot" />
-          <div className="live-banner-text">
-            <h3>No friends online yet</h3>
-            <p>We'll show a LIVE banner here when someone you follow is in-game.</p>
-          </div>
-        </div>
-
-        <div className="mobile-connect-section">
-          <div className="mobile-connect-section-header">
-            <h2>Friends are playing</h2>
-            <button className="see-all-link">See all</button>
-          </div>
-          <div className="mobile-connect-games-scroll">
-            {games.slice(0, 6).map((g) => (
-              <button key={g.id} className="mobile-connect-game-card" onClick={() => onOpenGame?.(g)}>
-                <div className="mobile-connect-game-thumb">
-                  <img src={getThumbnailUrl(g)} alt="" loading="lazy" />
-                </div>
-                <div className="mobile-connect-game-meta">
-                  <strong>{g.name}</strong>
-                  <small>Trending</small>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mobile-connect-section">
-          <div className="mobile-connect-section-header">
-            <h2>Active Conversations</h2>
-            <button className="see-all-link">See all</button>
-          </div>
-          <div className="mobile-connect-chats-list">
-            {chatCreators.slice(0, 8).map((c) => (
-              <button key={c.id} className="mobile-connect-chat-row" onClick={() => onOpenChat?.(c)}>
-                <img src={avatarUrl(c.username, c.avatar, 96)} alt="" />
-                <div className="mobile-connect-chat-info">
-                  <strong>{c.displayName || c.username}</strong>
-                  <small>Tap to message</small>
-                </div>
-              </button>
-            ))}
-            {chatCreators.length === 0 && (
-              <div className="connect-empty"><p>No people found.</p></div>
-            )}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="messages-screen">
-      <aside className="ig-inbox-sidebar">
-        <header>
-          <div>
-            <strong>Messages</strong>
-            <small>{lane === 'chats' ? `${chatCreators.length} conversations` : 'Message requests'}</small>
-          </div>
-          <button aria-label="New message"><Plus size={19} /></button>
-        </header>
-        <label className="ig-inbox-search">
-          <Search size={17} />
-          <input value={chatQuery} onChange={(event) => setChatQuery(event.target.value)} placeholder="Search" />
-        </label>
-        <nav>
-          <button className={lane === 'chats' ? 'active' : ''} onClick={() => setLane('chats')}>Primary</button>
-          <button className={lane === 'requests' ? 'active' : ''} onClick={() => setLane('requests')}>Requests</button>
-        </nav>
-        <div className="inbox-list">
-          {lane === 'chats' ? (
-            <>
-              {chatCreators.map((creator) => (
-                <button
-                  className={`inbox-row ${selectedChat?.id === creator.id ? 'active' : ''}`}
-                  key={creator.id}
-                  onClick={() => setSelectedChat(creator)}
-                >
-                  <img src={avatarUrl(creator.username, creator.avatar, 96)} alt="" />
-                  <span>
-                    <strong>{creator.displayName || creator.username}</strong>
-                    <small>@{creator.username}</small>
-                  </span>
-                  <i />
-                </button>
-              ))}
-              {chatCreators.length === 0 && <EmptyListState title="No chats found" text="Try another username or display name." />}
-            </>
-          ) : (
-            <div className="inbox-empty-panel">
-              <UserPlus size={26} />
-              <strong>No requests</strong>
-              <span>Real message and follow requests will appear here when the backend returns them.</span>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      <main className="ig-thread-main">
-        {lane === 'chats' && selectedChat ? (
-          <DirectMessageSheet creator={selectedChat} embedded onOpenProfile={() => onOpenCreator(selectedChat)} />
-        ) : lane === 'chats' ? (
-          <EmptyListState title="No conversation selected" text="Choose a conversation to start messaging." />
-        ) : (
-          <div className="thread-empty-state">
-            <UserPlus size={38} />
-            <strong>No message requests</strong>
-            <span>When someone new reaches out, their request will open here in this inbox layout.</span>
-          </div>
-        )}
-      </main>
-    </section>
-  );
-}
-
-function ProfileScreen({ games, onOpenGame, onAuth, user, onLogout }: { games: Game[]; onOpenGame: (game: Game) => void; onAuth: () => void; user: AuthUser | null; onLogout: () => void }) {
-  const [tab, setTab] = useState<'created' | 'played' | 'liked'>('created');
-  const handle = user?.username || 'guest';
-  const displayName = user?.displayName || user?.username || 'Guest Player';
-
-  const [createdGames, setCreatedGames] = useState<Game[]>([]);
-  const [playedGames, setPlayedGames] = useState<Game[]>([]);
-  const [likedGamesList, setLikedGamesList] = useState<Game[]>([]);
-
-  // Fallback: if the backend fetch fails, still show anything from the
-  // top-48 trending list that we can reasonably attribute to the user.
-  const localCreated = useMemo(() => user ? games.filter((game) => (
-    game.creatorId === user.id
-    || game.userId === user.id
-    || game.createdBy === user.id
-    || game.creatorUsername === user.username
-  )) : [], [games, user]);
-
-  useEffect(() => {
-    if (!user?.id) {
-      setCreatedGames([]);
-      setPlayedGames([]);
-      setLikedGamesList([]);
-      return;
-    }
-    let mounted = true;
-    (async () => {
-      const [createdRes, playedRes, likedRes] = await Promise.allSettled([
-        users.created(user.id, 60),
-        users.played(user.id, 60),
-        likesApi.userLikes(user.id),
-      ]);
-      if (!mounted) return;
-      if (createdRes.status === 'fulfilled' && Array.isArray(createdRes.value?.games)) {
-        setCreatedGames(createdRes.value.games);
-      } else {
-        setCreatedGames(localCreated);
-      }
-      if (playedRes.status === 'fulfilled' && Array.isArray(playedRes.value?.games)) {
-        setPlayedGames(playedRes.value.games);
-      }
-      if (likedRes.status === 'fulfilled' && Array.isArray(likedRes.value?.games)) {
-        setLikedGamesList(likedRes.value.games);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [user?.id, localCreated]);
-
-  const activeGames = tab === 'created' ? createdGames
-    : tab === 'played' ? playedGames
-    : likedGamesList;
-  const likesCount = user?.likesCount ?? likedGamesList.length;
-  return (
-    <section className="page-scroll profile-screen">
-      <header className="profile-top">
-        <button className="icon-button"><UserPlus size={19} /></button>
-        <strong>@{handle}</strong>
-        <button className="icon-button"><Menu size={20} /></button>
-      </header>
-
-      <div className="profile-identity">
-        <div className="profile-avatar">
-          <img src={avatarUrl(user?.username || 'guest-player', user?.avatar, 256)} alt="" />
-        </div>
-        <h1>{displayName}</h1>
-        <p>@{handle}</p>
-      </div>
-
-      <div className="profile-stats">
-        <span><strong>{formatCount(user?.followingCount || 0)}</strong><small>Following</small></span>
-        <span><strong>{formatCount(user?.followersCount || 0)}</strong><small>Followers</small></span>
-        <span><strong>{createdGames.length}</strong><small>Created</small></span>
-        <span><strong>{formatCount(likesCount)}</strong><small>Likes</small></span>
-      </div>
-
-      <div className="profile-actions">
-        {user ? (
-          <button onClick={onLogout}>Log out</button>
-        ) : (
-          <button onClick={onAuth}>Sign in</button>
-        )}
-        <button><ArrowUp size={15} /> Share profile</button>
-      </div>
-
-      <div className="profile-tabs">
-        {(['created', 'played', 'liked'] as const).map((item) => (
-          <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>
-            {item === 'created' ? <Grid3X3 size={18} /> : item === 'played' ? <Play size={18} /> : <Heart size={18} />}
-            {item}
-          </button>
-        ))}
-      </div>
-
-      <div className="profile-grid">
-        {activeGames.map((game) => (
-          <button key={`${tab}-${game.id}`} onClick={() => onOpenGame(game)}>
-            <img src={getThumbnailUrl(game)} alt="" loading="lazy" onError={(e) => handleThumbError(e, game)} />
-            <span><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</span>
-          </button>
-        ))}
-        {activeGames.length === 0 && (
-          <EmptyListState
-            title={tab === 'created' ? 'No created games yet' : `No ${tab} games yet`}
-            text="This section will populate from the account backend."
-          />
-        )}
-      </div>
-    </section>
-  );
-}
-
-function MoreScreen({ onPage }: { onPage: (page: MarketingPage) => void }) {
-  return (
-    <section className="page-scroll more-screen">
-      <header className="more-top">
-        <div className="more-brand">
-          <span className="more-logo-dot" />
-          <strong>GameTok More</strong>
-        </div>
-        <p>Explore blog, about, changelog, FAQ, and platform links</p>
-      </header>
-
-      <div className="more-group">
-        <small className="more-group-label">Discover & Content</small>
-        <button className="more-card" onClick={() => onPage('blog')}>
-          <div className="more-card-icon icon-purple"><BookOpen size={20} /></div>
-          <div className="more-card-info">
-            <strong>Blog & Updates</strong>
-            <span>Articles on AI game creation, trends & announcements</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-
-        <button className="more-card" onClick={() => onPage('about')}>
-          <div className="more-card-icon icon-pink"><Info size={20} /></div>
-          <div className="more-card-info">
-            <strong>About GameTok</strong>
-            <span>Our vision, platform story, and creator mission</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-
-        <button className="more-card" onClick={() => onPage('changelog')}>
-          <div className="more-card-icon icon-cyan"><Sparkles size={20} /></div>
-          <div className="more-card-info">
-            <strong>Changelog</strong>
-            <span>Latest features, optimizations, and patch notes</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-
-        <button className="more-card" onClick={() => onPage('faq')}>
-          <div className="more-card-icon icon-yellow"><HelpCircle size={20} /></div>
-          <div className="more-card-info">
-            <strong>FAQ & Help</strong>
-            <span>Frequently asked questions and getting started</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-
-        <button className="more-card" onClick={() => onPage('earn')}>
-          <div className="more-card-icon icon-green"><Trophy size={20} /></div>
-          <div className="more-card-info">
-            <strong>Creator Rewards & Earn</strong>
-            <span>Monetize your games and win community bounties</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-      </div>
-
-      <div className="more-group">
-        <small className="more-group-label">Legal & Policies</small>
-        <button className="more-card" onClick={() => onPage('privacy')}>
-          <div className="more-card-icon icon-gray"><Shield size={20} /></div>
-          <div className="more-card-info">
-            <strong>Privacy Policy</strong>
-            <span>How we protect and manage your data</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-
-        <button className="more-card" onClick={() => onPage('terms')}>
-          <div className="more-card-icon icon-gray"><FileText size={20} /></div>
-          <div className="more-card-info">
-            <strong>Terms of Service</strong>
-            <span>Platform rules and usage agreement</span>
-          </div>
-          <ChevronRight size={18} className="more-chevron" />
-        </button>
-      </div>
-
-      <div className="more-group">
-        <small className="more-group-label">Get Native Apps</small>
-        <StoreButtons className="more-store-buttons" />
-      </div>
-    </section>
-  );
-}
-
-function BottomNav({
-  activeTab,
-  gameDeckMode,
-  onTab,
-}: {
-  activeTab: Tab;
-  gameDeckMode: boolean;
-  onTab: (tab: Tab) => void;
-}) {
-  // Hide bottom navigation completely while playing a game
-  if (gameDeckMode) {
-    return null;
-  }
-
-  return (
-    <nav className="bottom-nav standard-nav">
-      <button className={activeTab === 'explore' || activeTab === 'home' ? 'active' : ''} onClick={() => onTab('explore')}>
-        <Compass size={23} /><span>Games</span>
-      </button>
-      <button className={activeTab === 'connect' ? 'active' : ''} onClick={() => onTab('connect')}>
-        <Users size={23} /><span>Connect</span>
-      </button>
-      <button className="create-tab" onClick={() => onTab('create')} aria-label="Create">
-        <span className="create-tab-box"><Plus size={22} strokeWidth={2.5} /></span>
-      </button>
-      <button className={activeTab === 'profile' ? 'active' : ''} onClick={() => onTab('profile')}>
-        <User size={23} /><span>Profile</span>
-      </button>
-      <button className={activeTab === 'more' ? 'active' : ''} onClick={() => onTab('more')}>
-        <Menu size={23} /><span>More</span>
-      </button>
-    </nav>
-  );
-}
-
-function DesktopRail({
-  activeTab,
-  user,
-  onTab,
-  onPage,
-}: {
-  activeTab: Tab;
-  user: AuthUser | null;
-  onTab: (tab: Tab) => void;
-  onPage?: (page: MarketingPage) => void;
-}) {
-  return <DesktopAppSidebar activeTab={activeTab} user={user} onTab={onTab} onPage={onPage} />;
-}
-
-// Store links for the native apps. Glyph paths are the same ones the legacy
-// about/ page uses, so the web and the marketing pages stay visually in step.
-function StoreButtons({ className = '' }: { className?: string }) {
-  return (
-    <div className={`store-buttons ${className}`.trim()}>
-      <a href={IOS_STORE_URL} target="_blank" rel="noreferrer" className="store-button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-        </svg>
-        <span>
-          <small>Download on the</small>
-          <strong>App Store</strong>
-        </span>
-      </a>
-      <a href={ANDROID_STORE_URL} target="_blank" rel="noreferrer" className="store-button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.61 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
-        </svg>
-        <span>
-          <small>Get it on</small>
-          <strong>Google Play</strong>
-        </span>
-      </a>
-    </div>
-  );
-}
-
 function DesktopDirectGamePlayer({
   game,
   onGoHome: _onGoHome,
   onExplore,
-  liked,
-  onToggleLike,
+  liked: _liked,
+  onToggleLike: _onToggleLike,
   onOpenModal,
 }: {
   game: Game;
@@ -2532,26 +1984,18 @@ function DesktopDirectGamePlayer({
           </button>
           <button className="direct-player-nav-btn" onClick={onExplore}>
             <Compass size={17} />
-            <span>All Games</span>
+            <span>Games</span>
           </button>
         </div>
 
         <div className="direct-player-center">
           <h1 className="direct-player-title">{game.name || game.title}</h1>
           <span className="direct-player-author">
-            by @{game.creatorDisplayName || game.creatorUsername || 'creator'}
+            by <strong>GameTok</strong> <span style={{ color: '#38bdf8' }}>✓</span>
           </span>
         </div>
 
         <div className="direct-player-right">
-          <button
-            className={`direct-player-action-btn ${liked ? 'active' : ''}`}
-            onClick={onToggleLike}
-            title="Like"
-          >
-            <Heart size={18} fill={liked ? '#ec2c7a' : 'none'} color={liked ? '#ec2c7a' : '#fff'} />
-            <span>{game.likes || 0}</span>
-          </button>
           <button className="direct-player-action-btn" onClick={handleShare} title="Share Game">
             <Share2 size={18} />
             <span>{copied ? 'Copied!' : 'Share'}</span>
@@ -2902,124 +2346,130 @@ function marketingSubtitle(page: MarketingPage, isPost: boolean) {
 }
 
 function DesktopExploreScreen({
-  user,
   games,
-  onTab,
   onOpenGame,
-  onCreate,
   onPage,
-  variant = 'desktop',
 }: {
-  user: AuthUser | null;
+  user?: AuthUser | null;
   games: Game[];
   onPage?: (page: MarketingPage) => void;
-  onTab: (tab: Tab) => void;
+  onTab?: (tab: Tab) => void;
   onOpenGame: (game: Game) => void;
-  onCreate: () => void;
+  onCreate?: () => void;
   variant?: 'desktop' | 'mobile';
 }) {
-  const isMobile = variant === 'mobile';
-  const [query, setQuery] = useState('');
-  const [recentIds] = useState<string[]>(() => readRecentGameIds());
-
-  const searchQ = query.trim().toLowerCase();
-  const matchesQuery = (g: Game) =>
-    !searchQ ||
-    (g.name || '').toLowerCase().includes(searchQ) ||
-    (g.creatorDisplayName || '').toLowerCase().includes(searchQ) ||
-    (g.creatorUsername || '').toLowerCase().includes(searchQ);
-
-  const continueGames = useMemo(() => {
-    if (!recentIds.length) return [] as Game[];
-    const byId = new Map(games.map((g) => [g.id, g]));
-    return recentIds.map((id) => byId.get(id)).filter(Boolean).filter(matchesQuery as (g: Game | undefined) => g is Game) as Game[];
-  }, [games, recentIds, searchQ]);
-
-  const trending = useMemo(
-    () => [...games].filter(matchesQuery).sort((a, b) => (b.plays || 0) - (a.plays || 0)),
-    [games, searchQ],
-  );
-
-  const fresh = useMemo(
-    () =>
-      [...games]
-        .filter(matchesQuery)
-        .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()),
-    [games, searchQ],
-  );
+  const gta = games.find((g) => g.id === 'gta-lagos') || games[0] || GTA_LAGOS_GAME;
 
   return (
-    <section className={`desktop-explore ${isMobile ? 'is-mobile' : 'desktop-app-main'}`}>
-      {!isMobile && <DesktopAppSidebar activeTab="explore" user={user} onTab={onTab} onPage={onPage} />}
-      <main className="desktop-explore-main">
-        <header className="desktop-explore-header">
-          <div>
-            <p>GAMETOK</p>
-            <h1>Games</h1>
+    <div className="modern-game-portal">
+      {/* Top Header */}
+      <header className="portal-header">
+        <div className="portal-header-inner">
+          <div className="portal-brand">
+            <img src="/about/icon.png" alt="GameTok" className="portal-logo" />
+            <span className="portal-brand-text">GameTOK</span>
           </div>
-          <button className="desktop-explore-create" onClick={onCreate}>
-            <Wand2 size={16} /> Create
-          </button>
-        </header>
 
-        <div className="desktop-explore-search">
-          <Search size={18} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search games, creators, worlds"
-          />
-        </div>
+          <nav className="portal-nav">
+            <span className="portal-nav-link active">Games</span>
+            <button className="portal-nav-link" onClick={() => onPage?.('about')}>About</button>
+          </nav>
 
-        {isMobile && <StoreButtons className="on-mobile-explore" />}
-
-        {continueGames.length > 0 && (
-          <DesktopExploreRow title="Continue" games={continueGames} onOpenGame={onOpenGame} />
-        )}
-        {games.length > 1 ? (
-          <>
-            <DesktopExploreRow title="Trending" games={trending} onOpenGame={onOpenGame} />
-            <DesktopExploreRow title="New" games={fresh} onOpenGame={onOpenGame} />
-          </>
-        ) : (
-          <DesktopExploreRow title="Featured" games={trending} onOpenGame={onOpenGame} />
-        )}
-
-        {trending.length === 0 && fresh.length === 0 && (
-          <div className="desktop-explore-empty"><p>No games match that yet.</p></div>
-        )}
-      </main>
-    </section>
-  );
-}
-
-const EXPLORE_ROW_CHUNK_SIZE = 30;
-
-function DesktopExploreRow({ title, games, onOpenGame }: { title: string; games: Game[]; onOpenGame: (game: Game) => void }) {
-  if (games.length === 0) return null;
-  const chunks: Game[][] = [];
-  for (let i = 0; i < games.length; i += EXPLORE_ROW_CHUNK_SIZE) {
-    chunks.push(games.slice(i, i + EXPLORE_ROW_CHUNK_SIZE));
-  }
-  return (
-    <section className="desktop-explore-row">
-      <h2>{title}</h2>
-      {chunks.map((chunk, chunkIndex) => (
-        <div className="desktop-explore-row-scroll" key={`${title}-chunk-${chunkIndex}`}>
-          {chunk.map((game) => (
-            <button key={`${title}-${game.id}`} className="desktop-explore-card" onClick={() => onOpenGame(game)}>
-              <div className="desktop-explore-card-thumb" style={{ backgroundColor: game.color || '#111' }}>
-                <img src={getThumbnailUrl(game)} alt="" loading="lazy" onError={(e) => handleThumbError(e, game)} />
-              </div>
-              <div className="desktop-explore-card-meta">
-                <strong>{game.name}</strong>
-                <small><Play size={11} fill="currentColor" /> {formatCount(game.plays)}</small>
-              </div>
+          <div className="portal-header-actions">
+            <button className="portal-play-nav-btn" onClick={() => onOpenGame(gta)}>
+              <Play size={14} fill="currentColor" /> Play GTA Lagos
             </button>
-          ))}
+          </div>
         </div>
-      ))}
-    </section>
+      </header>
+
+      {/* Main Content Showcase */}
+      <main className="portal-main">
+        {/* Hero Section */}
+        <section className="portal-hero">
+          <div className="portal-hero-media" onClick={() => onOpenGame(gta)}>
+            <img
+              src="https://games.gametok.co/gta-lagos/thumb.jpg"
+              alt="GTA Lagos"
+              className="portal-hero-img"
+            />
+            <div className="portal-hero-gradient" />
+            <div className="portal-hero-play-badge" aria-label="Play GTA Lagos">
+              <Play size={34} fill="#ffffff" color="#ffffff" style={{ marginLeft: 4 }} />
+            </div>
+          </div>
+
+          <div className="portal-hero-info">
+            <div className="portal-badges">
+              <span className="portal-badge featured">OFFICIAL RELEASE</span>
+              <span className="portal-badge">OPEN WORLD</span>
+              <span className="portal-badge">MULTIPLAYER</span>
+            </div>
+
+            <h1 className="portal-game-title">GTA Lagos</h1>
+
+            <div className="portal-creator-row">
+              <img src="/about/icon.png" alt="GameTok" className="portal-creator-avatar" />
+              <span>Published by <strong>GameTok</strong></span>
+              <span className="portal-verified">✓</span>
+            </div>
+
+            <p className="portal-game-desc">
+              Explore an open-world Lagos from Ojota to Lekki. Hustle, drive, run missions with your crew, and play with everyone online directly in your browser.
+            </p>
+
+            <div className="portal-hero-cta">
+              <button className="portal-btn-primary" onClick={() => onOpenGame(gta)}>
+                <Play size={18} fill="currentColor" /> PLAY NOW
+              </button>
+              <div className="portal-specs">
+                <span>Free to Play</span>
+                <span>•</span>
+                <span>Browser & Mobile</span>
+                <span>•</span>
+                <span>No Download Required</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Cards Grid */}
+        <section className="portal-features">
+          <div className="portal-feature-card">
+            <div className="portal-feature-icon">🚗</div>
+            <h3>Open World Lagos</h3>
+            <p>From the mainland markets and highways of Ojota and Ikeja to the high-rises and bridges of Victoria Island and Lekki.</p>
+          </div>
+
+          <div className="portal-feature-card">
+            <div className="portal-feature-icon">👥</div>
+            <h3>Online Multiplayer</h3>
+            <p>Cruise the streets with friends, compete in street races, complete missions, and chat in real-time online.</p>
+          </div>
+
+          <div className="portal-feature-card">
+            <div className="portal-feature-icon">⚡</div>
+            <h3>Zero Installation</h3>
+            <p>Built with web technology to run at 60 FPS directly in your browser on phone, tablet, and desktop.</p>
+          </div>
+        </section>
+      </main>
+
+      {/* Website Footer */}
+      <footer className="portal-footer">
+        <div className="portal-footer-inner">
+          <div className="portal-footer-left">
+            <img src="/about/icon.png" alt="GameTok" className="portal-footer-logo" />
+            <span>GameTOK © 2026. All rights reserved.</span>
+          </div>
+          <div className="portal-footer-links">
+            <button onClick={() => onPage?.('about')}>About</button>
+            <button onClick={() => onPage?.('terms')}>Terms</button>
+            <button onClick={() => onPage?.('privacy')}>Privacy</button>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
 

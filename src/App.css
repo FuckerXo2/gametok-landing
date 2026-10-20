@@ -9473,3 +9473,400 @@ kbd {
   }
 }
 
+/* ==========================================================================
+   Modern Game Portal (Normal Website Look for Games)
+   ========================================================================== */
+.modern-game-portal {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #08060d;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.portal-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  height: 64px;
+  background: rgba(8, 6, 13, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-header-inner {
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portal-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.portal-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.portal-brand-text {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fff 40%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.portal-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.portal-nav-link {
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.portal-nav-link:hover,
+.portal-nav-link.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.portal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-play-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9333ea, #6366f1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.portal-play-nav-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(147, 51, 234, 0.45);
+}
+
+.portal-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+  box-sizing: border-box;
+}
+
+.portal-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  overflow: hidden;
+  margin-bottom: 48px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 900px) {
+  .portal-hero {
+    grid-template-columns: 1.25fr 1fr;
+    align-items: center;
+  }
+}
+
+.portal-hero-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #000;
+  cursor: pointer;
+}
+
+.portal-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.35s ease;
+}
+
+.portal-hero-media:hover .portal-hero-img {
+  transform: scale(1.03);
+}
+
+.portal-hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8, 6, 13, 0.75) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.portal-hero-play-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(147, 51, 234, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 32px rgba(147, 51, 234, 0.65);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.portal-hero-play-badge:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  background: #9333ea;
+}
+
+.portal-hero-info {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
+}
+
+@media (max-width: 680px) {
+  .portal-hero-info {
+    padding: 24px 20px;
+  }
+}
+
+.portal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portal-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.portal-badge.featured {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.2));
+  color: #f472b6;
+  border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+.portal-game-title {
+  margin: 0;
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  color: #fff;
+}
+
+@media (max-width: 680px) {
+  .portal-game-title {
+    font-size: 32px;
+  }
+}
+
+.portal-creator-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.portal-creator-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.portal-verified {
+  color: #38bdf8;
+  font-weight: 900;
+}
+
+.portal-game-desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.portal-hero-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.portal-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  border: 0;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.portal-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(168, 85, 247, 0.55);
+}
+
+.portal-specs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+.portal-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.portal-feature-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.portal-feature-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.portal-feature-card h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.portal-feature-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.portal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.4);
+  padding: 32px 24px;
+}
+
+.portal-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.portal-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.portal-footer-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.portal-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.portal-footer-links button {
+  background: none;
+  border: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.portal-footer-links button:hover {
+  color: #ffffff;
+}
+
+
