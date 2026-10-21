@@ -9435,35 +9435,19 @@ kbd {
   display: block;
 }
 
-@media (max-width: 680px) {
+@media (max-width: 768px) {
+  .desktop-only-topbar,
   .direct-player-topbar {
-    height: 50px;
-    padding: 0 10px;
-    gap: 8px;
-  }
-  .direct-player-nav-btn,
-  .direct-player-website-cta,
-  .direct-player-author,
-  .direct-player-action-btn span {
     display: none !important;
   }
-  .direct-player-logo strong {
-    display: none;
-  }
-  .direct-player-title {
-    font-size: 13px;
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   .direct-player-body {
-    height: calc(100vh - 50px);
-    height: calc(100dvh - 50px);
+    height: 100vh !important;
+    height: 100dvh !important;
   }
 }
 
 @media (orientation: landscape) and (max-height: 600px) {
+  .desktop-only-topbar,
   .direct-player-topbar {
     display: none !important;
   }

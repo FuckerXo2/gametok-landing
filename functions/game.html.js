@@ -52,7 +52,6 @@ export async function onRequest(context) {
 <head>
     <meta charset="UTF-8">
     <title>Play ${escapeHtml(gameName)} on GameTOK</title>
-    <meta name="apple-itunes-app" content="app-id=6757498584, app-argument=${escapeHtml(deepLink)}">
     <meta property="og:title" content="Play ${escapeHtml(gameName)} on GameTOK 🎮">
     <meta property="og:description" content="${escapeHtml(gameDesc)}">
     <meta property="og:image" content="${escapeHtml(thumbnailUrl)}">

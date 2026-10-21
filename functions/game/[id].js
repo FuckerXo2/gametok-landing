@@ -71,7 +71,6 @@ export async function onRequest(context) {
     <title>${escapeHtml(title)}</title>
     <link rel="canonical" href="${escapeHtml(pageUrl)}">
     <meta name="description" content="${escapeHtml(desc)}">
-    <meta name="apple-itunes-app" content="app-id=6757498584, app-argument=${escapeHtml(deepLink)}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="GameTok">
     <meta property="og:title" content="${escapeHtml(title)}">

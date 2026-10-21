@@ -1979,7 +1979,7 @@ function DesktopDirectGamePlayer({
 
   return (
     <div className="desktop-direct-player" ref={containerRef}>
-      <header className="direct-player-topbar">
+      <header className="direct-player-topbar desktop-only-topbar">
         <div className="direct-player-left">
           <button className="direct-player-logo" onClick={onExplore} title="Back to Games">
             <ArrowLeft size={18} />
