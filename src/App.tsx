@@ -1964,7 +1964,7 @@ function DesktopDirectGamePlayer({
           title={game.name}
           src={getGameUrl(game)}
           data-game-id={game.id}
-          allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated"
+          allow="autoplay; fullscreen; clipboard-write; cross-origin-isolated; microphone"
         />
       </main>
     </div>
