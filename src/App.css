@@ -9285,18 +9285,9 @@ kbd {
   z-index: 1000;
 }
 
-.direct-player-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 56px;
-  padding: 0 20px;
-  background: rgba(14, 11, 20, 0.96);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  z-index: 30;
-  flex-shrink: 0;
+.direct-player-topbar,
+.desktop-only-topbar {
+  display: none !important;
 }
 
 .direct-player-left {
@@ -9419,8 +9410,8 @@ kbd {
 .direct-player-body {
   flex: 1;
   width: 100%;
-  height: calc(100vh - 56px);
-  height: calc(100dvh - 56px);
+  height: 100vh;
+  height: 100dvh;
   position: relative;
   background: #000;
   display: flex;

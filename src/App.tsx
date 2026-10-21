@@ -8,7 +8,6 @@ import {
 import type { Options as AdventurerOptions } from '@dicebear/adventurer';
 import type { Options as CoreOptions } from '@dicebear/core';
 import {
-  ArrowLeft,
   ArrowUp,
   ChevronLeft,
   ChevronRight,
@@ -18,7 +17,6 @@ import {
   Heart,
   Home,
   Image as ImageIcon,
-  Maximize2,
   MessageCircle,
   Pause,
   Play,
@@ -1943,10 +1941,10 @@ function CreateScreen({
 function DesktopDirectGamePlayer({
   game,
   onGoHome: _onGoHome,
-  onExplore,
+  onExplore: _onExplore,
   liked: _liked,
   onToggleLike: _onToggleLike,
-  onOpenModal,
+  onOpenModal: _onOpenModal,
 }: {
   game: Game;
   onGoHome?: () => void;
@@ -1955,64 +1953,11 @@ function DesktopDirectGamePlayer({
   onToggleLike?: () => void;
   onOpenModal?: (modal: Modal) => void;
 }) {
-  const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   useGameTracking(game.id, true, true);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen?.();
-    } else {
-      document.exitFullscreen?.();
-    }
-  };
-
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } else {
-      onOpenModal?.('share');
-    }
-  };
-
   return (
     <div className="desktop-direct-player" ref={containerRef}>
-      <header className="direct-player-topbar desktop-only-topbar">
-        <div className="direct-player-left">
-          <button className="direct-player-logo" onClick={onExplore} title="Back to Games">
-            <ArrowLeft size={18} />
-            <img src="/about/icon.png" alt="GameTOK" />
-            <strong>GameTok</strong>
-          </button>
-          <button className="direct-player-nav-btn" onClick={onExplore}>
-            <Compass size={17} />
-            <span>Games</span>
-          </button>
-        </div>
-
-        <div className="direct-player-center">
-          <h1 className="direct-player-title">{game.name || game.title}</h1>
-          <span className="direct-player-author">
-            by <strong>GameTok</strong> <span style={{ color: '#38bdf8' }}>✓</span>
-          </span>
-        </div>
-
-        <div className="direct-player-right">
-          <button className="direct-player-action-btn" onClick={handleShare} title="Share Game">
-            <Share2 size={18} />
-            <span>{copied ? 'Copied!' : 'Share'}</span>
-          </button>
-          <button className="direct-player-action-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
-            <Maximize2 size={18} />
-          </button>
-          <button className="direct-player-website-cta" onClick={onExplore}>
-            Exit Game
-          </button>
-        </div>
-      </header>
-
       <main className="direct-player-body">
         <iframe
           className="direct-player-iframe"
