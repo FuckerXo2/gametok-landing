@@ -2743,11 +2743,11 @@ textarea {
   font-size: 13px;
 }
 
-/* App Store / Google Play links. Shared by the desktop hero and mobile explore. */
-.store-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+/* App Store / Google Play links removed */
+.store-buttons,
+.store-button,
+.mobile-smart-banner {
+  display: none !important;
 }
 
 .store-button {
