@@ -466,12 +466,16 @@ const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, _game: Game
 
 
 const getGameUrl = (game: Game) => {
+  if (game.id === 'gta-lagos') {
+    return '/web-games/gta-lagos/live/index.html';
+  }
   let raw = game.embedUrl;
   if (raw) {
     if (raw.includes('r2.dev/web-games/')) {
-      raw = raw.replace(/https?:\/\/[^/]+\.r2\.dev\/web-games\//, `${GAMES_HOST}/`);
+      raw = raw.replace(/https?:\/\/[^/]+\.r2\.dev\/web-games\//, '/web-games/');
+    } else if (raw.startsWith('/api/')) {
+      raw = `${API_ORIGIN}${raw}`;
     }
-    raw = raw.startsWith('/') ? `${API_ORIGIN}${raw}` : raw;
     const sep = raw.includes('?') ? '&' : '?';
     return `${raw}${sep}gd_sdk_referrer_url=${encodeURIComponent(GAMES_HOST)}`;
   }
