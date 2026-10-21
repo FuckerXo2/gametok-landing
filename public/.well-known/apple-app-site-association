@@ -1,16 +1,7 @@
 {
   "applinks": {
     "apps": [],
-    "details": [
-      {
-        "appID": "8GRX5F25PU.com.olasubomi.gametok",
-        "paths": [
-          "/game/*",
-          "/game.html*",
-          "*"
-        ]
-      }
-    ]
+    "details": []
   },
   "webcredentials": {
     "apps": [
