@@ -1,11 +1,24 @@
 {
   "applinks": {
     "apps": [],
-    "details": []
+    "details": [
+      {
+        "appID": "8GRX5F25PU.com.olasubomi.gametok",
+        "paths": [
+          "NOT /*",
+          "NOT *"
+        ],
+        "components": [
+          {
+            "/": "/*",
+            "exclude": true,
+            "comment": "Disable universal links so all URLs open in browser only"
+          }
+        ]
+      }
+    ]
   },
   "webcredentials": {
-    "apps": [
-      "8GRX5F25PU.com.olasubomi.gametok"
-    ]
+    "apps": []
   }
 }

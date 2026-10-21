@@ -56,7 +56,6 @@ export async function onRequest(context) {
   } catch (e) {}
 
   const pageUrl = `https://gametok.co/game/${encodeURIComponent(gameId)}`;
-  const deepLink = `gametok://game/${encodeURIComponent(gameId)}`;
   const title = `Play ${gameName} on GameTok 🎮`;
   const desc = `${gameDesc} Tap to play — no download.`;
 
