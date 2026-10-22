@@ -188,10 +188,8 @@ export async function onRequest(context) {
     headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
     headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
-    // files stored compressed (Content-Encoding: gzip, e.g. No Rules FC's .glb models): say so, and the
-    // runtime sends them compressed; their stored length isn't the length the browser decodes, so no Content-Length
+    // (the runtime has already unpacked a file stored compressed, so it goes out plain, without its stored length)
     const contentEncoding = upstreamRes.headers.get('content-encoding');
-    if (contentEncoding) headers.set('Content-Encoding', contentEncoding);
     const contentLength = upstreamRes.headers.get('content-length');
     if (contentLength && !contentEncoding) headers.set('Content-Length', contentLength);
 
@@ -204,7 +202,6 @@ export async function onRequest(context) {
     return new Response(upstreamRes.body, {
       status: upstreamRes.status,
       headers,
-      ...(contentEncoding ? { encodeBody: 'manual' } : {}),   // already compressed: send it as stored
     });
   } catch (err) {
     return new Response(`Error proxying game asset: ${err.message}`, { status: 502 });
