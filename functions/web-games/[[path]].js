@@ -204,6 +204,7 @@ export async function onRequest(context) {
     return new Response(upstreamRes.body, {
       status: upstreamRes.status,
       headers,
+      ...(contentEncoding ? { encodeBody: 'manual' } : {}),   // already compressed: send it as stored
     });
   } catch (err) {
     return new Response(`Error proxying game asset: ${err.message}`, { status: 502 });
