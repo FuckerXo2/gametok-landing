@@ -106,6 +106,10 @@ export async function onRequest(context) {
         headers.set('Cache-Control', isEntry ? 'no-cache, max-age=0' : 'public, max-age=31536000, immutable');
         headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
         headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+        if (obj.httpMetadata?.contentEncoding) {             // stored compressed: send the bytes as they are
+          headers.set('Content-Encoding', obj.httpMetadata.contentEncoding);
+          return new Response(obj.body, { status: 200, headers, encodeBody: 'manual' });
+        }
         return new Response(obj.body, { status: 200, headers });
       }
     } catch (_) {}
@@ -184,8 +188,12 @@ export async function onRequest(context) {
     headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
     headers.set('Cross-Origin-Opener-Policy', 'same-origin');
 
+    // files stored compressed (Content-Encoding: gzip, e.g. No Rules FC's .glb models): say so, and the
+    // runtime sends them compressed; their stored length isn't the length the browser decodes, so no Content-Length
+    const contentEncoding = upstreamRes.headers.get('content-encoding');
+    if (contentEncoding) headers.set('Content-Encoding', contentEncoding);
     const contentLength = upstreamRes.headers.get('content-length');
-    if (contentLength) headers.set('Content-Length', contentLength);
+    if (contentLength && !contentEncoding) headers.set('Content-Length', contentLength);
 
     const contentRange = upstreamRes.headers.get('content-range');
     if (contentRange) headers.set('Content-Range', contentRange);
