@@ -421,6 +421,8 @@ const formatCount = (value?: number) => {
   return `${n}`;
 };
 
+const NRFC_COVER = 'https://pub-b7694276c8f54290854b276638a93b62.r2.dev/web-games/no-rules-fc/thumb.jpg';
+
 export const GTA_LAGOS_GAME: Game = {
   id: 'gta-lagos',
   name: 'GTA Lagos',
@@ -2317,6 +2319,7 @@ function DesktopExploreScreen({
   variant?: 'desktop' | 'mobile';
 }) {
   const gta = games.find((g) => g.id === 'gta-lagos') || games[0] || GTA_LAGOS_GAME;
+  const nrfc: Game = games.find((g) => g.id === 'no-rules-fc') || { id: 'no-rules-fc', name: 'No Rules FC', thumbnail: NRFC_COVER } as Game;
 
   return (
     <div className="modern-game-portal">
@@ -2378,6 +2381,50 @@ function DesktopExploreScreen({
 
             <div className="portal-hero-cta">
               <button className="portal-btn-primary" onClick={() => onOpenGame(gta)}>
+                <Play size={18} fill="currentColor" /> PLAY NOW
+              </button>
+              <div className="portal-specs">
+                <span>Free to Play</span>
+                <span>•</span>
+                <span>Browser & Mobile</span>
+                <span>•</span>
+                <span>No Download Required</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* No Rules FC */}
+        <section className="portal-hero">
+          <div className="portal-hero-media" onClick={() => onOpenGame(nrfc)}>
+            <img src={NRFC_COVER} alt="No Rules FC" className="portal-hero-img" />
+            <div className="portal-hero-gradient" />
+            <div className="portal-hero-play-badge" aria-label="Play No Rules FC">
+              <Play size={34} fill="#ffffff" color="#ffffff" style={{ marginLeft: 4 }} />
+            </div>
+          </div>
+
+          <div className="portal-hero-info">
+            <div className="portal-badges">
+              <span className="portal-badge featured">NEW</span>
+              <span className="portal-badge">5V5 FOOTBALL</span>
+              <span className="portal-badge">MULTIPLAYER</span>
+            </div>
+
+            <h1 className="portal-game-title">No Rules FC</h1>
+
+            <div className="portal-creator-row">
+              <img src="/about/icon.png" alt="GameTok" className="portal-creator-avatar" />
+              <span>Published by <strong>GameTok</strong></span>
+              <span className="portal-verified">✓</span>
+            </div>
+
+            <p className="portal-game-desc">
+              5v5 hero football with no ref and no fouls. Pick your hero, use their super, party up with friends and play online with voice chat.
+            </p>
+
+            <div className="portal-hero-cta">
+              <button className="portal-btn-primary" onClick={() => onOpenGame(nrfc)}>
                 <Play size={18} fill="currentColor" /> PLAY NOW
               </button>
               <div className="portal-specs">
