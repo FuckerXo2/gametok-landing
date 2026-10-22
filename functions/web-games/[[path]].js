@@ -16,6 +16,7 @@ const MIME_TYPES = {
   ico: 'image/x-icon',
   gif: 'image/gif',
   mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
   ogg: 'audio/ogg',
   wav: 'audio/wav',
   glb: 'model/gltf-binary',

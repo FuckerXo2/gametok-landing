@@ -55,9 +55,11 @@ export async function onRequest(context) {
     }
   } catch (e) {}
 
-  const pageUrl = `https://gametok.co/game/${encodeURIComponent(gameId)}`;
-  const title = `Play ${gameName} on GameTok 🎮`;
-  const desc = `${gameDesc} Tap to play — no download.`;
+  // an invite link (?with=<player>&from=<name>): the preview says who's asking
+  const from = (url.searchParams.get('from') || '').replace(/[^\w .#-]/g, '').slice(0, 20).trim();
+  const pageUrl = `https://gametok.co/game/${encodeURIComponent(gameId)}${url.search}`;
+  const title = from ? `${from} invited you to play ${gameName} 🎮` : `Play ${gameName} on GameTok 🎮`;
+  const desc = from ? `Tap to join their party. ${gameDesc} No download.` : `${gameDesc} Tap to play — no download.`;
 
   // Previews read the first tags they find, so the homepage's own title, description, canonical
   // and og:/twitter: tags come out before the game's go in.

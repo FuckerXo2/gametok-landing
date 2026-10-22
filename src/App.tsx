@@ -463,7 +463,15 @@ const handleThumbError = (e: React.SyntheticEvent<HTMLImageElement>, _game: Game
 };
 
 
-const getGameUrl = (game: Game) => {
+// The page's own ?… (an invite link: ?with=<player>&from=<name>) goes on to the game, which reads it.
+const withPageQuery = (url: string) => {
+  const q = new URLSearchParams(window.location.search); q.delete('gd_sdk_referrer_url');
+  const extra = q.toString();
+  return extra ? `${url}${url.includes('?') ? '&' : '?'}${extra}` : url;
+};
+
+const getGameUrl = (game: Game) => withPageQuery(gameFrameUrl(game));
+const gameFrameUrl = (game: Game) => {
   if (game.id === 'gta-lagos') {
     return '/web-games/gta-lagos/live/index.html';
   }
