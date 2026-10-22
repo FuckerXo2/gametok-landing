@@ -754,9 +754,10 @@ async function request(endpoint: string, timeoutMs = 9000) {
 }
 
 function useGameTokData(targetGameId?: string | null) {
-  const [games, setGames] = useState<Game[]>([GTA_LAGOS_GAME]);
+  // No default game: the list is GameTok's real catalog (a /game/:id link adds its own game).
+  const [games, setGames] = useState<Game[]>([]);
   const [creators, setCreators] = useState<Creator[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
@@ -769,30 +770,26 @@ function useGameTokData(targetGameId?: string | null) {
         ]);
         if (!mounted) return;
         if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
-          const incoming: Game[] = gamesRes.value.games;
-          const gta = incoming.find((g) => g.id === 'gta-lagos' || g.name?.toLowerCase().includes('lagos'));
-          const finalGta: Game = gta ? {
-            ...gta,
-            thumbnail: gta.thumbnail?.includes('r2.dev') ? 'https://games.gametok.co/gta-lagos/thumb.jpg' : (gta.thumbnail || GTA_LAGOS_GAME.thumbnail),
-            embedUrl: gta.embedUrl?.includes('r2.dev') ? 'https://games.gametok.co/gta-lagos/84fd1309389f/index.html' : (gta.embedUrl || GTA_LAGOS_GAME.embedUrl),
-          } : GTA_LAGOS_GAME;
-          setGames([finalGta]);
+          // GTA Lagos plays from its own build address (games.gametok.co), not the R2 one the catalog has
+          const incoming: Game[] = gamesRes.value.games.map((g: Game) => g.id !== 'gta-lagos' ? g : {
+            ...g,
+            thumbnail: g.thumbnail?.includes('r2.dev') ? 'https://games.gametok.co/gta-lagos/thumb.jpg' : (g.thumbnail || GTA_LAGOS_GAME.thumbnail),
+            embedUrl: g.embedUrl?.includes('r2.dev') ? GTA_LAGOS_GAME.embedUrl : (g.embedUrl || GTA_LAGOS_GAME.embedUrl),
+          });
+          // keep a game a link already brought in (it may not be in the trending page)
+          setGames((prev) => [...prev.filter((p) => !incoming.some((g) => g.id === p.id)), ...incoming]);
           try {
-            localStorage.setItem(STORAGE_KEYS.cachedGames, JSON.stringify([finalGta]));
+            localStorage.setItem(STORAGE_KEYS.cachedGames, JSON.stringify(incoming));
           } catch {}
           setOffline(false);
         } else {
-          setGames([GTA_LAGOS_GAME]);
           setOffline(true);
         }
         if (creatorsRes.status === 'fulfilled' && Array.isArray(creatorsRes.value?.users)) {
           setCreators(creatorsRes.value.users);
         }
       } catch {
-        if (mounted) {
-          setGames([GTA_LAGOS_GAME]);
-          setOffline(true);
-        }
+        if (mounted) setOffline(true);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -988,7 +985,10 @@ function App() {
       .catch(() => {});
   }, [authUser?.id]);
 
-  const activeGame = games.length > 0 ? games[((gameIndex % games.length) + games.length) % games.length] : null;
+  // A /game/:id link waits for that game instead of showing whatever loaded first (GTA Lagos flashed up).
+  const [routeMissing, setRouteMissing] = useState<string | null>(null);
+  const routeWaiting = !!routeGameId && routeMissing !== routeGameId && !games.some((g) => g.id?.toLowerCase() === routeGameId.toLowerCase());
+  const activeGame = !routeWaiting && games.length > 0 ? games[((gameIndex % games.length) + games.length) % games.length] : null;
 
   const requireAuth = (mode: AuthMode = 'signup') => {
     if (authUser || getToken()) return false;
@@ -1114,8 +1114,9 @@ function App() {
         if (game && game.id) {
           setGames((prev) => [game, ...prev.filter((g) => g.id !== game.id)]);
           setGameIndex(0);
-        }
+        } else setRouteMissing(routeGameId);
       }).catch((e) => {
+        setRouteMissing(routeGameId);
         console.warn('[WebPlayer] Failed to fetch shared game by ID:', e);
       }).finally(() => {
         fetchingGameIdRef.current = null;
@@ -1155,7 +1156,7 @@ function App() {
           <section className="desktop-deck-pending">
             <DesktopAppSidebar activeTab="explore" user={authUser} onTab={goTab} onPage={(page) => goMarketingPage(page, 'app')} />
             <EmptyAppState
-              loading={loading}
+              loading={loading || routeWaiting}
               title="Game not found"
               text="That game may have been removed."
             />
