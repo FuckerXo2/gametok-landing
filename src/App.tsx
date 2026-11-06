@@ -304,7 +304,7 @@ const FAQ_GROUPS = [
   {
     title: 'General',
     items: [
-      ['What is GameTok?', 'GameTok is an instant gaming platform where you can play games like GTA Lagos, create, and share with friends.'],
+      ['What is GameTok?', 'GameTok is an instant gaming platform where you can play games like No Rules FC, create, and share with friends.'],
       ['Do I need to code?', 'No. The goal is to describe the game and let the system build a playable draft.'],
       ['Is the web app replacing mobile?', 'No. You can play directly on web and mobile in your browser or through the app.'],
     ],
@@ -423,25 +423,6 @@ const formatCount = (value?: number) => {
 
 const NRFC_COVER = 'https://pub-b7694276c8f54290854b276638a93b62.r2.dev/web-games/no-rules-fc/thumb.jpg';
 
-export const GTA_LAGOS_GAME: Game = {
-  id: 'gta-lagos',
-  name: 'GTA Lagos',
-  description: 'Open-world Lagos, from Ojota to Lekki. Hustle, drive, run missions with your crew, and play with everyone online.',
-  color: '#1a1206',
-  thumbnail: 'https://games.gametok.co/gta-lagos/thumb.jpg',
-  embedUrl: 'https://games.gametok.co/gta-lagos/84fd1309389f/index.html',
-  orientation: 'landscape',
-  creatorDisplayName: 'GameTok',
-  creatorUsername: 'gametok',
-  creatorVerified: true,
-  creatorAvatar: '/about/icon.png',
-  plays: 0,
-  likes: 0,
-  saves: 0,
-  status: 'published',
-  version: '1.0.0',
-} as Game;
-
 const getThumbnailUrl = (game: Game) => {
   let value = game.thumbnail?.trim();
   if (value) {
@@ -474,9 +455,6 @@ const withPageQuery = (url: string) => {
 
 const getGameUrl = (game: Game) => withPageQuery(gameFrameUrl(game));
 const gameFrameUrl = (game: Game) => {
-  if (game.id === 'gta-lagos') {
-    return '/web-games/gta-lagos/live/index.html';
-  }
   let raw = game.embedUrl;
   if (raw) {
     if (raw.includes('r2.dev/web-games/')) {
@@ -772,12 +750,7 @@ function useGameTokData(targetGameId?: string | null) {
         ]);
         if (!mounted) return;
         if (gamesRes.status === 'fulfilled' && Array.isArray(gamesRes.value?.games)) {
-          // GTA Lagos plays from its own build address (games.gametok.co), not the R2 one the catalog has
-          const incoming: Game[] = gamesRes.value.games.map((g: Game) => g.id !== 'gta-lagos' ? g : {
-            ...g,
-            thumbnail: g.thumbnail?.includes('r2.dev') ? 'https://games.gametok.co/gta-lagos/thumb.jpg' : (g.thumbnail || GTA_LAGOS_GAME.thumbnail),
-            embedUrl: g.embedUrl?.includes('r2.dev') ? GTA_LAGOS_GAME.embedUrl : (g.embedUrl || GTA_LAGOS_GAME.embedUrl),
-          });
+          const incoming: Game[] = gamesRes.value.games;
           // keep a game a link already brought in (it may not be in the trending page)
           setGames((prev) => [...prev.filter((p) => !incoming.some((g) => g.id === p.id)), ...incoming]);
           try {
@@ -987,7 +960,7 @@ function App() {
       .catch(() => {});
   }, [authUser?.id]);
 
-  // A /game/:id link waits for that game instead of showing whatever loaded first (GTA Lagos flashed up).
+  // A /game/:id link waits for that game instead of showing whatever loaded first (another game flashed up).
   const [routeMissing, setRouteMissing] = useState<string | null>(null);
   const routeWaiting = !!routeGameId && routeMissing !== routeGameId && !games.some((g) => g.id?.toLowerCase() === routeGameId.toLowerCase());
   const activeGame = !routeWaiting && games.length > 0 ? games[((gameIndex % games.length) + games.length) % games.length] : null;
@@ -2296,7 +2269,7 @@ function StaticMarketingPage({
 function marketingSubtitle(page: MarketingPage, isPost: boolean) {
   if (isPost) return 'A GameTok field note for the playable social web.';
   if (page === 'about') return 'What GameTok is, who it is for, and where it is going.';
-  if (page === 'games') return 'Discover GTA Lagos and playable games built by creators.';
+  if (page === 'games') return 'Discover No Rules FC and playable games built by creators.';
   if (page === 'pricing') return 'Static v1 pricing cards for product storytelling. Payments come later.';
   if (page === 'blog') return 'Updates on AI game creation, releases, and creator tools.';
   if (page === 'changelog') return 'Everything changing as GameTok web grows from app replica to full product.';
@@ -2318,7 +2291,6 @@ function DesktopExploreScreen({
   onCreate?: () => void;
   variant?: 'desktop' | 'mobile';
 }) {
-  const gta = games.find((g) => g.id === 'gta-lagos') || games[0] || GTA_LAGOS_GAME;
   const nrfc: Game = games.find((g) => g.id === 'no-rules-fc') || { id: 'no-rules-fc', name: 'No Rules FC', thumbnail: NRFC_COVER } as Game;
 
   return (
@@ -2337,8 +2309,8 @@ function DesktopExploreScreen({
           </nav>
 
           <div className="portal-header-actions">
-            <button className="portal-play-nav-btn" onClick={() => onOpenGame(gta)}>
-              <Play size={14} fill="currentColor" /> Play GTA Lagos
+            <button className="portal-play-nav-btn" onClick={() => onOpenGame(nrfc)}>
+              <Play size={14} fill="currentColor" /> Play No Rules FC
             </button>
           </div>
         </div>
@@ -2346,54 +2318,6 @@ function DesktopExploreScreen({
 
       {/* Main Content Showcase */}
       <main className="portal-main">
-        {/* Hero Section */}
-        <section className="portal-hero">
-          <div className="portal-hero-media" onClick={() => onOpenGame(gta)}>
-            <img
-              src="https://games.gametok.co/gta-lagos/thumb.jpg"
-              alt="GTA Lagos"
-              className="portal-hero-img"
-            />
-            <div className="portal-hero-gradient" />
-            <div className="portal-hero-play-badge" aria-label="Play GTA Lagos">
-              <Play size={34} fill="#ffffff" color="#ffffff" style={{ marginLeft: 4 }} />
-            </div>
-          </div>
-
-          <div className="portal-hero-info">
-            <div className="portal-badges">
-              <span className="portal-badge featured">OFFICIAL RELEASE</span>
-              <span className="portal-badge">OPEN WORLD</span>
-              <span className="portal-badge">MULTIPLAYER</span>
-            </div>
-
-            <h1 className="portal-game-title">GTA Lagos</h1>
-
-            <div className="portal-creator-row">
-              <img src="/about/icon.png" alt="GameTok" className="portal-creator-avatar" />
-              <span>Published by <strong>GameTok</strong></span>
-              <span className="portal-verified">✓</span>
-            </div>
-
-            <p className="portal-game-desc">
-              Explore an open-world Lagos from Ojota to Lekki. Hustle, drive, run missions with your crew, and play with everyone online directly in your browser.
-            </p>
-
-            <div className="portal-hero-cta">
-              <button className="portal-btn-primary" onClick={() => onOpenGame(gta)}>
-                <Play size={18} fill="currentColor" /> PLAY NOW
-              </button>
-              <div className="portal-specs">
-                <span>Free to Play</span>
-                <span>•</span>
-                <span>Browser & Mobile</span>
-                <span>•</span>
-                <span>No Download Required</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* No Rules FC */}
         <section className="portal-hero">
           <div className="portal-hero-media" onClick={() => onOpenGame(nrfc)}>
@@ -2441,15 +2365,15 @@ function DesktopExploreScreen({
         {/* Feature Cards Grid */}
         <section className="portal-features">
           <div className="portal-feature-card">
-            <div className="portal-feature-icon">🚗</div>
-            <h3>Open World Lagos</h3>
-            <p>From the mainland markets and highways of Ojota and Ikeja to the high-rises and bridges of Victoria Island and Lekki.</p>
+            <div className="portal-feature-icon">🎮</div>
+            <h3>Instant Games</h3>
+            <p>Football, fighting, party games and more, made by GameTok and ready the moment you tap play.</p>
           </div>
 
           <div className="portal-feature-card">
             <div className="portal-feature-icon">👥</div>
             <h3>Online Multiplayer</h3>
-            <p>Cruise the streets with friends, compete in street races, complete missions, and chat in real-time online.</p>
+            <p>Party up with friends, jump into the same match, and talk with voice chat.</p>
           </div>
 
           <div className="portal-feature-card">
@@ -3345,7 +3269,7 @@ function AuthSheet({
 
       <div className="auth-idea-card">
         <span>{mode === 'signup' ? 'Start with:' : 'Last session:'}</span>
-        <strong>{mode === 'signup' ? '"A boss-rush arena that evolves every round"' : 'GTA Lagos is waiting'}</strong>
+        <strong>{mode === 'signup' ? '"A boss-rush arena that evolves every round"' : 'Your games are waiting'}</strong>
       </div>
 
       <div className="auth-email-fields">
