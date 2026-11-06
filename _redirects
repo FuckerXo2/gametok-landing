@@ -37,5 +37,5 @@ http://www.gametok.co/* https://gametok.co/:splat 301!
 /terms /index.html 200
 /download / 301!
 /download/* / 301!
-/dashboard https://games.gametok.co/dashboard 302
-/developer https://games.gametok.co/ 302
+/dashboard / 302
+/developer / 302

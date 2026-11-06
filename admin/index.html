@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>GameTok Admin</title>
+<style>
+  /* Series colours: the validated dark categorical order (slots 1-4), on the dark chart surface. */
+  :root {
+    color-scheme: dark;
+    --bg: #101211; --surface: #1a1a19; --surface-2: #232322; --line: #2e2e2c;
+    --text: #f0efec; --dim: #c3c2b7; --muted: #8f8e85; --accent: #47ab9a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --bad: #e66767;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  a { color: inherit; }
+  button, input { font: inherit; color: inherit; }
+  .layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 100vh; }
+  nav { position: sticky; top: 0; height: 100vh; padding: 18px 10px; border-right: 1px solid var(--line); overflow-y: auto; }
+  .brand { font-weight: 700; font-size: 15px; padding: 0 10px 16px; }
+  .brand i { color: var(--accent); font-style: normal; }
+  nav button { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px 10px; color: var(--dim); cursor: pointer; margin-bottom: 2px; }
+  nav button:hover { background: var(--surface); }
+  nav button[aria-current="page"] { background: var(--surface-2); color: var(--text); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent); }
+  main { padding: 20px 24px 80px; min-width: 0; max-width: 1280px; }
+  .top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .top h1 { font-size: 20px; margin: 0; flex: 1; min-width: 160px; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+  .seg button { background: none; border: 0; color: var(--dim); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); font-weight: 600; }
+  .check { display: inline-flex; gap: 6px; align-items: center; color: var(--dim); font-size: 13px; cursor: pointer; }
+  .check input { accent-color: var(--accent); }
+  .btn { background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #06110f; font-weight: 600; }
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: var(--dim); font-size: 13px; margin-bottom: 14px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 1160px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+  .tile .t { color: var(--dim); font-size: 13px; }
+  .tile .v { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; margin: 2px 0; }
+  .tile .s { color: var(--muted); font-size: 12px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 14px; min-width: 0; }
+  .panel h2 { font-size: 15px; margin: 0 0 2px; }
+  .panel .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+  .two > .panel { margin-bottom: 0; }
+  .two { margin-bottom: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--dim); margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: 220px; overflow: visible; }
+  .tip { position: absolute; pointer-events: none; background: #050505; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 12px; white-space: nowrap; transform: translate(-50%, -100%); display: none; z-index: 5; }
+  .tip .row { display: flex; align-items: center; gap: 6px; }
+  .tip i { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+  .tip b { margin-left: auto; padding-left: 12px; }
+  details { margin-top: 8px; }
+  summary { color: var(--muted); font-size: 12.5px; cursor: pointer; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th[data-sort] { cursor: pointer; user-select: none; }
+  td { padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td.wide { white-space: normal; min-width: 220px; color: var(--dim); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--surface-2); }
+  tr.click { cursor: pointer; }
+  .muted { color: var(--muted); }
+  .game { display: flex; align-items: center; gap: 8px; }
+  .game img { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; background: var(--surface-2); }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; border: 1px solid var(--line); color: var(--dim); }
+  .state { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dim); }
+  .state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .state.on::before { background: var(--s3); }
+  .state.warn::before { background: var(--s4); }
+  .state.off::before { background: var(--bad); }
+  .hbar { display: grid; grid-template-columns: minmax(90px, 200px) minmax(0, 1fr) 64px; gap: 10px; align-items: center; padding: 4px 0; font-size: 13px; }
+  .hbar .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--dim); }
+  .hbar .track { height: 12px; }
+  .hbar .fill { height: 100%; border-radius: 0 4px 4px 0; background: var(--s1); min-width: 2px; }
+  .empty { color: var(--muted); padding: 14px 0; font-size: 13px; }
+  .search { width: 100%; max-width: 340px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li { display: grid; grid-template-columns: 74px 66px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .feed .when { color: var(--muted); font-size: 12px; }
+  .kind { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+  .drawer { position: fixed; inset: 0 0 0 auto; width: min(520px, 100%); background: var(--surface); border-left: 1px solid var(--line); padding: 20px; overflow-y: auto; z-index: 20; transform: translateX(100%); transition: transform .2s; }
+  .drawer.open { transform: none; }
+  .gate { max-width: 400px; margin: 16vh auto; padding: 0 20px; text-align: center; }
+  .gate input { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; margin: 14px 0 10px; }
+  .heat { text-align: center; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: minmax(0, 1fr); }
+    nav { position: sticky; z-index: 10; height: auto; display: flex; overflow-x: auto; gap: 2px; padding: 8px; background: var(--bg); border-right: 0; border-bottom: 1px solid var(--line); }
+    nav button { width: auto; white-space: nowrap; margin: 0; }
+    nav button[aria-current="page"] { box-shadow: none; }
+    .brand { display: none; }
+    main { padding: 14px 12px 60px; }
+    .tile .v { font-size: 24px; }
+    .two { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <h1 style="font-size: 20px; margin-bottom: 6px;">GameTok Admin</h1>
+  <p class="muted" id="gateText">Sign in with your admin account, or use the admin key.</p>
+  <a class="btn primary" href="/profile">Sign in on GameTok</a>
+  <form id="keyForm"><input id="keyInput" type="password" placeholder="Admin key" autocomplete="off" aria-label="Admin key"><button class="btn">Use key</button></form>
+</div>
+
+<div class="layout" id="app" hidden>
+  <nav aria-label="Sections"><div class="brand">Game<i>Tok</i> Admin</div></nav>
+  <main>
+    <div class="top">
+      <h1 id="title">Overview</h1>
+      <div class="seg" id="range" title="How many days the charts and tables cover">
+        <button data-days="7">7 days</button><button data-days="30" aria-pressed="true">30 days</button><button data-days="90">90 days</button><button data-days="365">1 year</button>
+      </div>
+      <label class="check"><input type="checkbox" id="internal"> Include team &amp; test</label>
+      <button class="btn" id="signout">Sign out</button>
+    </div>
+    <div class="note" id="status" hidden></div>
+    <div id="view"></div>
+  </main>
+</div>
+<aside class="drawer" id="drawer" aria-label="Account details"><button class="btn" style="float: right;" id="drawerClose">Close</button><div id="drawerBody"></div></aside>
+
+<script>
+const ROOT = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? '' : 'https://gametok-backend-267787411422.us-central1.run.app';
+const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => (n === null || n === undefined ? '—' : Number(n).toLocaleString());
+const pct = (x) => (x === null || x === undefined ? '—' : `${Math.round(x * 100)}%`);
+const usd = (n) => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dur = (s) => { if (s === null || s === undefined) return '—'; s = Math.round(s); if (s < 60) return `${s}s`; if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`; return `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m`; };
+const ago = (t) => { if (!t) return '—'; const s = (Date.now() - new Date(t).getTime()) / 1000; if (s < 60) return 'just now'; if (s < 3600) return `${Math.floor(s / 60)}m ago`; if (s < 86400) return `${Math.floor(s / 3600)}h ago`; return `${Math.floor(s / 86400)}d ago`; };
+const day = (t) => (t ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: '2-digit' }) : '—');
+const dayIso = (iso, long) => new Date(iso + 'T12:00:00').toLocaleDateString(undefined, long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' });
+const bytes = (n) => (n > 1e9 ? (n / 1e9).toFixed(1) + ' GB' : (n / 1e6).toFixed(1) + ' MB');
+const S = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
+
+const store = { get: (k) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } }, set: (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} } };
+const authHeaders = () => { const k = store.get('gametok_admin_key'); if (k) return { 'x-admin-key': k }; const t = store.get('authToken'); return t ? { Authorization: `Bearer ${t}` } : {}; };
+
+let days = 30, internal = false, tab = 'overview', token = 0;
+async function get(path) {
+  const res = await fetch(ROOT + path, { headers: authHeaders() });
+  if (res.status === 401) { showGate(); throw new Error('unauthorized'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+const api = (path, extra = '') => get(`/api/admin/insights${path}?days=${days}${internal ? '&internal=1' : ''}${extra}`);
+function showGate(msg) {
+  $('app').hidden = true; $('gate').hidden = false;
+  if (store.get('authToken') || store.get('gametok_admin_key')) $('gateText').textContent = msg || "That sign-in isn't an admin. Use an admin account or the admin key.";
+}
+
+// ---- pieces ----
+const tile = (t, v, s = '') => `<div class="tile"><div class="t">${esc(t)}</div><div class="v">${esc(v)}</div><div class="s">${s}</div></div>`;
+const panel = (title, sub, body) => `<div class="panel"><h2>${esc(title)}</h2>${sub ? `<p class="sub">${sub}</p>` : '<div style="height:10px"></div>'}${body}</div>`;
+const none = (text = 'Nothing recorded yet.') => `<div class="empty">${esc(text)}</div>`;
+const table = (cols, data) => data.length ? `<div class="wrap"><table><thead><tr>${cols.map(([l, , n]) => `<th class="${n ? 'num' : ''}">${esc(l)}</th>`).join('')}</tr></thead><tbody>${data.map((r) => `<tr>${cols.map(([, f, n]) => `<td class="${n ? 'num' : ''}">${f(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : none();
+const bars = (list, fmtV = fmt) => {
+  if (!list.length) return none();
+  const max = Math.max(...list.map((x) => Math.abs(x.v)), 1);
+  return list.map((x) => `<div class="hbar"><span class="lab" title="${esc(x.l)}">${esc(x.l)}</span><span class="track"><div class="fill" style="width:${(Math.abs(x.v) / max) * 100}%"></div></span><span class="num">${esc(fmtV(x.v))}</span></div>`).join('');
+};
+
+// Columns per day, stacked bottom-up with a 2px gap; one y axis, hover tooltip, table view underneath.
+const charts = new Map();
+function chart(id, series, keys) {
+  charts.set(id, { series, keys });
+  const legend = keys.length > 1 ? `<div class="legend">${keys.map(([, l], i) => `<span><i style="background:${S[i]}"></i>${esc(l)}</span>`).join('')}</div>` : '';
+  const rows = [...series].reverse().filter((s) => keys.some(([k]) => s[k]));
+  return `${legend}<div class="chart" id="${id}"><svg role="img" aria-label="${esc(keys.map((k) => k[1]).join(', '))} per day"></svg><div class="tip"></div></div>
+    <details><summary>Show as a table</summary><div class="wrap"><table><thead><tr><th>Day</th>${keys.map(([, l]) => `<th class="num">${esc(l)}</th>`).join('')}</tr></thead><tbody>${rows.map((s) => `<tr><td>${esc(dayIso(s.day, true))}</td>${keys.map(([k]) => `<td class="num">${fmt(s[k])}</td>`).join('')}</tr>`).join('') || '<tr><td class="muted">All zero.</td></tr>'}</tbody></table></div></details>`;
+}
+function drawCharts() {
+  for (const [id, { series, keys }] of charts) {
+    const wrap = $(id); if (!wrap) continue;
+    const svg = wrap.querySelector('svg'), tip = wrap.querySelector('.tip');
+    const W = Math.max(svg.clientWidth, 280), H = 220, L = 38, R = 6, T = 8, B = 24;
+    const total = (s) => keys.reduce((n, [k]) => n + (s[k] || 0), 0);
+    const max = Math.max(1, ...series.map(total));
+    const mag = Math.pow(10, Math.floor(Math.log10(max)));
+    const step = Math.max(1, [1, 2, 5, 10].map((m) => m * mag).find((c) => max / c <= 5) || mag);
+    const top = Math.ceil(max / step) * step;
+    const y = (v) => T + (1 - v / top) * (H - T - B);
+    const slot = (W - L - R) / series.length, bw = Math.max(1.5, Math.min(24, slot - 2));
+    let out = '';
+    for (let v = 0; v <= top; v += step) out += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 7}" y="${y(v) + 4}" fill="var(--muted)" font-size="11" text-anchor="end">${fmt(v)}</text>`;
+    const every = Math.max(1, Math.ceil(series.length / Math.max(3, Math.floor(W / 80))));
+    series.forEach((s, i) => {
+      const cx = L + slot * i + slot / 2;
+      let base = 0, drawn = 0;
+      const parts = keys.map(([k], j) => ({ v: s[k] || 0, j })).filter((p) => p.v);
+      parts.forEach((p, idx) => {
+        const y0 = y(base) - (drawn ? 2 : 0), y1 = y(base + p.v), h = Math.max(1, y0 - y1), r = idx === parts.length - 1 ? Math.min(4, bw / 2, h) : 0, x = cx - bw / 2;
+        out += r ? `<path d="M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + bw - r}Q${x + bw},${y1} ${x + bw},${y1 + r}V${y0}Z" fill="${S[p.j]}"/>` : `<rect x="${x}" y="${y1}" width="${bw}" height="${h}" fill="${S[p.j]}"/>`;
+        base += p.v; drawn++;
+      });
+      if ((series.length - 1 - i) % every === 0) out += `<text x="${cx}" y="${H - 6}" fill="var(--muted)" font-size="11" text-anchor="middle">${esc(dayIso(s.day))}</text>`;
+      out += `<rect class="hit" data-i="${i}" x="${L + slot * i}" y="${T}" width="${slot}" height="${H - T - B}" fill="transparent"/>`;
+    });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = out;
+    svg.querySelectorAll('.hit').forEach((h) => {
+      h.addEventListener('pointerenter', () => {
+        const i = +h.dataset.i, s = series[i], rect = svg.getBoundingClientRect();
+        tip.style.display = 'block';
+        tip.style.left = `${Math.min(Math.max(((L + slot * i + slot / 2) / W) * rect.width, 80), rect.width - 80)}px`;
+        tip.style.top = `${(y(total(s)) / H) * rect.height - 6}px`;
+        tip.innerHTML = `<div class="muted" style="margin-bottom:3px">${esc(dayIso(s.day, true))}</div>` + keys.map(([k, l], j) => `<div class="row"><i style="background:${S[j]}"></i>${esc(l)}<b>${fmt(s[k])}</b></div>`).join('');
+      });
+      h.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+    });
+  }
+}
+window.addEventListener('resize', drawCharts);
+
+// ---- tabs ----
+const TABS = {
+  overview: ['Overview', async () => {
+    const [d, rev, st, live] = await Promise.all([api('/overview'), get(`/api/admin/revenue?days=${days}`).catch(() => null), api('/app-stores').catch(() => null), api('/live').catch(() => null)]);
+    const stores = st ? Object.values(st.stores) : [];
+    const hubPlayers = live ? live.hub.games.reduce((n, g) => n + (g.players || 0), 0) : null;
+    return `<div class="tiles">
+        ${tile('Active today', fmt(d.active.today), `${fmt(d.signedIn.today)} signed in · ${fmt(d.active.today - d.signedIn.today)} guests`)}
+        ${tile('Active this week', fmt(d.active.week), `${fmt(d.signedIn.week)} signed in · ${fmt(d.active.week - d.signedIn.week)} guests`)}
+        ${tile('Active this month', fmt(d.active.month), `${fmt(d.signedIn.month)} signed in · ${fmt(d.active.month - d.signedIn.month)} guests`)}
+        ${tile('In the app right now', live ? fmt(live.app.connected) : '—', live ? `${fmt(hubPlayers)} in online matches` : '')}
+      </div><div class="tiles">
+        ${tile('Revenue', rev ? usd(rev.totals.usd) : '—', rev ? `last ${days} days · list price, before store cut · ${fmt(rev.totals.purchases)} purchases` : '')}
+        ${tile('Downloads', stores.length ? fmt(stores.reduce((n, s) => n + s.month, 0)) : '—', stores.length ? `last 30 days · ${fmt(stores.reduce((n, s) => n + s.allTime, 0))} all time` : 'stores not reporting')}
+        ${tile('New people', fmt(d.newPeople.week), `this week · ${fmt(d.newPeople.today)} today · ${fmt(d.newPeople.ever)} ever`)}
+        ${tile('Plays', fmt(d.totals.plays_today), `today · ${fmt(d.totals.plays_all_time)} all time`)}
+      </div><div class="tiles">
+        ${tile('Back next day', d.retention.d1 ? pct(d.retention.d1.pct) : '—', d.retention.d1 ? `of ${fmt(d.retention.d1.people)} new people` : 'not enough yet')}
+        ${tile('Back after 7 days', d.retention.d7 ? pct(d.retention.d7.pct) : '—', d.retention.d7 ? `of ${fmt(d.retention.d7.people)} new people` : 'not enough yet')}
+        ${tile('Back after 30 days', d.retention.d30 ? pct(d.retention.d30.pct) : '—', d.retention.d30 ? `of ${fmt(d.retention.d30.people)} new people` : 'not enough yet')}
+        ${tile('Time per person', dur(d.perPerson.secondsPerDay), `per day, last 7 days · ${d.perPerson.playsPerVisit === null ? '—' : d.perPerson.playsPerVisit.toFixed(1)} games per visit`)}
+      </div>
+      ${panel('People who played each day', 'Active people per day, Lagos time. Guests count once per device.', chart('dau', d.series, [['returning', 'Came back'], ['new', 'First time']]))}`;
+  }],
+  retention: ['Retention', async () => {
+    const d = await api('/overview');
+    const cell = (c, key) => { if (c[key] === null) return '<td class="heat muted">—</td>'; const r = c.size ? c[key] / c.size : 0; return `<td class="heat" style="background:rgba(57,135,229,${(r * 0.8).toFixed(2)})" title="${fmt(c[key])} of ${fmt(c.size)}">${pct(r)}</td>`; };
+    return panel('Do new people come back?', 'One row per day people first came. Each cell is the share active again exactly that many days later. Small days swing a lot; hover for the count. — means too recent to know.',
+      d.cohorts.length ? `<div class="wrap"><table><thead><tr><th>First came</th><th class="num">People</th><th class="heat">Next day</th><th class="heat">7 days</th><th class="heat">30 days</th><th class="heat">Ever back</th></tr></thead><tbody>${d.cohorts.map((c) => `<tr><td>${esc(dayIso(c.day, true))}</td><td class="num">${fmt(c.size)}</td>${cell(c, 'd1')}${cell(c, 'd7')}${cell(c, 'd30')}${cell(c, 'everBack')}</tr>`).join('')}</tbody></table></div>` : none());
+  }],
+  games: ['Games', async () => {
+    const d = await api('/games');
+    gamesRows = d.games;
+    return panel('Games', `Last ${days} days. Click a column to sort. Seen = shown on a card or page. Came back = played it on more than one day.`, '<div class="wrap"><table id="gamesTable"></table></div>');
+  }, () => renderGames()],
+  people: ['Accounts', async () => {
+    const d = await api('/audience');
+    const labels = ['Under 30s', '30s–2m', '2–10m', '10–30m', '30m+'];
+    const hours = Array.from({ length: 24 }, (_, h) => ({ l: `${String(h).padStart(2, '0')}:00`, v: (d.hours.find((x) => x.hour === h) || {}).n || 0 }));
+    return `<div class="two">
+        ${panel('New accounts per day', 'Most players never make one; guests are in Overview.', chart('signups', d.signups, [['n', 'New accounts']]))}
+        ${panel('Phone or computer', 'Games played per day.', chart('platforms', d.platforms, [['phone', 'Phone'], ['computer', 'Computer']]))}
+      </div><div class="two">
+        ${panel('How long a play lasts', `Timed plays, last ${days} days.`, bars(labels.map((l, i) => ({ l, v: (d.lengths.find((x) => x.bucket === i) || {}).n || 0 }))))}
+        ${panel('How people sign up', 'All accounts.', bars(d.providers.map((p) => ({ l: p.provider, v: p.n }))))}
+      </div>
+      ${panel('When people play', `Games started per hour, Lagos time, last ${days} days.`, `<details open><summary>Hours</summary>${bars(hours)}</details>`)}
+      ${panel('Accounts', 'Newest first. Click someone to see what they played.', `<input class="search" id="userSearch" type="search" placeholder="Search username, name or email"><div class="wrap"><table id="usersTable"></table></div><button class="btn" id="moreUsers" style="margin-top:10px" hidden>Load more</button>`)}`;
+  }, () => { loadUsers(); let t; $('userSearch').addEventListener('input', () => { clearTimeout(t); t = setTimeout(loadUsers, 300); }); $('moreUsers').addEventListener('click', () => loadUsers(true)); }],
+  money: ['Revenue', async () => {
+    const [r, e] = await Promise.all([get(`/api/admin/revenue?days=${days}`), api('/economy')]);
+    const calDays = Array.from({ length: days }, (_, i) => { const x = new Date(Date.now() - (days - 1 - i) * 864e5); return x.toISOString().slice(0, 10); });
+    const byDay = Object.fromEntries(r.daily.map((x) => [x.day, x]));
+    return `<div class="tiles">
+        ${tile('Revenue', usd(r.totals.usd), `last ${days} days · list price, before the stores' 15–30% cut`)}
+        ${tile('Purchases', fmt(r.totals.purchases), `${fmt(r.totals.buyers)} buyers · ${fmt(r.totals.refunds)} refunded · ${fmt(r.totals.sandbox)} sandbox`)}
+        ${tile('TokBux spent', fmt(r.totals.tokbuxSpent), `last ${days} days`)}
+        ${tile('TokBux held', fmt(e.balances.held), `${fmt(e.balances.profiles)} avatars · ${fmt(e.balances.with_items)} own items`)}
+      </div>
+      ${panel('Revenue per day', 'Real money only, in US dollars. Sandbox and refunds left out.', chart('revenue', calDays.map((d) => ({ day: d, usd: byDay[d] ? Number(byDay[d].usd.toFixed(2)) : 0 })), [['usd', 'Dollars']]))}
+      <div class="two">
+        ${panel('Packs', `Last ${days} days.`, table([['Pack', (x) => esc(x.product_id)], ['Store', (x) => esc(x.store)], ['Bought', (x) => fmt(x.purchases), 1], ['Dollars', (x) => usd(x.usd), 1]], r.packs))}
+        ${panel('Where TokBux came from and went', `Last ${days} days. Minus = spent or taken back.`, table([['Reason', (x) => esc(x.reason)], ['Times', (x) => fmt(x.n), 1], ['TokBux', (x) => fmt(x.tokbux), 1]], e.reasons))}
+      </div><div class="two">
+        ${panel('Best selling items', `By TokBux spent, last ${days} days.`, bars(e.items.map((x) => ({ l: x.item_id, v: x.tokbux }))))}
+        ${panel('Most owned items', 'All time.', bars(e.owned.map((x) => ({ l: x.item, v: x.n }))))}
+      </div>
+      ${panel('Latest purchases', '', table([['When', (x) => esc(ago(x.created_at))], ['Who', (x) => (x.username ? '@' + esc(x.username) : '—')], ['Pack', (x) => esc(x.product_id)], ['Store', (x) => esc(x.store)], ['Dollars', (x) => usd(x.usd), 1], ['', (x) => (x.sandbox ? '<span class="pill">sandbox</span>' : x.refunded_at ? '<span class="pill">refunded</span>' : '')]], r.recent))}`;
+  }],
+  stores: ['App stores', async () => {
+    const d = await api('/app-stores');
+    const staleDays = (s) => (s && s.latestDay ? Math.round((Date.now() - Date.parse(s.latestDay)) / 864e5) : null);
+    const card = (k, name) => { const s = d.stores[k]; const late = staleDays(s); return tile(name, s ? fmt(s.month) : '—', !d.connected[k] ? `<span class="state off">Not connected: keys missing on the server</span>${s ? `<br>${fmt(s.allTime)} all time, up to ${esc(s.latestDay)}` : ''}` : !s ? '<span class="state warn">Connected, no numbers yet</span>' : `last 30 days · ${fmt(s.allTime)} all time${s.activeDevices !== null ? ` · on ${fmt(s.activeDevices)} phones` : ''}<br><span class="state ${late > 5 ? 'warn' : 'on'}">Latest day ${esc(s.latestDay)}${late > 5 ? ` (${late} days behind)` : ''}</span>`); };
+    const map = {}; d.series.forEach((x) => { (map[x.day] ??= { day: x.day, apple: 0, google: 0 })[x.store] = x.downloads; });
+    const series = Array.from({ length: days }, (_, i) => { const iso = new Date(Date.now() - (days - 1 - i) * 864e5).toISOString().slice(0, 10); return map[iso] || { day: iso, apple: 0, google: 0 }; });
+    return `<div class="tiles">${card('apple', 'App Store')}${card('google', 'Google Play')}</div>${panel('First-time downloads per day', 'From Apple and Google. They report a day or two late.', chart('stores', series, [['apple', 'App Store'], ['google', 'Google Play']]))}`;
+  }],
+  live: ['Live', async () => {
+    const [d, a] = await Promise.all([api('/live'), api('/activity', '&limit=80')]);
+    const gameName = (id) => (d.lastGames.find((g) => g.game_id === id) || {}).name || id;
+    const what = (e) => e.kind === 'play' ? `<b>${esc(e.who || 'a guest')}</b> played <b>${esc(e.game || e.game_id)}</b> <span class="muted">${e.seconds ? 'for ' + dur(e.seconds) : ''}${e.detail === 'mobile' ? ' on a phone' : e.detail === 'web' ? ' on a computer' : ''}</span>`
+      : e.kind === 'signup' ? `<b>${esc(e.who || 'someone')}</b> made an account <span class="muted">with ${esc(e.detail || 'email')}</span>` : `<b>${esc(e.who ? '@' + e.who : 'a developer')}</b> published <b>${esc(e.game)}</b>`;
+    return `<div class="tiles">
+        ${tile('In the app', fmt(d.app.connected), `signed in, right now · ${fmt(d.app.byStatus['in-game'] || 0)} in a game`)}
+        ${tile('Seen in the last hour', fmt(d.seen.hour), `${fmt(d.seen.day)} today · ${fmt(d.seen.week)} this week (accounts)`)}
+        ${tile('In a squad lobby', d.hub.squads.up ? fmt(d.hub.squads.players) : '—', d.hub.squads.up ? `${fmt(d.hub.squads.squads)} squads` : '<span class="state off">Server not answering</span>')}
+      </div><div class="two">
+        ${panel('Online games right now', 'From the GameTok online server. It keeps rooms in memory, so there is no history.', table([['Game', (g) => esc(g.name)], ['Players', (g) => (g.up ? fmt(g.players) : '—'), 1], ['Rooms', (g) => (g.up ? fmt(g.rooms) : '—'), 1], ['', (g) => `<span class="state ${g.up ? 'on' : 'off'}">${g.up ? 'Up' : 'Not answering'}</span>`]], d.hub.games))}
+        ${panel('In a game right now', 'Signed-in people, per game.', Object.keys(d.app.byGame).length ? bars(Object.entries(d.app.byGame).map(([id, n]) => ({ l: gameName(id), v: n }))) : none('Nobody at the moment.'))}
+      </div><div class="two">
+        ${panel('Last game people were in', 'Accounts seen in the last 7 days.', bars(d.lastGames.map((g) => ({ l: g.name, v: g.n }))))}
+        ${panel('Developer API matches', 'Saved matches. Our own online games do not use this.', table([['Game', (m) => esc(m.name)], ['Mode', (m) => esc(m.mode)], ['State', (m) => esc(m.status)], ['Matches', (m) => fmt(m.n), 1]], d.matches))}
+      </div>
+      ${panel('What just happened', 'Plays, new accounts and games published. Refreshes every 20 seconds.', `<ul class="feed">${a.events.map((e) => `<li><span class="when" title="${esc(new Date(e.at).toLocaleString())}">${esc(ago(e.at))}</span><span class="kind">${esc({ play: 'Play', signup: 'Account', publish: 'Game' }[e.kind] || e.kind)}</span><span>${what(e)}</span></li>`).join('') || `<li>${none()}</li>`}</ul>`)}`;
+  }],
+  social: ['Social', async () => {
+    const d = await api('/social');
+    const t = d.totals;
+    return `<div class="tiles">
+        ${tile('Follows', fmt(t.follows), 'all time')}
+        ${tile('Messages', fmt(t.messages), `${fmt(t.conversations)} chats`)}
+        ${tile('Comments', fmt(t.comments), `${fmt(t.likes)} game likes · ${fmt(t.saves)} saves`)}
+        ${tile('Reports waiting', fmt(t.reports_open), `${fmt(t.reports)} ever · ${fmt(t.blocks)} blocks`)}
+      </div><div class="two">
+        ${panel('Follows and messages', 'Per day.', chart('social1', d.series, [['follows', 'Follows'], ['messages', 'Messages']]))}
+        ${panel('Comments, likes and saves', 'Per day.', chart('social2', d.series, [['comments', 'Comments'], ['likes', 'Likes'], ['saves', 'Saves']]))}
+      </div>
+      ${panel('Stories', `${fmt(t.stories)} posted · ${fmt(t.story_views)} seen.`, chart('social3', d.series, [['stories', 'Stories']]))}`;
+  }],
+  push: ['Notifications', async () => {
+    const d = await api('/notifications');
+    const measured = d.byAction.some((x) => x.opened), open = (x) => (measured && x.pushed ? pct(x.opened / x.pushed) : '—');
+    return `<div class="tiles">
+        ${tile('Phones reachable', fmt(d.devices.accounts + d.devices.guests), `${fmt(d.devices.accounts)} with an account · ${fmt(d.devices.guests)} guests`)}
+        ${tile('Pushed', fmt(d.byAction.reduce((n, x) => n + x.pushed, 0)), `last ${days} days`)}
+        ${tile('Opened', d.byAction.some((x) => x.opened) ? fmt(d.byAction.reduce((n, x) => n + x.opened, 0)) : '—', d.byAction.some((x) => x.opened) ? `last ${days} days` : '<span class="state warn">Not measured: nothing marks a notification as read</span>')}
+      </div>
+      ${panel('Pushes per day', '', chart('pushes', d.sent, [['n', 'Pushes sent']]))}
+      ${panel('By kind', `Last ${days} days. Made = recorded in the app's inbox; pushed = sent to a phone.`, table([['Kind', (x) => esc(x.type)], ['What', (x) => esc(x.action)], ['Made', (x) => fmt(x.made), 1], ['Pushed', (x) => fmt(x.pushed), 1], ['Opened', (x) => (measured ? fmt(x.opened) : '—'), 1], ['Open rate', open, 1]], d.byAction))}`;
+  }],
+  search: ['Search', async () => {
+    const d = await api('/search');
+    if (!d.total.n) return panel('Search', '', none('No searches have ever been recorded. The app may not be sending them: nothing is writing to this source.'));
+    return `${panel('Searches per day', `${fmt(d.total.n)} all time, last ${esc(ago(d.total.last))}.`, chart('searches', d.series, [['n', 'Searches']]))}${panel('What people look for', `Last ${days} days.`, table([['Search', (x) => esc(x.query)], ['Times', (x) => fmt(x.n), 1], ['People', (x) => fmt(x.people), 1]], d.top))}`;
+  }],
+  platform: ['Platform', async () => {
+    const d = await api('/platform');
+    return `<div class="tiles">
+        ${tile('Live games', fmt((d.statuses.find((s) => s.status === 'published') || {}).n || 0), d.statuses.filter((s) => s.status !== 'published').map((s) => `${fmt(s.n)} ${esc(s.status)}`).join(' · ') || 'none in other states')}
+        ${tile('Developers', fmt(d.developers), `${fmt(d.keys)} active API keys`)}
+        ${tile('Builds uploaded', fmt(d.uploads), `${bytes(d.upload_bytes)} · ${fmt(d.versions)} versions`)}
+        ${tile('Games removed', fmt(d.removed), 'all time')}
+      </div><div class="two">
+        ${panel('Developer keys', 'Latest used first.', table([['Who', (k) => (k.username ? '@' + esc(k.username) : '—')], ['Key', (k) => esc(k.key_prefix) + '…'], ['Mode', (k) => esc(k.mode)], ['Last used', (k) => esc(ago(k.last_used_at))], ['', (k) => (k.revoked_at ? '<span class="pill">revoked</span>' : '')]], d.apiKeys))}
+        ${panel('Background jobs', 'Last run.', table([['Job', (j) => esc(j.name)], ['Ran', (j) => esc(ago(j.last_run_at))]], d.jobs))}
+      </div><div class="two">
+        ${panel('Uploads', '', table([['Who', (u) => (u.username ? '@' + esc(u.username) : '—')], ['Size', (u) => esc(bytes(u.bytes)), 1], ['Files', (u) => fmt(u.files), 1], ['When', (u) => esc(day(u.created_at))]], d.uploadList))}
+        ${panel('Removed games', '', table([['Game', (g) => esc(g.name || g.id)], ['Why', (g) => esc(g.reason)], ['When', (g) => esc(day(g.deleted_at))]], d.removedList))}
+      </div>`;
+  }],
+  sources: ['Sources', async () => {
+    const d = await api('/sources');
+    const state = (s) => { if (!s.rows) return '<span class="state off">Empty</span>'; if (s.week) return '<span class="state on">Collecting</span>'; return `<span class="state warn">Quiet ${esc(ago(s.last))}</span>`; };
+    const groups = [...new Set(d.database.map((s) => s.group))];
+    return panel('Every place GameTok records something', 'Empty or quiet means that number can\'t be trusted, or nothing is being sent.', groups.map((g) => `<h3 style="font-size:13px;margin:14px 0 4px;color:var(--dim)">${esc(g)}</h3><div class="wrap"><table><thead><tr><th style="width:190px">Source</th><th>Records</th><th class="num">Rows</th><th class="num">Last 7 days</th><th>Since</th><th>Status</th></tr></thead><tbody>${d.database.filter((s) => s.group === g).map((s) => `<tr><td>${esc(s.table)}</td><td class="wide">${esc(s.what)}</td><td class="num">${fmt(s.rows)}</td><td class="num">${fmt(s.week)}</td><td class="muted">${esc(day(s.first))}</td><td>${state(s)}</td></tr>`).join('')}</tbody></table></div>`).join(''))
+      + panel('Live, not stored', '', table([['Source', (s) => esc(s.name)], ['Records', (s) => esc(s.what)], ['Status', (s) => `<span class="state ${s.up ? 'on' : 'off'}">${s.up ? 'Answering' : 'Not answering'}</span>`]], d.live))
+      + panel('Outside GameTok', 'Pulled in, or kept by someone else.', table([['Source', (s) => esc(s[0])], ['Status', (s) => s[1]]], [
+        ['App Store Connect (downloads)', `<span class="state ${d.stores.apple ? 'on' : 'off'}">${d.stores.apple ? 'Connected' : 'Keys missing on the server'}</span>`],
+        ['Google Play (installs)', `<span class="state ${d.stores.google ? 'on' : 'off'}">${d.stores.google ? 'Connected' : 'Keys missing on the server'}</span>`],
+        ['Cloudflare (website traffic)', '<span class="state">Only in the Cloudflare account</span>'],
+        ['Google Cloud (server load, costs)', '<span class="state">Only in the Google Cloud console</span>'],
+      ]));
+  }],
+};
+
+// Games table
+let gamesRows = [], gamesSort = { key: 'people', dir: -1 };
+function renderGames() {
+  const el = $('gamesTable'); if (!el) return;
+  const cols = [['name', 'Game'], ['people', 'People', 1], ['came_back', 'Came back', 1], ['rate', 'Return rate', 1], ['views', 'Seen', 1], ['plays', 'Plays', 1], ['phone', 'On phones', 1], ['avg_play_seconds', 'Avg play', 1], ['plays_all_time', 'All time', 1], ['like_count', 'Likes', 1], ['last_played_at', 'Last played'], ['creator', 'Creator']];
+  const rows = gamesRows.map((g) => ({ ...g, rate: g.people ? g.came_back / g.people : null, phone: g.plays ? g.mobile_plays / g.plays : null }));
+  const { key, dir } = gamesSort;
+  rows.sort((a, b) => { const x = a[key], y = b[key]; if (x === null || x === undefined) return 1; if (y === null || y === undefined) return -1; return (x > y ? 1 : x < y ? -1 : 0) * dir; });
+  el.innerHTML = `<thead><tr>${cols.map(([k, l, n]) => `<th class="${n ? 'num' : ''}" data-sort="${k}">${esc(l)}${key === k ? (dir < 0 ? ' ↓' : ' ↑') : ''}</th>`).join('')}</tr></thead><tbody>${rows.map((g) => `<tr>
+    <td><div class="game"><img src="${esc(/^https:/.test(g.thumbnail || '') ? g.thumbnail : '')}" alt="" loading="lazy">${esc(g.name)}${g.status === 'draft' ? ' <span class="pill">draft</span>' : ''}</div></td>
+    <td class="num">${fmt(g.people)}</td><td class="num">${fmt(g.came_back)}</td><td class="num">${pct(g.rate)}</td><td class="num">${fmt(g.views)}</td><td class="num">${fmt(g.plays)}</td><td class="num">${pct(g.phone)}</td><td class="num">${dur(g.avg_play_seconds)}</td><td class="num">${fmt(g.plays_all_time)}</td><td class="num">${fmt(g.like_count)}</td>
+    <td class="muted">${esc(ago(g.last_played_at))}</td><td class="muted">${g.creator ? '@' + esc(g.creator) : '—'}</td></tr>`).join('')}</tbody>`;
+  el.querySelectorAll('th').forEach((th) => th.addEventListener('click', () => { const k = th.dataset.sort; gamesSort = { key: k, dir: gamesSort.key === k ? -gamesSort.dir : -1 }; renderGames(); }));
+}
+
+// Accounts table and drawer
+let userOffset = 0;
+async function loadUsers(append) {
+  if (append !== true) userOffset = 0;
+  const q = $('userSearch').value.trim();
+  const d = await api('/users', `&limit=50&offset=${userOffset}${q ? '&q=' + encodeURIComponent(q) : ''}`);
+  const el = $('usersTable'); if (!el) return;
+  const rows = d.users.map((u) => `<tr class="click" data-id="${esc(u.id)}"><td><b>${esc(u.username ? '@' + u.username : (u.display_name || 'No username'))}</b>${u.is_internal ? ' <span class="pill">team/test</span>' : ''}<div class="muted" style="font-size:12px">${esc(u.email || '')}</div></td><td class="muted">${esc(day(u.created_at))}</td><td class="num">${fmt(u.plays)}</td><td class="num">${fmt(u.games_played)}</td><td class="num">${dur(u.seconds_played)}</td><td class="muted">${esc(ago(u.last_played_at))}</td><td class="num">${u.games_published ? fmt(u.games_published) : '—'}</td><td class="muted">${esc(u.oauth_provider || 'email')}</td></tr>`).join('');
+  if (append === true) el.querySelector('tbody').insertAdjacentHTML('beforeend', rows);
+  else el.innerHTML = `<thead><tr><th>Account (${fmt(d.total)})</th><th>Joined</th><th class="num">Plays</th><th class="num">Games</th><th class="num">Time</th><th>Last played</th><th class="num">Published</th><th>Signed up with</th></tr></thead><tbody>${rows}</tbody>`;
+  userOffset += d.users.length;
+  $('moreUsers').hidden = userOffset >= d.total;
+  el.querySelectorAll('tr.click').forEach((tr) => { tr.onclick = () => openUser(tr.dataset.id); });
+}
+async function openUser(id) {
+  $('drawerBody').innerHTML = '<p class="muted">Loading…</p>';
+  $('drawer').classList.add('open');
+  const d = await get(`/api/admin/insights/users/${encodeURIComponent(id)}`);
+  const u = d.user;
+  $('drawerBody').innerHTML = `<h2 style="font-size:20px;margin:0 0 4px">${esc(u.username ? '@' + u.username : (u.display_name || 'Account'))}</h2>
+    <p class="muted" style="margin:0 0 14px">${esc(u.email || 'no email')} · ${esc(u.oauth_provider || 'email')} · joined ${esc(day(u.created_at))}</p>
+    <h3 style="font-size:14px">Games played</h3>${table([['Game', (g) => esc(g.name || g.game_id)], ['Plays', (g) => fmt(g.plays), 1], ['Time', (g) => dur(g.seconds_played), 1], ['Last', (g) => esc(ago(g.last_played_at))]], d.games)}
+    <h3 style="font-size:14px;margin-top:18px">Published</h3>${table([['Game', (g) => esc(g.name)], ['State', (g) => esc(g.status || 'published')]], d.published)}
+    <h3 style="font-size:14px;margin-top:18px">Searches</h3>${table([['Search', (s) => esc(s.query)], ['When', (s) => esc(ago(s.created_at))]], d.searches)}`;
+}
+$('drawerClose').onclick = () => $('drawer').classList.remove('open');
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('drawer').classList.remove('open'); });
+
+// ---- wiring ----
+const navEl = document.querySelector('nav');
+Object.entries(TABS).forEach(([k, [label]]) => {
+  const b = document.createElement('button');
+  b.textContent = label; b.dataset.tab = k;
+  b.onclick = () => { location.hash = k; };
+  navEl.appendChild(b);
+});
+async function load(quiet) {
+  const mine = ++token, [label, fn, after] = TABS[tab];
+  $('title').textContent = label;
+  navEl.querySelectorAll('button').forEach((b) => (b.dataset.tab === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  if (!quiet) $('view').innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    charts.clear();
+    const html = await fn();
+    if (mine !== token) return;
+    const open = quiet ? [...$('view').querySelectorAll('details')].map((d) => d.open) : null;
+    const scroll = window.scrollY;
+    $('view').innerHTML = html;
+    if (open) $('view').querySelectorAll('details').forEach((d, i) => { if (open[i] !== undefined) d.open = open[i]; });
+    drawCharts();
+    if (after) after();
+    if (quiet) window.scrollTo(0, scroll);
+    $('status').hidden = true;
+  } catch (e) {
+    if (e.message === 'unauthorized' || mine !== token) return;
+    console.error(e);
+    $('status').hidden = false;
+    $('status').textContent = `Couldn't load this (${e.message}). It tries again in a minute.`;
+    if (!quiet) $('view').innerHTML = '';
+  }
+}
+window.addEventListener('hashchange', () => { const k = location.hash.slice(1); if (TABS[k]) { tab = k; load(); window.scrollTo(0, 0); } });
+$('range').querySelectorAll('button').forEach((b) => { b.onclick = () => { days = +b.dataset.days; $('range').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); load(); }; });
+$('internal').onchange = () => { internal = $('internal').checked; load(); };
+$('signout').onclick = () => { store.set('gametok_admin_key', ''); location.reload(); };
+$('keyForm').onsubmit = (e) => { e.preventDefault(); const k = $('keyInput').value.trim(); if (!k) return; store.set('gametok_admin_key', k); start(); };
+setInterval(() => { if (!document.hidden && $('drawer').classList.contains('open') === false && !$('app').hidden && (tab === 'live' || tab === 'overview')) load(true); }, 20000);
+
+function start() {
+  const local = ROOT === '';
+  if (!local && !store.get('authToken') && !store.get('gametok_admin_key')) return showGate();
+  $('gate').hidden = true; $('app').hidden = false;
+  const k = location.hash.slice(1); if (TABS[k]) tab = k;
+  load();
+}
+start();
+</script>
+</body>
+</html>
